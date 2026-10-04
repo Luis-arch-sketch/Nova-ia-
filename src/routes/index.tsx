@@ -39,6 +39,7 @@ function Index() {
   const [sidebar, setSidebar] = useState(false);
   const [notice, setNotice] = useState("");
   const [theme, setTheme] = useState<ThemeMode>("liquido");
+  const [themeReady, setThemeReady] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,12 +51,16 @@ function Index() {
   }, []);
   useEffect(() => { if (convs.length) localStorage.setItem(KEY, JSON.stringify(convs)); }, [convs]);
   useEffect(() => {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === "liquido" || saved === "galaxy") setTheme(saved);
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "liquido" || saved === "galaxy") setTheme(saved);
+    } catch {}
+    setThemeReady(true);
   }, []);
   useEffect(() => {
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+    if (!themeReady) return;
+    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+  }, [theme, themeReady]);
   const active = convs.find((c) => c.id === activeId);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [active?.messages.length, typing]);
 
@@ -111,7 +116,7 @@ function Index() {
       </aside>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b px-4 py-3">
+        <header className="nova-header flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <button className="rounded-lg px-2 py-1 text-xl md:hidden" aria-label="Abrir menu" onClick={() => setSidebar(true)}>☰</button>
           <div className="flex items-center gap-2 rounded-full glass px-3 py-1.5 text-sm">
             <span className="h-2 w-2 rounded-full bg-primary glow" />

@@ -110,9 +110,50 @@
   transition: opacity 300ms ease, transform 600ms ease;
 }
 
-.theme-galaxy::before,
+.theme-galaxy {
+  --background: oklch(0.12 0.06 295);
+  --card: oklch(0.2 0.08 295 / 68%);
+  --secondary: oklch(0.24 0.1 295);
+  --muted: oklch(0.22 0.07 295);
+  --primary: oklch(0.78 0.15 295);
+  --accent: oklch(0.78 0.17 325);
+  --ring: oklch(0.78 0.15 295);
+  --sidebar: oklch(0.11 0.05 295 / 94%);
+  --glow: oklch(0.72 0.22 295 / 42%);
+  --gradient-brand: linear-gradient(120deg, oklch(0.8 0.16 280), oklch(0.74 0.21 325));
+  --gradient-space:
+    radial-gradient(circle at 23px 31px, #ffffff80 0 .7px, transparent 1.4px),
+    radial-gradient(circle at 71px 83px, #e6d7ff66 0 1px, transparent 1.7px),
+    radial-gradient(ellipse at 18% 12%, oklch(0.4 0.22 290 / 55%), transparent 50%),
+    radial-gradient(ellipse at 85% 88%, oklch(0.35 0.17 325 / 50%), transparent 55%),
+    linear-gradient(145deg, oklch(0.1 0.06 285), oklch(0.15 0.08 310));
+  background-size: 173px 191px, 251px 227px, auto, auto, auto;
+}
+
+.theme-galaxy::before {
+  width: 52vw;
+  height: 52vw;
+  min-width: 280px;
+  min-height: 280px;
+  left: -12vw;
+  top: 8vh;
+  border-radius: 43% 57% 61% 39% / 47% 35% 65% 53%;
+  background: radial-gradient(circle at 35% 30%, oklch(0.74 0.19 280 / 52%), oklch(0.45 0.24 295 / 30%) 50%, transparent 72%);
+  opacity: .75;
+  animation: liquidFloatA 12s ease-in-out infinite alternate;
+}
+
 .theme-galaxy::after {
-  opacity: 0;
+  width: 46vw;
+  height: 46vw;
+  min-width: 260px;
+  min-height: 260px;
+  right: -10vw;
+  bottom: 4vh;
+  border-radius: 58% 42% 33% 67% / 36% 58% 42% 64%;
+  background: radial-gradient(circle at 50% 50%, oklch(0.64 0.23 320 / 44%), oklch(0.36 0.2 300 / 30%) 52%, transparent 74%);
+  opacity: .72;
+  animation: liquidFloatB 14s ease-in-out infinite alternate;
 }
 
 .theme-liquido {
@@ -170,11 +211,11 @@
 }
 
 .theme-switcher-btn {
-  min-height: 28px;
-  padding: 0 10px;
+  min-height: 36px;
+  padding: 0 14px;
   border-radius: 999px;
   font-family: var(--font-display);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: .08em;
   color: var(--muted-foreground);
   transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
@@ -197,9 +238,18 @@
 }
 
 @media (max-width: 640px) {
-  .theme-switcher-btn {
-    min-height: 30px;
-    padding: 0 8px;
-    font-size: 8px;
+  .nova-header .theme-switcher {
+    order: 3;
+    width: 100%;
   }
+  .theme-switcher-btn {
+    flex: 1;
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-shell::before, .theme-shell::after { animation: none; }
 }
