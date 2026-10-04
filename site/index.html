@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>NOVA IA</title>
+  <meta name="description" content="NOVA IA — assistente Galaxy com modo Líquido Azul." />
+  <style>
+    :root{
+      --bg:#0b1020;--fg:#f3f7ff;--muted:#9aa7bd;--card:rgba(25,31,58,.72);
+      --border:rgba(170,195,255,.16);--primary:#65dcff;--accent:#d66dff;--sidebar:rgba(8,12,27,.92);
+      --brand:linear-gradient(120deg,#65dcff,#d66dff);--glow:rgba(101,220,255,.35);
+      --space:radial-gradient(ellipse at 20% 0%,rgba(107,62,197,.36),transparent 55%),radial-gradient(ellipse at 90% 100%,rgba(50,155,226,.28),transparent 55%);
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark;
+    }
+    *{box-sizing:border-box} html,body{height:100%;margin:0} body{background:var(--space),var(--bg);color:var(--fg);overflow:hidden}
+    button,textarea{font:inherit}.app{height:100dvh;display:flex;position:relative;isolation:isolate;overflow:hidden}
+    .app:before,.app:after{content:"";position:fixed;pointer-events:none;z-index:-1;filter:blur(44px);opacity:0;transition:.3s}
+    .app.liquido{--bg:#071527;--card:rgba(13,52,82,.62);--border:rgba(131,232,255,.2);--primary:#7ceaff;--accent:#7ceaff;--sidebar:rgba(4,19,37,.94);--brand:linear-gradient(120deg,#9cf4ff,#49a8ff);--glow:rgba(124,234,255,.42);--space:radial-gradient(circle at 18% 12%,rgba(51,159,255,.35),transparent 34%),radial-gradient(circle at 78% 80%,rgba(45,220,255,.24),transparent 38%),linear-gradient(145deg,#061324,#0b2644)}
+    .app.liquido:before{opacity:.8;width:52vw;height:52vw;min-width:280px;min-height:280px;left:-12vw;top:8vh;border-radius:43% 57% 61% 39%/47% 35% 65% 53%;background:radial-gradient(circle at 35% 30%,rgba(190,250,255,.46),rgba(37,156,255,.22) 50%,transparent 72%);animation:floatA 12s ease-in-out infinite alternate}
+    .app.liquido:after{opacity:.7;width:46vw;height:46vw;min-width:260px;min-height:260px;right:-10vw;bottom:4vh;border-radius:58% 42% 33% 67%/36% 58% 42% 64%;background:radial-gradient(circle,rgba(118,244,255,.38),rgba(55,103,255,.20) 52%,transparent 74%);animation:floatB 14s ease-in-out infinite alternate}
+    @keyframes floatA{to{transform:translate(8vw,4vh) rotate(9deg) scale(1.08)}} @keyframes floatB{to{transform:translate(-7vw,-3vh) rotate(-10deg) scale(.96)}}
+    .sidebar{width:288px;flex:0 0 288px;background:var(--sidebar);border-right:1px solid var(--border);backdrop-filter:blur(18px);padding:16px;display:flex;flex-direction:column}
+    .logo{display:flex;align-items:center;gap:10px;margin-bottom:22px}.logo-badge{width:38px;height:38px;border-radius:12px;background:var(--brand);display:grid;place-items:center;font-weight:800;box-shadow:0 0 24px var(--glow)}.brand{font-weight:800;letter-spacing:.18em;background:var(--brand);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .new{border:0;border-radius:14px;background:var(--brand);color:#071018;font-weight:750;padding:12px;box-shadow:0 0 22px var(--glow);cursor:pointer}.side-title{font-size:11px;color:var(--muted);letter-spacing:.12em;margin:16px 0 8px}.conv-list{flex:1;overflow:auto}.conv{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;color:var(--fg)}.conv.active{background:rgba(255,255,255,.07)}.conv button{background:none;border:0;color:inherit;cursor:pointer}.conv .name{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.conv .del{color:var(--muted);font-size:20px}.model-card{border:1px solid var(--border);background:var(--card);border-radius:14px;padding:12px;color:var(--muted);font-size:12px}.model-card b{color:var(--primary)}
+    .main{min-width:0;flex:1;display:flex;flex-direction:column}.header{height:62px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:10px 16px;backdrop-filter:blur(12px);background:rgba(5,8,20,.20)}.menu{display:none;background:none;border:0;color:var(--fg);font-size:24px}.status{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card);border-radius:999px;padding:7px 12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 16px var(--glow)}
+    .switcher{display:flex;gap:2px;padding:3px;border:1px solid var(--border);border-radius:999px;background:var(--card);backdrop-filter:blur(14px)}.switcher button{border:0;background:transparent;color:var(--muted);font-weight:750;font-size:9px;letter-spacing:.08em;padding:8px 10px;border-radius:999px;cursor:pointer}.switcher button.active{color:#071018;background:var(--brand);box-shadow:0 0 18px var(--glow)}
+    .content{flex:1;overflow:auto;padding:24px 16px}.inner{max-width:780px;margin:0 auto}.welcome{text-align:center;padding-top:8vh}.welcome h1{font-size:clamp(34px,7vw,60px);margin:0;background:var(--brand);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.06em}.welcome p{color:var(--muted)}.suggestions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px}.suggestions button{border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:18px;padding:16px;text-align:left;cursor:pointer}.suggestions strong{display:block;color:var(--primary);margin-bottom:6px}.suggestions span{color:var(--muted);font-size:13px}
+    .messages{display:flex;flex-direction:column;gap:18px}.row{display:flex}.row.user{justify-content:flex-end}.bubble{max-width:85%;padding:11px 14px;border-radius:18px;line-height:1.45}.user .bubble{background:var(--primary);color:#071018;border-bottom-right-radius:5px}.assistant{gap:10px}.assistant .avatar{width:32px;height:32px;flex:0 0 32px;border-radius:9px;background:var(--brand);display:grid;place-items:center;color:#071018;font-weight:800;box-shadow:0 0 16px var(--glow)}.assistant .bubble{padding:5px 0}.typing{color:var(--muted);display:flex;gap:10px;align-items:center}.typing .pulse{width:32px;height:32px;border-radius:9px;background:var(--brand);animation:pulse 1s infinite alternate}@keyframes pulse{to{opacity:.35}}
+    .footer{padding:10px 14px 14px}.composer{max-width:780px;margin:0 auto;border:1px solid var(--border);background:var(--card);border-radius:18px;padding:8px;backdrop-filter:blur(16px)}textarea{width:100%;resize:none;border:0;outline:none;background:transparent;color:var(--fg);padding:8px 10px;min-height:44px;max-height:140px}.actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.chip{border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:999px;padding:6px 10px;font-size:11px}.send{margin-left:auto;width:38px;height:38px;border-radius:50%;border:0;background:var(--brand);color:#071018;font-size:19px;font-weight:900;cursor:pointer}.footnote{text-align:center;color:var(--muted);font-size:10px;margin-top:7px}.notice{text-align:center;color:var(--accent);font-size:12px;margin-bottom:6px}
+    .overlay{display:none}
+    @media(max-width:760px){.sidebar{position:fixed;z-index:30;inset:0 auto 0 0;transform:translateX(-100%);transition:.2s}.sidebar.open{transform:translateX(0)}.overlay.show{display:block;position:fixed;z-index:20;inset:0;background:rgba(0,0,0,.55)}.menu{display:block}.header{padding-inline:10px}.status{font-size:12px;padding:6px 9px}.switcher button{padding:8px 7px;font-size:8px}.suggestions{grid-template-columns:1fr}.content{padding-top:16px}.welcome{padding-top:4vh}.chip{font-size:10px;padding:6px 8px}}
+  </style>
+</head>
+<body>
+<div id="app" class="app">
+  <div id="overlay" class="overlay"></div>
+  <aside id="sidebar" class="sidebar">
+    <div class="logo"><div class="logo-badge">N</div><div class="brand">NOVA IA</div></div>
+    <button id="newBtn" class="new">+ Nova conversa</button>
+    <div class="side-title">CONVERSAS</div><div id="convList" class="conv-list"></div>
+    <div class="model-card"><b id="modeLabel">Galaxy</b> · Modelo: NOVA IA</div>
+  </aside>
+  <main class="main">
+    <header class="header">
+      <button id="menuBtn" class="menu" aria-label="Abrir menu">☰</button>
+      <div class="status"><span class="dot"></span><strong>NOVA IA</strong></div>
+      <div class="switcher" aria-label="Selecionar visual">
+        <button id="liquidoBtn">LÍQUIDO AZUL</button><button id="galaxyBtn">GALAXY</button>
+      </div>
+    </header>
+    <section id="content" class="content"><div id="inner" class="inner"></div></section>
+    <footer class="footer">
+      <div id="notice" class="notice"></div>
+      <form id="form" class="composer">
+        <textarea id="input" rows="1" placeholder="Envie uma mensagem para a NOVA IA"></textarea>
+        <div class="actions">
+          <button type="button" class="chip" data-soon="Criar imagem">Criar imagem · em breve</button>
+          <button type="button" class="chip" data-soon="Criar vídeo">Criar vídeo · em breve</button>
+          <button type="button" class="chip" data-soon="Página web">Página web · em breve</button>
+          <button class="send" type="submit" aria-label="Enviar">↑</button>
+        </div>
+      </form>
+      <div id="footnote" class="footnote">NOVA IA · versão de demonstração local · Galaxy</div>
+    </footer>
+  </main>
+</div>
+<script>
+const KEY="nova-ia-conversas", THEME_KEY="nova-ia-theme";
+const $=s=>document.querySelector(s);
+const app=$("#app"), sidebar=$("#sidebar"), overlay=$("#overlay"), inner=$("#inner"), convList=$("#convList"), input=$("#input");
+const suggestions=[
+  ["Ideias criativas","Me dê ideias para um projeto de fim de semana"],
+  ["Explicar um termo","O que significa curiosidade?"],
+  ["Planejar o dia","Me ajude a organizar minha rotina de estudos"],
+  ["Bater papo","Vamos conversar sobre o espaço e as galáxias"]
+];
+const glossary={casa:"lugar onde uma pessoa ou família mora; lar, residência.",amor:"sentimento de afeto profundo, cuidado e ligação por alguém ou algo.",curiosidade:"desejo de saber, aprender ou descobrir algo novo.",jogo:"atividade com regras, feita por diversão, competição ou aprendizado.",galaxia:"enorme sistema de estrelas, gás e poeira unidos pela gravidade.",inteligencia:"capacidade de aprender, compreender e resolver problemas."};
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+const newConv=()=>({id:uid(),title:"Nova conversa",messages:[]});
+let convs=[]; try{convs=JSON.parse(localStorage.getItem(KEY)||"[]")}catch{} if(!convs.length)convs=[newConv()];
+let activeId=convs[0].id, typing=false, theme=localStorage.getItem(THEME_KEY)==="liquido"?"liquido":"galaxy";
+function save(){localStorage.setItem(KEY,JSON.stringify(convs))}
+function active(){return convs.find(c=>c.id===activeId)}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function normalize(s){return s.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ")}
+function classify(input){
+  const text=normalize(input); if(!text)return{kind:"chat"};
+  const words=text.replace(/[?!.,;:]/g,"").split(" ").filter(Boolean);
+  const greetings=["oi","ola","bom dia","boa tarde","boa noite","e ai","hey","opa"];
+  if(words.length<=1)return greetings.includes(words[0]||"")?{kind:"greeting"}:{kind:"chat"};
+  if(greetings.includes(text.replace(/[?!.,]/g,"")))return{kind:"greeting"};
+  const pats=[/^o que (?:significa|quer dizer) (?:a palavra |o termo )?["“]?(.+?)["”]?\??$/, /^qual (?:e |eh )?o significado (?:de|da|do) (?:palavra |termo )?["“]?(.+?)["”]?\??$/, /^significado (?:de|da|do) ["“]?(.+?)["”]?\??$/, /^defina ["“]?(.+?)["”]?\??$/, /^definicao (?:de|da|do) ["“]?(.+?)["”]?\??$/, /^o que (?:e|eh) (?:um |uma |o |a )?["“]?(.+?)["”]?\?$/];
+  for(const re of pats){const m=text.match(re);if(m&&m[1]){const term=m[1].replace(/[?!.]+$/,"").trim();if(term&&term.split(" ").length<=4)return{kind:"definition",term}}}
+  return{kind:"chat"};
+}
+function reply(text){
+  const i=classify(text); if(i.kind==="greeting")return"Olá! Eu sou a NOVA IA. Como posso ajudar você hoje?";
+  if(i.kind==="definition"){const k=normalize(i.term);const d=glossary[k];return d?("<strong>"+escapeHtml(i.term)+"</strong>: "+d):("Ainda não tenho uma definição salva para “"+escapeHtml(i.term)+"” nesta versão local da NOVA IA. Pode me dar mais contexto?")}
+  const w=text.trim().split(/\s+/).filter(Boolean); if(w.length===1)return"Você escreveu “"+escapeHtml(w[0])+"”. Quer conversar sobre isso? Conte um pouco mais do que você tem em mente. Se quiser o significado, é só perguntar “o que significa "+escapeHtml(w[0])+"?”.";
+  return"Entendi. Esta é uma versão de demonstração local da NOVA IA, então minhas respostas ainda são simples. Pode continuar — estou acompanhando a conversa.";
+}
+function applyTheme(){
+  app.classList.toggle("liquido",theme==="liquido"); $("#liquidoBtn").classList.toggle("active",theme==="liquido"); $("#galaxyBtn").classList.toggle("active",theme==="galaxy");
+  $("#modeLabel").textContent=theme==="liquido"?"Líquido Azul":"Galaxy"; $("#footnote").textContent="NOVA IA · versão de demonstração local · "+(theme==="liquido"?"Líquido Azul":"Galaxy"); localStorage.setItem(THEME_KEY,theme);
+}
+function renderSidebar(){convList.innerHTML=convs.map(c=>'<div class="conv '+(c.id===activeId?'active':'')+'"><button class="name" data-open="'+c.id+'">'+escapeHtml(c.title)+'</button><button class="del" data-del="'+c.id+'" aria-label="Excluir conversa">×</button></div>').join("")}
+function render(){
+  renderSidebar(); const c=active(); if(!c||!c.messages.length){
+    inner.innerHTML='<div class="welcome"><h1>NOVA IA</h1><p>Olá! Sobre o que vamos conversar hoje?</p><div class="suggestions">'+suggestions.map((s,i)=>'<button data-sug="'+i+'"><strong>'+s[0]+'</strong><span>'+s[1]+'</span></button>').join("")+'</div></div>';
+  }else{
+    inner.innerHTML='<div class="messages">'+c.messages.map(m=>m.role==="user"?'<div class="row user"><div class="bubble">'+escapeHtml(m.text)+'</div></div>':'<div class="row assistant"><div class="avatar">N</div><div class="bubble">'+m.html+'</div></div>').join("")+(typing?'<div class="typing"><div class="pulse"></div><span>NOVA IA está pensando…</span></div>':'')+'</div>';
+    $("#content").scrollTop=$("#content").scrollHeight;
+  }
+}
+function send(text){
+  const t=text.trim();const c=active(); if(!t||!c||typing)return;
+  if(!c.messages.length)c.title=t.slice(0,36);c.messages.push({role:"user",text:t});save();typing=true;render();input.value="";
+  setTimeout(()=>{c.messages.push({role:"assistant",html:reply(t)});typing=false;save();render()},500);
+}
+$("#form").addEventListener("submit",e=>{e.preventDefault();send(input.value)});
+input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(input.value)}});
+inner.addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(b)send(suggestions[+b.dataset.sug][1])});
+convList.addEventListener("click",e=>{const o=e.target.closest("[data-open]"),d=e.target.closest("[data-del]");if(o){activeId=o.dataset.open;sidebar.classList.remove("open");overlay.classList.remove("show");render()} if(d){convs=convs.filter(c=>c.id!==d.dataset.del);if(!convs.length)convs=[newConv()];if(!convs.some(c=>c.id===activeId))activeId=convs[0].id;save();render()}});
+$("#newBtn").onclick=()=>{const c=newConv();convs.unshift(c);activeId=c.id;save();render();sidebar.classList.remove("open");overlay.classList.remove("show")};
+$("#menuBtn").onclick=()=>{sidebar.classList.add("open");overlay.classList.add("show")}; overlay.onclick=()=>{sidebar.classList.remove("open");overlay.classList.remove("show")};
+$("#liquidoBtn").onclick=()=>{theme="liquido";applyTheme()}; $("#galaxyBtn").onclick=()=>{theme="galaxy";applyTheme()};
+document.querySelectorAll("[data-soon]").forEach(b=>b.onclick=()=>{const n=$("#notice");n.textContent=b.dataset.soon+": em desenvolvimento";setTimeout(()=>n.textContent="",1800)});
+applyTheme();render();
+</script>
+</body>
+</html>
