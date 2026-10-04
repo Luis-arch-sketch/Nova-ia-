@@ -38,7 +38,7 @@ function Index() {
   const [typing, setTyping] = useState(false);
   const [sidebar, setSidebar] = useState(false);
   const [notice, setNotice] = useState("");
-  const [theme, setTheme] = useState<ThemeMode>("galaxy");
+  const [theme, setTheme] = useState<ThemeMode>("liquido");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,8 +118,8 @@ function Index() {
             <span className="font-medium">{MODEL_NAME}</span>
           </div>
           <div className="theme-switcher" role="group" aria-label="Selecionar visual da NOVA IA">
-            <button type="button" onClick={() => setTheme("liquido")} className={`theme-switcher-btn ${theme === "liquido" ? "active" : ""}`}>LÍQUIDO AZUL</button>
-            <button type="button" onClick={() => setTheme("galaxy")} className={`theme-switcher-btn ${theme === "galaxy" ? "active" : ""}`}>GALAXY</button>
+            <button type="button" onClick={() => setTheme("liquido")} className={`theme-switcher-btn ${theme === "liquido" ? "active" : ""}`} aria-pressed={theme === "liquido"} aria-label="Usar tema LÍQUIDO AZUL">LÍQUIDO AZUL</button>
+            <button type="button" onClick={() => setTheme("galaxy")} className={`theme-switcher-btn ${theme === "galaxy" ? "active" : ""}`} aria-pressed={theme === "galaxy"} aria-label="Usar tema GALAXY">GALAXY</button>
           </div>
         </header>
 
