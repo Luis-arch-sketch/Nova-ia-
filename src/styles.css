@@ -1,0 +1,92 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Orbitron", "Space Grotesk", sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-glow: var(--glow);
+}
+
+:root {
+  --radius: 0.875rem;
+  --background: oklch(0.13 0.03 270);
+  --foreground: oklch(0.96 0.01 250);
+  --card: oklch(0.18 0.04 270 / 70%);
+  --card-foreground: oklch(0.96 0.01 250);
+  --popover: oklch(0.18 0.04 270);
+  --popover-foreground: oklch(0.96 0.01 250);
+  --primary: oklch(0.78 0.15 215);
+  --primary-foreground: oklch(0.13 0.03 270);
+  --secondary: oklch(0.22 0.05 270);
+  --secondary-foreground: oklch(0.96 0.01 250);
+  --muted: oklch(0.22 0.04 270);
+  --muted-foreground: oklch(0.7 0.03 260);
+  --accent: oklch(0.7 0.2 330);
+  --accent-foreground: oklch(0.13 0.03 270);
+  --destructive: oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.6 0.08 250 / 18%);
+  --input: oklch(0.6 0.08 250 / 22%);
+  --ring: oklch(0.78 0.15 215);
+  --sidebar: oklch(0.11 0.03 270 / 92%);
+  --glow: oklch(0.78 0.15 215 / 35%);
+  --gradient-brand: linear-gradient(120deg, oklch(0.78 0.15 215), oklch(0.7 0.2 330));
+  --gradient-space: radial-gradient(ellipse at 20% 0%, oklch(0.3 0.12 290 / 55%), transparent 55%),
+    radial-gradient(ellipse at 90% 100%, oklch(0.35 0.12 215 / 40%), transparent 55%);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background: var(--gradient-space), var(--color-background);
+    background-attachment: fixed;
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+}
+
+@utility text-brand {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility bg-brand { background: var(--gradient-brand); }
+@utility glow { box-shadow: 0 0 24px var(--glow); }
+@utility glass {
+  background: var(--card);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+}
+
+#lovable-badge {
+  display: none !important;
+}
