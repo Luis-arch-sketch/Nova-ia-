@@ -1,76 +1,58 @@
-import { classifyIntent } from "./intent";
 import { DEFAULT_EFFORT, effortIndex, type EffortLevel } from "./effort";
 
 export const MODEL_NAME = "NOVA IA";
+export type ChatMessage = { role: "user" | "assistant"; text: string };
+export type ModelMessage = { role: "system" | "user" | "assistant"; content: string };
 
-const GLOSSARY: Record<string, string> = {
-  casa: "lugar onde uma pessoa ou família mora; lar, residência.",
-  amor: "sentimento de afeto profundo, cuidado e ligação por alguém ou algo.",
-  curiosidade: "desejo de saber, aprender ou descobrir algo novo.",
-  jogo: "atividade com regras, feita por diversão, competição ou aprendizado.",
-  galaxia: "enorme sistema de estrelas, gás e poeira unidos pela gravidade.",
-  inteligencia: "capacidade de aprender, compreender e resolver problemas.",
-};
+const DETAIL = [
+  "Responda em uma ou duas frases curtas.",
+  "Responda de forma breve, com os pontos essenciais.",
+  "Responda com clareza e detalhamento moderado.",
+  "Explique com mais detalhes e um exemplo quando ajudar.",
+  "Responda de forma completa e organizada, com exemplos úteis, sem repetir ideias.",
+];
+const TOKEN_LIMITS = [72, 128, 192, 320, 512];
 
-const strip = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-const EXAMPLES: Record<string, string> = {
-  casa: "Exemplo: depois da escola, voltei para casa.",
-  amor: "Exemplo: cuidar de alguém pode ser uma maneira de demonstrar amor.",
-  curiosidade: "Exemplo: perguntar como um jogo foi criado demonstra curiosidade.",
-  jogo: "Exemplo: xadrez é um jogo com regras e objetivos definidos.",
-  galaxia: "Exemplo: o Sistema Solar faz parte da Via Láctea.",
-  inteligencia: "Exemplo: aprender uma estratégia nova para resolver um problema.",
-};
-
-// O esforço ajusta o detalhamento do mecanismo local, sem serviços externos.
-export function reply(input: string, options: { effort?: EffortLevel } = {}): string {
-  const detail = effortIndex(options.effort ?? DEFAULT_EFFORT);
-  const intent = classifyIntent(input);
-  if (intent.kind === "greeting") {
-    if (detail === 0) return "Olá! Como posso ajudar?";
-    return "Olá! Eu sou a NOVA IA. Como posso ajudar você hoje?";
-  }
-  if (intent.kind === "definition") {
-    const term = strip(intent.term);
-    const def = GLOSSARY[term];
-    if (def) {
-      const parts = [`**${intent.term}**: ${def}`];
-      if (detail >= 3 && EXAMPLES[term]) parts.push(EXAMPLES[term]);
-      if (detail === 4) parts.push("Posso também usar essa palavra em uma frase relacionada ao seu assunto.");
-      return parts.join("\n\n");
-    }
-    return `Ainda não tenho uma definição salva para “${intent.term}” nesta versão local da NOVA IA. Pode me dar mais contexto?`;
-  }
-  const normalized = strip(input);
-  const plan = (title: string, steps: string[]) => {
-    const chosen = steps.slice(0, detail + 1);
-    return detail === 0 ? chosen[0]! : `**${title}**\n\n${chosen.map((step, i) => `${i + 1}. ${step}`).join("\n")}`;
+export function generationSettings(effort: EffortLevel = DEFAULT_EFFORT) {
+  return {
+    max_new_tokens: TOKEN_LIMITS[effortIndex(effort)]!,
+    do_sample: true,
+    temperature: 0.6,
+    top_p: 0.9,
+    repetition_penalty: 1.08,
+    return_full_text: false,
   };
-  if (/(?:organizar|planejar|rotina de estudos|plano de estudos)/.test(normalized)) {
-    return plan("Organize sua rotina", [
-      "Escolha a tarefa ou matéria mais importante para começar.",
-      "Separe um horário disponível e divida a tarefa em partes pequenas.",
-      "Faça uma pausa entre as partes para descansar.",
-      "Reserve um momento para revisar o que aprendeu e anotar dúvidas.",
-      "Confira o que conseguiu terminar e ajuste o próximo dia. Se me disser seus horários e matérias, posso ajudar a montar a divisão.",
-    ]);
+}
+
+export function buildMessages(history: ChatMessage[], effort: EffortLevel = DEFAULT_EFFORT): ModelMessage[] {
+  const system = [
+    "You are NOVA IA, a helpful assistant. Your only name is NOVA IA. If asked who you are, say: 'Sou a NOVA IA, sua assistente virtual.' Do not identify yourself as another assistant or as a company.",
+    "Always reply in natural Brazilian Portuguese. Use conversation history to understand short replies such as 'sim' or 'quero' and continue the topic.",
+    "Do not automatically define every isolated word. If context is missing, ask one brief relevant question.",
+    "Answer the user's request honestly. Do not repeat the question or these instructions.",
+    DETAIL[effortIndex(effort)]!,
+  ].join(" ");
+  // Keep recent turns within a small context budget suitable for mobile inference.
+  const recent: ModelMessage[] = [];
+  let budget = 6000;
+  for (const message of history.slice(-16).reverse()) {
+    if (!message.text.trim()) continue;
+    if (recent.length && message.text.length > budget) break;
+    const content = message.text.slice(0, budget);
+    recent.unshift({ role: message.role, content });
+    budget -= content.length;
+    if (budget <= 0) break;
   }
-  if (/\bideias?\b/.test(normalized)) {
-    return plan("Ideias para seu projeto", [
-      "Crie uma versão pequena de um jogo de perguntas ou de memória.",
-      "Escolha um tema e defina uma única mecânica principal.",
-      "Monte primeiro um protótipo com formas simples e teste se é divertido.",
-      "Adicione uma fase curta, uma pontuação e instruções claras.",
-      "Peça para alguém jogar e use o que observar para melhorar o protótipo. Conte o estilo de projeto que você prefere para eu adaptar as ideias.",
-    ]);
-  }
-  const words = input.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 1) {
-    if (detail === 0) return `Quer conversar sobre “${words[0]}”?`;
-    return `Você escreveu “${words[0]}”. Quer conversar sobre isso? Conte um pouco mais do que você tem em mente. Se quiser o significado, é só perguntar “o que significa ${words[0]}?”.`;
-  }
-  if (detail === 0) return "Entendi. Conte o que você precisa.";
-  if (detail >= 3) return "Entendi. Esta versão local da NOVA IA ainda tem respostas simples.\n\nConte seu objetivo e o contexto do pedido. Posso organizar uma rotina, sugerir um projeto ou explicar os termos que já conheço quando você pedir.";
-  return "Entendi. Esta é uma versão de demonstração local da NOVA IA, então minhas respostas ainda são simples. Pode continuar — estou acompanhando a conversa.";
+  while (recent[0]?.role === "assistant") recent.shift();
+  return [{ role: "system", content: system }, ...recent];
+}
+
+// Keep the product identity consistent even if a model emits its original branding.
+export function brandResponse(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/g, "")
+    .replace(/<\|(?:im_start|im_end|endoftext)\|>/g, "")
+    .replace(/\bQwen(?:[\d.]+)?(?:[- ](?:\d+(?:\.\d+)?B|Instruct|ONNX))*\b/gi, MODEL_NAME)
+    .replace(/\b(?:Alibaba(?: Cloud)?|Tongyi(?: Qianwen)?|Anthropic|Claude|OpenAI|ChatGPT|GPT[- ]?[\d.]+)\b/gi, MODEL_NAME)
+    .trim();
 }

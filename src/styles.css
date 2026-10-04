@@ -308,3 +308,11 @@
   .effort-card { padding-top: .3rem; padding-bottom: .35rem; }
   .effort-trigger { min-height: 3rem; }
 }
+
+.composer-plus { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0; border-radius: 50%; color: var(--foreground); background: var(--secondary); }
+.composer-plus:hover { background: color-mix(in oklch, var(--primary) 22%, var(--secondary)); }
+.composer-plus:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.nova-options { width: min(23rem, calc(100vw - 1.5rem)); max-height: min(34rem, var(--radix-popover-content-available-height)); overflow-y: auto; padding: 1rem; border-radius: 1.5rem; background: var(--background); color: var(--foreground); box-shadow: 0 12px 48px #0008; }
+.nova-options .effort-card { margin: 0; }
+.ai-progress { height: .25rem; overflow: hidden; border-radius: 1rem; background: var(--secondary); }
+.ai-progress > span { display: block; height: 100%; background: var(--gradient-brand); transition: width 180ms ease; }

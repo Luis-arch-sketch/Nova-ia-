@@ -4,20 +4,22 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build && node scripts/prepare-site-output.mjs",
-    "build:dev": "vite build --mode development",
+    "dev": "node scripts/prepare-ai-runtime.mjs && vite dev",
+    "build": "node scripts/prepare-ai-runtime.mjs && vite build && node scripts/prepare-site-output.mjs",
+    "build:dev": "node scripts/prepare-ai-runtime.mjs && vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:ai": "node scripts/verify-local-ai.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@huggingface/transformers": "3.8.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",

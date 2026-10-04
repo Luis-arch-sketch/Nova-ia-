@@ -1,13 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { classifyIntent } from "@/lib/intent";
-import { reply } from "@/lib/nova-engine";
 
 describe("classifyIntent", () => {
   it.each(["casa", "curiosidade", "amor", "jogo", "Casa?", "  amor  ", "galáxia!"])(
     "palavra isolada '%s' nunca é definição",
     (w) => {
       expect(classifyIntent(w).kind).not.toBe("definition");
-      expect(reply(w)).not.toMatch(/significa\.\.\.|^\*\*/);
     },
   );
 

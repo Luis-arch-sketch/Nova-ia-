@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EffortSelector } from "@/components/effort-selector";
 import { EFFORT_KEY, type EffortLevel } from "@/lib/effort";
-import { reply } from "@/lib/nova-engine";
+import { generationSettings } from "@/lib/nova-engine";
 import { Route } from "@/routes/index";
 
 beforeEach(() => {
@@ -41,27 +41,26 @@ describe("Esforço da NOVA IA", () => {
     expect(screen.getByRole("button", { name: "Selecionar esforço: Máximo" })).toBeInTheDocument();
   });
 
-  it("usa o nível escolhido para ampliar o plano de resposta", () => {
-    const question = "Me ajude a organizar minha rotina de estudos";
-    const short = reply(question, { effort: "minimo" });
-    const complete = reply(question, { effort: "maximo" });
-    expect(short).not.toContain("2.");
-    expect(complete).toContain("5.");
-    expect(complete.length).toBeGreaterThan(short.length);
-    expect(reply("casa", { effort: "maximo" })).not.toContain("lar, residência");
+  it("destina mais geração ao esforço máximo", () => {
+    expect(generationSettings("maximo").max_new_tokens).toBeGreaterThan(generationSettings("minimo").max_new_tokens);
   });
 
   it("restaura o nível salvo e mantém o visual coerente ao alterar e reabrir", () => {
     const Homepage = Route.options.component as ComponentType;
     localStorage.setItem(EFFORT_KEY, "maximo");
     render(<Homepage />);
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Abrir opções da NOVA IA" }));
     expect(screen.getByRole("button", { name: "Selecionar esforço: Máximo" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Usar tema GALAXY" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "Restaurar esforço padrão" }));
     expect(screen.getByRole("button", { name: "Usar tema LÍQUIDO AZUL" })).toHaveAttribute("aria-pressed", "true");
     expect(localStorage.getItem(EFFORT_KEY)).toBe("medio");
+    fireEvent.click(screen.getByRole("button", { name: "Fechar opções" }));
+    expect(screen.queryByRole("slider")).not.toBeInTheDocument();
     cleanup();
     render(<Homepage />);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir opções da NOVA IA" }));
     expect(screen.getByRole("button", { name: "Selecionar esforço: Médio" })).toBeInTheDocument();
   });
 });
