@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { MODEL_NAME, reply } from "@/lib/nova-engine";
+import { EffortSelector } from "@/components/effort-selector";
+import { DEFAULT_EFFORT, EFFORT_KEY, EFFORT_LEVELS, effortIndex, isEffortLevel, type EffortLevel } from "@/lib/effort";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,7 +40,8 @@ function Index() {
   const [typing, setTyping] = useState(false);
   const [sidebar, setSidebar] = useState(false);
   const [notice, setNotice] = useState("");
-  const [theme, setTheme] = useState<ThemeMode>("liquido");
+  const [effort, setEffort] = useState<EffortLevel>(DEFAULT_EFFORT);
+  const theme: ThemeMode = EFFORT_LEVELS[effortIndex(effort)]!.theme;
   const [themeReady, setThemeReady] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -53,18 +56,26 @@ function Index() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(THEME_KEY);
-      if (saved === "liquido" || saved === "galaxy") setTheme(saved);
+      const savedEffort = localStorage.getItem(EFFORT_KEY);
+      const restored = isEffortLevel(savedEffort) ? savedEffort : saved === "galaxy" ? "maximo" : DEFAULT_EFFORT;
+      setEffort(restored);
     } catch {}
     setThemeReady(true);
   }, []);
   useEffect(() => {
     if (!themeReady) return;
-    try { localStorage.setItem(THEME_KEY, theme); } catch {}
-  }, [theme, themeReady]);
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+      localStorage.setItem(EFFORT_KEY, effort);
+    } catch {}
+  }, [theme, effort, themeReady]);
   const active = convs.find((c) => c.id === activeId);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [active?.messages.length, typing]);
 
   const update = (id: string, fn: (c: Conv) => Conv) => setConvs((cs) => cs.map((c) => (c.id === id ? fn(c) : c)));
+  const changeEffort = (next: EffortLevel) => {
+    setEffort(next);
+  };
 
   const send = (text: string) => {
     const t = text.trim();
@@ -78,7 +89,7 @@ function Index() {
     setInput("");
     setTyping(true);
     setTimeout(() => {
-      update(id, (c) => ({ ...c, messages: [...c.messages, { role: "assistant", text: reply(t) }] }));
+      update(id, (c) => ({ ...c, messages: [...c.messages, { role: "assistant", text: reply(t, { effort }) }] }));
       setTyping(false);
     }, 600);
   };
@@ -123,8 +134,8 @@ function Index() {
             <span className="font-medium">{MODEL_NAME}</span>
           </div>
           <div className="theme-switcher" role="group" aria-label="Selecionar visual da NOVA IA">
-            <button type="button" onClick={() => setTheme("liquido")} className={`theme-switcher-btn ${theme === "liquido" ? "active" : ""}`} aria-pressed={theme === "liquido"} aria-label="Usar tema LÍQUIDO AZUL">LÍQUIDO AZUL</button>
-            <button type="button" onClick={() => setTheme("galaxy")} className={`theme-switcher-btn ${theme === "galaxy" ? "active" : ""}`} aria-pressed={theme === "galaxy"} aria-label="Usar tema GALAXY">GALAXY</button>
+            <button type="button" onClick={() => changeEffort(DEFAULT_EFFORT)} className={`theme-switcher-btn ${theme === "liquido" ? "active" : ""}`} aria-pressed={theme === "liquido"} aria-label="Usar tema LÍQUIDO AZUL">LÍQUIDO AZUL</button>
+            <button type="button" onClick={() => changeEffort("maximo")} className={`theme-switcher-btn ${theme === "galaxy" ? "active" : ""}`} aria-pressed={theme === "galaxy"} aria-label="Usar tema GALAXY">GALAXY</button>
           </div>
         </header>
 
@@ -153,7 +164,7 @@ function Index() {
                   ) : (
                     <div key={i} className="flex gap-3">
                       <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand font-display text-xs font-bold text-primary-foreground">N</div>
-                      <div className="pt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: fmt(m.text) }} />
+                      <div className="whitespace-pre-wrap pt-1 leading-relaxed" dangerouslySetInnerHTML={{ __html: fmt(m.text) }} />
                     </div>
                   ),
                 )}
@@ -167,6 +178,7 @@ function Index() {
         <footer className="px-3 pb-3 md:px-4 md:pb-4">
           <div className="mx-auto max-w-3xl">
             {notice && <div className="mb-2 text-center text-sm text-accent">{notice}</div>}
+            <EffortSelector value={effort} onChange={changeEffort} />
             <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="rounded-2xl glass p-2 focus-within:border-primary">
               <textarea
                 value={input}
