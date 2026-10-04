@@ -27,6 +27,8 @@ const SUGGESTIONS = [
 ];
 
 const KEY = "nova-ia-conversas";
+const THEME_KEY = "nova-ia-theme";
+type ThemeMode = "galaxy" | "liquido";
 const newConv = (): Conv => ({ id: crypto.randomUUID(), title: "Nova conversa", messages: [] });
 
 function Index() {
@@ -36,6 +38,7 @@ function Index() {
   const [typing, setTyping] = useState(false);
   const [sidebar, setSidebar] = useState(false);
   const [notice, setNotice] = useState("");
+  const [theme, setTheme] = useState<ThemeMode>("galaxy");
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +49,13 @@ function Index() {
     setActiveId(loaded[0]!.id);
   }, []);
   useEffect(() => { if (convs.length) localStorage.setItem(KEY, JSON.stringify(convs)); }, [convs]);
+  useEffect(() => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "liquido" || saved === "galaxy") setTheme(saved);
+  }, []);
+  useEffect(() => {
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
   const active = convs.find((c) => c.id === activeId);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [active?.messages.length, typing]);
 
@@ -78,7 +88,7 @@ function Index() {
   const soon = (what: string) => { setNotice(`${what}: em desenvolvimento`); setTimeout(() => setNotice(""), 2200); };
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden">
+    <div className={`theme-shell ${theme === "liquido" ? "theme-liquido" : "theme-galaxy"} flex h-[100dvh] overflow-hidden`}>
       {sidebar && <div className="fixed inset-0 z-30 bg-background/70 md:hidden" onClick={() => setSidebar(false)} />}
       <aside className={`fixed z-40 flex h-full w-72 flex-col border-r bg-sidebar p-4 backdrop-blur-xl transition-transform md:static md:translate-x-0 ${sidebar ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="mb-6 flex items-center gap-2">
@@ -96,7 +106,7 @@ function Index() {
           ))}
         </nav>
         <div className="mt-4 rounded-xl glass p-3 text-xs text-muted-foreground">
-          <span className="text-brand font-display font-semibold">Galaxy</span> · Modelo: <span className="text-foreground">{MODEL_NAME}</span>
+          <span className="text-brand font-display font-semibold">{theme === "liquido" ? "Líquido Azul" : "Galaxy"}</span> · Modelo: <span className="text-foreground">{MODEL_NAME}</span>
         </div>
       </aside>
 
@@ -107,7 +117,10 @@ function Index() {
             <span className="h-2 w-2 rounded-full bg-primary glow" />
             <span className="font-medium">{MODEL_NAME}</span>
           </div>
-          <span className="rounded-full border px-2.5 py-1 font-display text-[10px] tracking-widest text-brand">GALAXY</span>
+          <div className="theme-switcher" role="group" aria-label="Selecionar visual da NOVA IA">
+            <button type="button" onClick={() => setTheme("liquido")} className={`theme-switcher-btn ${theme === "liquido" ? "active" : ""}`}>LÍQUIDO AZUL</button>
+            <button type="button" onClick={() => setTheme("galaxy")} className={`theme-switcher-btn ${theme === "galaxy" ? "active" : ""}`}>GALAXY</button>
+          </div>
         </header>
 
         <section className="flex-1 overflow-y-auto px-4 py-6">
@@ -166,7 +179,7 @@ function Index() {
                 <button type="submit" disabled={!input.trim() || typing} aria-label="Enviar" className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-brand text-primary-foreground disabled:opacity-40 sm:ml-0">↑</button>
               </div>
             </form>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">{MODEL_NAME} · versão de demonstração local · Galaxy</p>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">{MODEL_NAME} · versão de demonstração local · {theme === "liquido" ? "Líquido Azul" : "Galaxy"}</p>
           </div>
         </footer>
       </main>
