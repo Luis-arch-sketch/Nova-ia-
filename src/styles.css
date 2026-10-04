@@ -94,6 +94,10 @@
 .theme-shell {
   position: relative;
   isolation: isolate;
+  background: var(--gradient-space), var(--color-background);
+  background-attachment: fixed;
+  color: var(--foreground);
+  transition: background 300ms ease, color 300ms ease;
 }
 
 .theme-shell::before,
