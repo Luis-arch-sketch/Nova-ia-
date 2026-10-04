@@ -90,3 +90,112 @@
 #lovable-badge {
   display: none !important;
 }
+
+.theme-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.theme-shell::before,
+.theme-shell::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(44px);
+  transition: opacity 300ms ease, transform 600ms ease;
+}
+
+.theme-galaxy::before,
+.theme-galaxy::after {
+  opacity: 0;
+}
+
+.theme-liquido {
+  --background: oklch(0.12 0.05 240);
+  --card: oklch(0.2 0.08 235 / 68%);
+  --secondary: oklch(0.24 0.09 230);
+  --muted: oklch(0.22 0.07 235);
+  --primary: oklch(0.82 0.14 205);
+  --accent: oklch(0.78 0.14 205);
+  --ring: oklch(0.82 0.14 205);
+  --sidebar: oklch(0.11 0.05 240 / 94%);
+  --glow: oklch(0.82 0.14 205 / 42%);
+  --gradient-brand: linear-gradient(120deg, oklch(0.88 0.12 195), oklch(0.7 0.18 225));
+  --gradient-space:
+    radial-gradient(circle at 18% 12%, oklch(0.56 0.18 220 / 38%), transparent 34%),
+    radial-gradient(circle at 78% 80%, oklch(0.5 0.16 195 / 30%), transparent 38%),
+    linear-gradient(145deg, oklch(0.11 0.05 245), oklch(0.15 0.08 225));
+}
+
+.theme-liquido::before {
+  width: 52vw;
+  height: 52vw;
+  min-width: 280px;
+  min-height: 280px;
+  left: -12vw;
+  top: 8vh;
+  border-radius: 43% 57% 61% 39% / 47% 35% 65% 53%;
+  background: radial-gradient(circle at 35% 30%, oklch(0.9 0.1 195 / 52%), oklch(0.58 0.18 220 / 28%) 50%, transparent 72%);
+  opacity: .75;
+  animation: liquidFloatA 12s ease-in-out infinite alternate;
+}
+
+.theme-liquido::after {
+  width: 46vw;
+  height: 46vw;
+  min-width: 260px;
+  min-height: 260px;
+  right: -10vw;
+  bottom: 4vh;
+  border-radius: 58% 42% 33% 67% / 36% 58% 42% 64%;
+  background: radial-gradient(circle at 50% 50%, oklch(0.82 0.12 200 / 44%), oklch(0.45 0.19 235 / 26%) 52%, transparent 74%);
+  opacity: .72;
+  animation: liquidFloatB 14s ease-in-out infinite alternate;
+}
+
+.theme-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--card) 88%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+.theme-switcher-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: var(--muted-foreground);
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.theme-switcher-btn.active {
+  color: var(--primary-foreground);
+  background: var(--gradient-brand);
+  box-shadow: 0 0 18px var(--glow);
+}
+
+@keyframes liquidFloatA {
+  from { transform: translate3d(0, 0, 0) rotate(-6deg) scale(1); }
+  to { transform: translate3d(8vw, 4vh, 0) rotate(9deg) scale(1.08); }
+}
+
+@keyframes liquidFloatB {
+  from { transform: translate3d(0, 0, 0) rotate(8deg) scale(1.04); }
+  to { transform: translate3d(-7vw, -3vh, 0) rotate(-10deg) scale(.96); }
+}
+
+@media (max-width: 640px) {
+  .theme-switcher-btn {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 8px;
+  }
+}
