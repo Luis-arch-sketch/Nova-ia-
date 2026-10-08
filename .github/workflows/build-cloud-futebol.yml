@@ -7,7 +7,7 @@ on:
       - '.github/workflows/build-cloud-futebol.yml'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,3 +31,21 @@ jobs:
           name: CloudFutebol-APK
           path: cloud-futebol/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+      - name: Publish APK on GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK="cloud-futebol/app/build/outputs/apk/debug/app-debug.apk"
+          DEST="CloudFutebol-v0.2.apk"
+          cp "$APK" "$DEST"
+          sha256sum "$DEST"
+          TAG="cloud-futebol-v0.2"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$DEST" --clobber
+          else
+            gh release create "$TAG" "$DEST" \
+              --title "Cloud Futebol v0.2 (experimental)" \
+              --target "$GITHUB_SHA" \
+              --notes "APK Android experimental. Abre Xbox Cloud Gaming em WebView e apresenta controles virtuais de toque. Controle no streaming ainda não validado. Conta Microsoft entra pelo Xbox; o projeto é independente da Microsoft." 
+          fi
