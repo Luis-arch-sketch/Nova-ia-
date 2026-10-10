@@ -39,7 +39,7 @@ try{
   assert.equal(await page.evaluate(()=>typeof THREE),'object','Three.js must load');
   const state=await page.evaluate(()=>{
    const c=document.querySelector('#c');
-   const ctx=c.getContext('webgl')||c.getContext('experimental-webgl');
+   const ctx=c.getContext('webgl2')||c.getContext('webgl')||c.getContext('experimental-webgl');
    const keys=['bam','bRank','roomButton','bm','bf','bj','ba','recoverBtn'];
    const controls=keys.map(id=>({id,exists:!!document.getElementById(id)}));
    const species=window.RoubeOvoVisuals?.species?.flat()?.length;
