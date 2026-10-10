@@ -488,5 +488,55 @@ function decorate(three,scene,biomes){
  }
  landmarks(three,scene,biomes);
 }
-window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,species:SPECIES};
+// Clima ambiente: neve, pétalas, cinzas e magia com UMA única chamada GPU.
+// Ancorado no jogador para acompanhar a câmera, com contagem pequena no Android.
+let atmosphere=null;
+function weather(three,scene,player,biome,dt){
+ init(three);
+ const N=(navigator.maxTouchPoints||0)>0?64:116;
+ if(!atmosphere){
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=32;
+  const ctx=canvas.getContext('2d');const gradient=ctx.createRadialGradient(16,16,1,16,16,16);
+  gradient.addColorStop(0,'rgba(255,255,255,1)');
+  gradient.addColorStop(.38,'rgba(255,255,255,.85)');
+  gradient.addColorStop(.76,'rgba(255,255,255,.24)');
+  gradient.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,32,32);
+  const tex=new T.CanvasTexture(canvas);
+  const geo=new T.BufferGeometry(),a=new Float32Array(N*3);
+  for(let i=0;i<N;i++){a[i*3]=Math.sin(i*21.7)*25;a[i*3+1]=1+(i*7.133)%18;a[i*3+2]=Math.cos(i*11.1)*26}
+  geo.setAttribute('position',new T.BufferAttribute(a,3));
+  const material=new T.PointsMaterial({color:0xfff3cd,map:tex,size:.66,transparent:true,opacity:.72,depthWrite:false,alphaTest:.025,sizeAttenuation:true});
+  const points=new T.Points(geo,material);
+  points.frustumCulled=false;points.renderOrder=2;scene.add(points);
+  atmosphere={points,a,geo,t:0,current:-1};
+ }
+ if(biome<0){atmosphere.points.visible=false;return}
+ const fx=atmosphere;fx.points.visible=true;
+ const variants={
+  0:[0xf6efb5,.34,-1],1:[0xc6f9ff,.35,.6],2:[0xffdba1,.34,.1],
+  3:[0xa5fb95,.31,-.4],4:[0xecfbff,.8,-1],5:[0xff7935,.79,1],
+  6:[0x90dafa,.64,1],7:[0xe2cda1,.27,.12],8:[0xc399ff,.56,.5],
+  9:[0xffa4d4,.71,-.55],10:[0xe3d9cd,.26,-.3],
+  11:[0xffe5a8,.53,.1],12:[0xc6a5ff,.71,.6]
+ };
+ const [color,opacity,velocity]=variants[biome]||variants[0];
+ if(fx.current!==biome){fx.current=biome;fx.points.material.color.setHex(color);fx.points.material.opacity=opacity;fx.points.material.size=biome===4?.65:biome===9?.85:biome===5?.42:.58}
+ fx.points.position.set(player.x,0,player.z);
+ fx.t+=dt;
+ if(fx.t<.045)return;
+ const secs=Math.min(fx.t,.12);fx.t=0;
+ for(let i=0;i<N;i++){
+  const q=i*3;
+  fx.a[q]+=Math.sin(i*.7+player.x*.01)*secs*(biome===4?.6:1.6);
+  fx.a[q+1]+=secs*(velocity*(biome===5?4.4:biome===4?2.4:2.2));
+  fx.a[q+2]+=Math.cos(i*.51+player.z*.01)*secs*.7;
+  if(fx.a[q+1]>19)fx.a[q+1]=.5;
+  if(fx.a[q+1]<.5)fx.a[q+1]=19;
+  if(fx.a[q]>27)fx.a[q]=-27;else if(fx.a[q]<-27)fx.a[q]=27;
+  if(fx.a[q+2]>27)fx.a[q+2]=-27;else if(fx.a[q+2]<-27)fx.a[q+2]=27;
+ }
+ fx.geo.attributes.position.needsUpdate=true;
+}
+window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,weather,species:SPECIES};
 })();
