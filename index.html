@@ -113,8 +113,18 @@ button:disabled{opacity:.5}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
-const $=i=>document.getElementById(i),T=THREE,U=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc'];
-const fm=n=>{if(!(n>=1e3))return n<10?+n.toFixed(1)+'':Math.floor(n)+'';const i=Math.min(Math.floor(Math.log10(n)/3),9);return +(n/10**(3*i)).toFixed(2)+U[i]};
+const $=i=>document.getElementById(i),T=THREE,U=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd','Td','Qad','Qid','Sxd','Spd','Ocd','Nod','Vg','Uvg','Dvg','Tvg','Qav'];
+// Formato compacto para dinheiro, Speed e renda, inclusive o LIMITED 10^77.
+const fm=value=>{
+ const n=Number(value);
+ if(!Number.isFinite(n))return '—';
+ const sign=n<0?'-':'',a=Math.abs(n);
+ if(a<1000)return sign+(a<10?Number(a.toFixed(1)):Math.floor(a));
+ const i=Math.floor(Math.log10(a)/3);
+ const scaled=a/10**(3*i);
+ const decimals=scaled>=100?0:scaled>=10?1:2;
+ return sign+Number(scaled.toFixed(decimals))+(U[i]||'e'+3*i);
+};
 /* ===== CONFIG: todos os números do jogo ficam aqui (editáveis) ===== */
 const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{7:.5,8:.04,9:.005}}; // rare: chance por reset de nascer 1 ovo dessa raridade, em um bioma aleatório (editável)
 const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED'],RS=[0,1,2,3,4,7,8,9]; // RS: raridade de cada posição de espécie no bioma
@@ -164,8 +174,8 @@ CFG.train=Number.isFinite(+A.trainMult)?Math.max(.1,Math.min(1000,+A.trainMult))
 const saveAdmin=()=>{A.reset=CFG.reset;A.trainMult=CFG.train;A.chances={7:CFG.rare[7]*100,8:CFG.rare[8]*100,9:CFG.rare[9]*100};try{localStorage.setItem(ADMIN_KEY,JSON.stringify(A))}catch(e){}};
 
 const hasLimited=()=>S.pets.some(p=>p.s===LIMITED_ID);
-const moneyView=()=>Number.isFinite(S.$)?(S.$>=1e30?S.$.toExponential(2):fm(S.$)):'⚠ Saldo inválido';
-const incomeView=()=>hasLimited()?LIMITED_RATE_TEXT:fm(tot);
+const moneyView=()=>Number.isFinite(S.$)?fm(S.$):'⚠ Saldo inválido';
+const incomeView=()=>fm(tot);
 const eff=()=>S.sp*(S.tr>=0?TR[S.tr][1]:1),walk=s=>Math.min(70,8+3.2*Math.log10(1+s));
 const pinc=p=>p.s===LIMITED_ID?LIMITED_RATE:SPC[p.s].inc*SZ[p.z][2]*(1+p.m.reduce((a,k)=>a+MUT[k][1]-1,0));
 let AP=[],tot=0,dirty=true;
@@ -326,7 +336,7 @@ const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const 
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
 const dep=k=>{const e=carry;if(e?.s===LIMITED_ID)setWorldLimited(false);carry=null;P.g.remove(e.mesh);if(e.aura){sc.remove(e.aura);e.aura=null}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');save()};
 const hatch=k=>{const s=S.inc[k];if(s?.s===LIMITED_ID)setWorldLimited(false);S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
- toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+LIMITED_RATE_TEXT+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
+ toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+fm(LIMITED_RATE)+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
  const z=Math.min(3,Math.max(...l.map(p=>p.z))+(Math.random()<.5?1:0)),m=[...new Set(l.flatMap(p=>p.m))].filter(()=>Math.random()<.6);
  S.pets.push({id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m});recalc();save();beep(740,.3,'triangle');toast('Fusão concluída: '+SPC[s].n+' '+SZ[z][0])};
