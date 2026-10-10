@@ -165,7 +165,7 @@ const save=()=>{S.t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));s
 
 /* Estado persistente do painel (modo solo, armazenado neste navegador) */
 const ADMIN_KEY='rue3d_admin_v2';
-const A={god:false,freeze:false,weightless:false,night:false,moveMult:1,jumpMult:1,autoHatch:false,autoSecret:false,autoSecretEvery:30,chances:{7:50,8:4,9:.5},reset:300,trainMult:5};
+const A={god:false,freeze:false,weightless:false,night:false,moveMult:1,personalFast:true,jumpMult:1,autoHatch:false,autoSecret:false,autoSecretEvery:30,chances:{7:50,8:4,9:.5},reset:300,trainMult:5};
 try{const d=JSON.parse(localStorage.getItem(ADMIN_KEY)||'null');if(d&&typeof d==='object'){for(const k of Object.keys(A))if(k in d)A[k]=d[k]}}catch(e){}
 const safePct=(n,v)=>Number.isFinite(+n)?Math.max(0,Math.min(100,+n)):v;
 for(const r of [7,8,9])CFG.rare[r]=safePct(A.chances&&A.chances[r],CFG.rare[r]*100)/100;
@@ -385,7 +385,7 @@ $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e
 const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
- $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+Object.keys(S.idx).length+'/'+SPC.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
+ $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+(ownerVerified&&A.personalFast?' ⚡ Corrida 10×':'')+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+Object.keys(S.idx).length+'/'+SPC.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
  $('ba').textContent=carry?'Largar':P.train?'Parar':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
 const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m'+Math.floor(s%60)+'s':Math.ceil(s)+'s';
 /* ===== Trail ===== */
@@ -396,7 +396,9 @@ const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
  const [ix,iy]=mvIn(),mg=Math.hypot(ix,iy);if(P.train&&mg>.3)P.train=false;
- const rawSp=walk(eff())*A.moveMult*abuseMoveMult()/(carry&&!A.weightless?1+CFG.w*carry.w:1);
+ // O ADMIN confirmado corre 10x; os outros jogadores mantêm a velocidade normal.
+ const runMultiplier=ownerVerified&&A.personalFast===true?10:A.moveMult;
+ const rawSp=walk(eff())*runMultiplier*abuseMoveMult()/(carry&&!A.weightless?1+CFG.w*carry.w:1);
  let sp=Number.isFinite(rawSp)?Math.max(.1,Math.min(rawSp,1400)):walk(0);
  if(P.stun>0){P.stun-=dt;sp=0}
  const s_=Math.sin(P.yaw),c_=Math.cos(P.yaw);let tx=(-s_*iy+c_*ix)*sp,tz=(-c_*iy-s_*ix)*sp;
@@ -633,7 +635,7 @@ const adminUI=(resetScroll=false)=>{
  if(adminTab===0){
  h='<h3>📊 Gestão do jogador</h3><p>Valores abaixo mudam imediatamente o jogo e ficam salvos neste navegador.</p>';
  h+='<div class="adGrid">'+adCard('💰 Dinheiro atual',`<div class="adStat">$${moneyView()}</div>${adField('cash','Valor a definir / adicionar')}<div class="adControls">${adBtn('moneySet','Definir')}${adBtn('moneyAdd','Adicionar')}${adBtn('moneyMillion','+ 1 milhão','secondary')}${adBtn('moneyBillion','+ 1 bilhão','secondary')}${adBtn('moneyZero','Zerar','danger')}</div>`);
- h+=adCard('⚡ Speed atual',`<div class="adStat">${fm(S.sp)}</div>${adField('speed','Valor a definir / adicionar')}<div class="adControls">${adBtn('speedSet','Definir')}${adBtn('speedAdd','Adicionar')}${adBtn('speedBoost','+ 100 mil','secondary')}${adBtn('speedZero','Zerar','danger')}</div>`);
+ h+=adCard('⚡ Speed atual',`<div class="adStat">${fm(S.sp)}</div>${adField('speed','Valor a definir / adicionar')}<div class="adControls">${adBtn('speedSet','Definir')}${adBtn('speedAdd','Adicionar')}${adBtn('speedBoost','+ 100 mil','secondary')}${adBtn('speedZero','Zerar','danger')}</div><div class="adControls">${adBtn('speed10x','⚡ Minha velocidade 10×',A.personalFast?'on':'secondary')}${adBtn('speedNormal','Velocidade normal',!A.personalFast?'on':'secondary')}</div><p class="adHint">Multiplica por 10 o movimento do ADMIN deste aparelho; fica salvo. Os outros jogadores mantêm a velocidade normal.</p>`);
  h+=adCard('🏰 Melhorias',`${adSelect('baseLevel','Nível da base',adOpts(CAP,(_,i)=>`Nível ${i} • ${CAP[i]} pets`))}${adBtn('baseSet','Aplicar base')}${adSelect('treadLevel','Nível da esteira',adOpts(TM,(t,i)=>`${t[0]} x${t[1]}`))}${adBtn('treadSet','Aplicar esteira')}`);
  h+=adCard('🌈 Trail',`${adSelect('trailLevel','Trail para desbloquear e equipar',adOpts(TR,(t)=>`${t[0]} x${t[1]}`))}<div class="adControls">${adBtn('trailSet','Desbloquear + equipar')}${adBtn('trailOff','Retirar','secondary')}${adBtn('trailAll','Desbloquear todas','secondary')}</div>`);
  h+='</div>';
@@ -808,7 +810,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'abThree':{for(const j of [5,6,7])abuseSpawn(j,1);msg='Secret, Eternal e Divine foram spawnados';break}
  case 'abEveryBiome':{let n=0;for(let i=0;i<BI.length;i++)if(adminSpawnEgg(i,5,2,'nest',false))n++;msg=n+' Secrets espalhados por todos os biomas';break}
  case 'abInstant':{let n=0;S.inc.forEach((p,i)=>{if(p){hatch(i);n++}});msg=n+' ovos chocados';break}
- case 'abFullPower':A.god=true;A.weightless=true;A.moveMult=10;A.jumpMult=6;AS.moveMult='10';AS.jumpMult='6';msg='Poderes máximos ativados';break;
+ case 'abFullPower':A.god=true;A.weightless=true;A.moveMult=10;A.personalFast=true;A.jumpMult=6;AS.moveMult='10';AS.jumpMult='6';msg='Poderes máximos ativados';break;
  case 'abAllTrails':S.own=TR.map((_,i)=>i);S.tr=TR.length-1;msg='Todas as trails liberadas e última equipada';break;
  case 'abAnnounce':abuseAnnounce(String(AS.abAnnouncement||'').trim(),adValidNumber('broadcastSeconds',4,30));mpBroadcastAction(String(AS.abAnnouncement||'').trim(),'announce');msg='Anúncio no topo exibido';break;
   case 'abHello':abuseAnnounce('Hello guys! 👋🔥 Bem-vindos ao meu Admin Abuse!',adValidNumber('broadcastSeconds',4,30));mpBroadcastAction('Hello guys! 👋🔥 Bem-vindos ao meu Admin Abuse!','announce');msg='Anúncio Hello guys exibido';break;
@@ -822,6 +824,8 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'speedSet':S.sp=adValidNumber('speed');msg='Speed definida: '+fm(S.sp);break;
  case 'speedAdd':S.sp+=adValidNumber('speed');if(!Number.isFinite(S.sp))throw Error('Valor alto demais.');msg='Speed adicionada.';break;
  case 'speedBoost':S.sp+=1e5;msg='+ 100 mil Speed';break;
+ case 'speed10x':A.personalFast=true;msg='⚡ Sua velocidade 10× ativada e salva!';break;
+ case 'speedNormal':A.personalFast=false;A.moveMult=1;AS.moveMult='1';msg='Movimento normal ativado';break;
  case 'speedZero':if(!confirm('Zerar sua Speed?'))return;S.sp=0;msg='Speed zerada.';break;
  case 'baseSet':S.bl=adNum('baseLevel',0,CAP.length-1,0)|0;msg='Base no nível '+S.bl;break;
  case 'treadSet':S.tm=adNum('treadLevel',0,TM.length-1,0)|0;styleTM();msg='Esteira: '+TM[S.tm][0];break;
@@ -855,7 +859,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'dropEgg':if(carry){drop();msg='Ovo solto'}else msg='Nenhum ovo carregado';break;
  case 'saveChances':CFG.rare[7]=adValidNumber('chanceSecret',0,100)/100;CFG.rare[8]=adValidNumber('chanceEternal',0,100)/100;CFG.rare[9]=adValidNumber('chanceDivine',0,100)/100;msg='Chances salvas: Secret '+AS.chanceSecret+'%';break;
  case 'saveTimers':CFG.reset=adValidNumber('resetSeconds',10,86400);CFG.train=adValidNumber('trainMult',.1,1000);nextReset=Date.now()/1e3+CFG.reset;msg='Tempo de spawn e treino atualizados';break;
- case 'saveMoves':A.moveMult=adValidNumber('moveMult',.2,20);A.jumpMult=adValidNumber('jumpMult',.5,8);msg='Movimento e salto atualizados';break;
+ case 'saveMoves':A.moveMult=adValidNumber('moveMult',.2,20);A.personalFast=false;A.jumpMult=adValidNumber('jumpMult',.5,8);msg='Movimento e salto personalizados aplicados';break;
  case 'autoSecret':A.autoSecretEvery=adValidNumber('autoSeconds',5,3600);A.autoSecret=!A.autoSecret;adminAutoTime=0;msg='Auto Secret '+(A.autoSecret?'ligado':'desligado');break;
  case 'saveNow':msg='Progresso e painel admin salvos';break;
  case 'export':{save();saveAdmin();const data={version:2,exportedAt:new Date().toISOString(),game:S,admin:A,leaderboard:LEAD,config:{rare:CFG.rare,reset:CFG.reset,train:CFG.train}},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Roube-um-Ovo-3D-backup.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);msg='Backup JSON exportado';break}
