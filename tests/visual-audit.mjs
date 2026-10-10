@@ -51,7 +51,8 @@ try{
     status:(typeof S!=='undefined')?{saveKey:'rue3d_v1',pets:S.pets?.length}:null,
     renderer:(typeof R!=='undefined')?{triangles:R.info.render.triangles,calls:R.info.render.calls}:null,
     biomeCount:(typeof BI!=='undefined')?BI.length:null,
-    sceneElements:(typeof sc!=='undefined')?sc.children.length:null
+    sceneElements:(typeof sc!=='undefined')?sc.children.length:null,
+    avatarParts:(typeof P!=='undefined')?P.g.children.length:null
    };
   });
   await page.screenshot({path:'test-results/'+mode+'.png'});
@@ -62,6 +63,7 @@ try{
   assert(state.controls.every(e=>e.exists),'Every old button remains');
   assert(state.canvasSize[0]>100&&state.canvasSize[1]>100,'Canvas area');
   assert(state.sceneElements>50,'Scene detail');
+  assert(state.avatarParts>=20,'O personagem deve ter roupa, mochila, cabelo e rosto detalhados');
   assert(state.webgl,'WebGL context created');
   assert(state.renderer?.calls>0,'Three.js must render at least one call');
   assert.equal(errors.length,0,'Game JavaScript runtime errors: '+JSON.stringify(errors));
