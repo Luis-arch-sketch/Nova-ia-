@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: roube-um-ovo-3d-salas
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
