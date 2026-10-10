@@ -2,9 +2,32 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const PORT=Number(process.env.PORT||3000),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map();
+let serverSequence=1;
 const send=(ws,o)=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o));};
 const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,admin:ws.admin});
 const peers=room=>rooms.get(room)||new Set();
+// Salas sob demanda, sem um número máximo definido de salas.
+// A lotação continua em 16 por sala; salas vazias são removidas automaticamente.
+const newPublicRoom=()=>{
+ let id;
+ do{id='SRV-'+(serverSequence++).toString(36).toUpperCase()}while(rooms.has(id));
+ return id;
+};
+const openPublicRoom=()=>{
+ let found='',mostPlayers=-1;
+ for(const [id,p] of rooms){
+  if(id.startsWith('SRV-')&&p.size<MAX_ROOM&&p.size>mostPlayers){found=id;mostPlayers=p.size}
+ }
+ return found||newPublicRoom();
+};
+const listPublicRooms=requested=>{
+ const all=[...rooms].filter(([id,p])=>id.startsWith('SRV-')&&p.size>0)
+  .map(([room,p])=>({room,count:p.size,capacity:MAX_ROOM}))
+  .sort((a,b)=>b.count-a.count||a.room.localeCompare(b.room));
+ const total=all.length,pages=Math.max(1,Math.ceil(total/20));
+ const n=Number(requested),page=Number.isSafeInteger(n)?Math.max(0,Math.min(n,pages-1)):0;
+ return {rooms:all.slice(page*20,(page+1)*20),total,players:all.reduce((n,r)=>n+r.count,0),page,pages};
+};
 const broadcast=(room,obj,except=null)=>{for(const c of peers(room))if(c!==except)send(c,obj)};
 const broadcastPresence=room=>broadcast(room,{type:'players',players:[...peers(room)].map(publicUser)});
 const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);p?.delete(ws);ws.room=null;ws.admin=false;if(p?.size===0)rooms.delete(r);else broadcastPresence(r)};
@@ -20,13 +43,46 @@ const applyOwnerTreadmill=html=>{
  }
  return html;
 };
-const gameHtml=applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'));
-const httpServer=http.createServer((req,res)=>{let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}const file=u.pathname==='/'?'/index.html':u.pathname;if(!['/index.html','/health'].includes(file)){res.writeHead(404).end('Not found');return}if(file==='/health'){res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({ok:true,rooms:rooms.size}));return}res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}).end(gameHtml)});
+// Script pequeno servido junto ao jogo, preservando a esteira 100Qav/s e saves.
+const installServerBrowser=html=>{
+ const rules=[["const mpJoin=()=>{","const mpJoin=(mode='join')=>{"],["if(name.length<2||room.length<3)","if(name.length<2||(mode==='join'&&room.length<3))"],["ws.onopen=()=>mpSend({type:'join',room,name});","ws.onopen=()=>mpSend({type:mode,room,name});"],["$('roomJoin').onclick=mpJoin;","$('roomJoin').onclick=()=>mpJoin('join');"],["if(msg.type==='joined'){MP.connected=true;","if(msg.type==='joined'){$('roomCode').value=msg.room;try{localStorage.setItem('rue3d_mp_room',msg.room)}catch(e){}MP.connected=true;"]];
+ for(const [from,to] of rules){
+  if(html.split(from).length!==2)throw new Error('Trecho multiplayer inesperado: '+from.slice(0,65));
+  html=html.replace(from,to);
+ }
+ if(!html.includes('</body>'))throw new Error('Fim do HTML não encontrado');
+ return html.replace('</body>','<script src="/servers-ui.js"></script></body>');
+};
+const gameHtml=installServerBrowser(applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')));
+const httpServer=http.createServer((req,res)=>{
+ let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}
+ if(req.method!=='GET'){res.writeHead(405).end('Method not allowed');return}
+ if(u.pathname==='/health'){
+  res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'})
+    .end(JSON.stringify({ok:true,rooms:rooms.size}));return;
+ }
+ if(u.pathname==='/api/servers'){
+  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
+    .end(JSON.stringify(listPublicRooms(u.searchParams.get('page'))));return;
+ }
+ if(u.pathname==='/servers-ui.js'){
+  const stream=fs.createReadStream(path.join(__dirname,'servers-ui.js'));
+  stream.on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()});
+  res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+  stream.pipe(res);return;
+ }
+ if(u.pathname==='/'||u.pathname==='/index.html'){
+  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}).end(gameHtml);
+  return;
+ }
+ res.writeHead(404).end('Not found');
+});
 const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:4096});
 wss.on('connection',ws=>{ws.id=crypto.randomUUID().slice(0,8);ws.room=null;ws.admin=false;ws.name='';ws.x=0;ws.y=0;ws.z=8;ws.yaw=0;ws.lastMove=0;ws.failedAdminCount=0;
 ws.on('message',raw=>{let m;try{m=JSON.parse(String(raw));if(!m||typeof m!=='object')return}catch{return}
-if(m.type==='join'){
-const room=String(m.room||'').toUpperCase(),name=String(m.name||'').trim();
+if(m.type==='join'||m.type==='quick-join'||m.type==='create-server'){
+const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?openPublicRoom():String(m.room||'').toUpperCase();
+const name=String(m.name||'').trim();
 if(!/^[A-Z0-9-]{3,12}$/.test(room)||name.length<2||name.length>20||/^admin$/i.test(name)){error(ws,'Nome ou código de sala inválido');return}
 leave(ws);if(peers(room).size>=MAX_ROOM){error(ws,'Sala cheia: máximo 16 jogadores');return}
 ws.room=room;ws.name=name;ws.admin=false;ws.x=0;ws.y=0;ws.z=8;
