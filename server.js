@@ -53,7 +53,17 @@ const installServerBrowser=html=>{
  if(!html.includes('</body>'))throw new Error('Fim do HTML não encontrado');
  return html.replace('</body>','<script src="/servers-ui.js"></script></body>');
 };
-const gameHtml=installServerBrowser(applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')));
+// Atualização visual: mantém todos os botões, salas, saves, ADMIN e treino originais.
+const applyGraphicUpgrade=html=>{
+ const rules=[["const creature=(col,k)=>{","const creature=(col,k,speciesId=null)=>{if(speciesId!==null&&window.RoubeOvoVisuals)return window.RoubeOvoVisuals.create(T,speciesId,k,col,sc);"],["const eggMesh=e=>{","const eggMesh=e=>{if(window.RoubeOvoVisuals)return window.RoubeOvoVisuals.egg(T,e,GS,SZ,LIMITED_ID,sc);"],["const GD=BI.map((b,i)=>{const home=","const guardianSpecies=[0,5,6,6,6,5,5,5,4,6,6,6,6];\nconst GD=BI.map((b,i)=>{const home="],["m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08)","m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08,i*8+guardianSpecies[i])"],["const m=creature(c,p.s===LIMITED_ID?3.6:.8*SZ[p.z][1]);","const m=creature(c,p.s===LIMITED_ID?3.6:.8*SZ[p.z][1],p.s);"],["o=PM[p.id]={m};if(p.s===LIMITED_ID)","o=PM[p.id]={m};if(window.RoubeOvoVisuals){const tag=label(SPC[p.s].n,384,64,3.7);tag.position.set(0,2.85,0);tag.scale.set(3.7/m.scale.x,.65/m.scale.x,1);m.add(tag)}if(p.s===LIMITED_ID)"],["if(o.fire)limitedAuraUp(o.fire,dt)","if(o.fire)limitedAuraUp(o.fire,dt);if(window.RoubeOvoVisuals)window.RoubeOvoVisuals.animate(o.m,TT,o.k)"],["g.l.set((g.st==='sleep'?'zzz ':'ALERTA ')+BI[i].gd)","g.l.set((g.st==='sleep'?'zzz ':'ALERTA ')+BI[i].gd);if(window.RoubeOvoVisuals)window.RoubeOvoVisuals.animate(g.m,TT,i)"],["cn.instanceColor.needsUpdate=true;tk.frustumCulled=cn.frustumCulled=false;sc.add(tk,cn)}","cn.instanceColor.needsUpdate=true;tk.frustumCulled=cn.frustumCulled=false;sc.add(tk,cn)}\nif(window.RoubeOvoVisuals)window.RoubeOvoVisuals.decorate(T,sc,BI);"]];
+ for(const [from,to] of rules){
+  if(html.split(from).length!==2)throw new Error('Formato visual mudou: '+from.slice(0,65));
+  html=html.replace(from,to);
+ }
+ if(html.split('<script>\n').length!==2)throw new Error('Script principal não encontrado');
+ return html.replace('<script>\n','<script src="/animals3d.js"></script>\n<script>\n');
+};
+const gameHtml=installServerBrowser(applyGraphicUpgrade(applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))));
 const httpServer=http.createServer((req,res)=>{
  let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}
  if(req.method!=='GET'){res.writeHead(405).end('Method not allowed');return}
@@ -64,6 +74,12 @@ const httpServer=http.createServer((req,res)=>{
  if(u.pathname==='/api/servers'){
   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
     .end(JSON.stringify(listPublicRooms(u.searchParams.get('page'))));return;
+ }
+ if(u.pathname==='/animals3d.js'){
+  const stream=fs.createReadStream(path.join(__dirname,'animals3d.js'));
+  stream.on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()});
+  res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+  stream.pipe(res);return;
  }
  if(u.pathname==='/servers-ui.js'){
   const stream=fs.createReadStream(path.join(__dirname,'servers-ui.js'));
