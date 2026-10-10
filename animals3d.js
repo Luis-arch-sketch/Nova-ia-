@@ -281,6 +281,35 @@ function egg(three,e,GS,SZ,limitedId,scene){
  g.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited?3.8:1));
  scene.add(g);return g;
 }
+function terrain(three,rx,ry){
+ init(three);
+ // Solo com manchas, pontinhos de grama e microveios no lugar do xadrez simples.
+ // As cores de cada bioma vêm do material original; os caminhos permanecem nos mesmos lugares.
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+ const ctx=canvas.getContext('2d');
+ ctx.fillStyle='#e9efe0';ctx.fillRect(0,0,128,128);
+ let seed=4317;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ for(let i=0;i<95;i++){
+  const x=random()*128,y=random()*128,r=3+random()*13;
+  ctx.fillStyle=i%3===0?'rgba(255,255,255,.13)':i%3===1?'rgba(70,95,50,.07)':'rgba(100,80,55,.06)';
+  ctx.beginPath();ctx.ellipse(x,y,r,r*(.42+random()),random()*Math.PI,0,Math.PI*2);ctx.fill();
+ }
+ for(let i=0;i<550;i++){
+  const x=random()*128,y=random()*128,r=.35+random()*1.25;
+  ctx.fillStyle=i%3===0?'rgba(56,85,35,.2)':i%3===1?'rgba(255,255,255,.28)':'rgba(98,116,73,.15)';
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+ }
+ for(let i=0;i<36;i++){
+  const x=random()*128,y=random()*128;
+  ctx.strokeStyle='rgba(72,92,47,.18)';ctx.lineWidth=.45+random()*.9;
+  ctx.beginPath();ctx.moveTo(x-1.6,y+1.7);ctx.lineTo(x,y-1.3);ctx.lineTo(x+1.1,y+.5);ctx.stroke();
+ }
+ const texture=new T.CanvasTexture(canvas);
+ texture.wrapS=texture.wrapT=T.RepeatWrapping;
+ texture.repeat.set(Math.max(.4,rx*.45),Math.max(.4,ry*.45));
+ texture.anisotropy=3;
+ return texture;
+}
 function decorate(three,scene,biomes){
  init(three);
  // Somente InstancedMesh: novos detalhes sem centenas de draw calls no Android.
@@ -306,5 +335,5 @@ function decorate(three,scene,biomes){
   base.frustumCulled=top.frustumCulled=false;scene.add(base,top);
  }
 }
-window.RoubeOvoVisuals={create,animate,egg,decorate,species:SPECIES};
+window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,species:SPECIES};
 })();
