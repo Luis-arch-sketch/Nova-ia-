@@ -580,6 +580,50 @@ function decorate(three,scene,biomes){
  }
  landmarks(three,scene,biomes);
 }
+// Personagem principal: rosto, cabelo, jaqueta, mochila e tênis animados
+// pelos mesmos membros do rig atual; sem mudar controles, escala ou colisão.
+function player(three,g,leftLeg,rightLeg,leftArm,rightArm){
+ init(three);
+ const add=(par,shape,c,w,h,d,x,y,z)=>{
+  const mesh=new T.Mesh(shared[shape],mat(c));
+  mesh.scale.set(w,h,d);mesh.position.set(x,y,z);par.add(mesh);return mesh;
+ };
+ // Expressão facial e cabelo
+ for(const x of [-.16,.16]){
+  add(g,'sphere',0xffffff,.095,.095,.040,x,2.29,.323);
+  add(g,'sphere',0x232332,.052,.068,.037,x,2.29,.359);
+  const brow=add(g,'box',0x383039,.18,.045,.040,x,2.43,.314);brow.rotation.z=x<0?.07:-.07;
+ }
+ add(g,'sphere',0xf2c296,.11,.095,.085,0,2.18,.36);
+ const grin=add(g,'box',0xb45b57,.23,.035,.033,0,2.05,.325);grin.rotation.z=-.035;
+ for(const x of [-.28,.28]){
+  const tuft=add(g,'cone',0x282333,.16,.38,.20,x,2.64,-.01);tuft.rotation.z=x<0?.19:-.19;
+ }
+ add(g,'sphere',0x25232d,.41,.18,.39,0,2.49,-.14);
+ // Camiseta, jaqueta com fecho, bolso e punhos
+ add(g,'box',0x344f87,.67,.16,.10,0,1.96,.32);
+ add(g,'box',0xffe1a3,.37,.19,.07,0,1.94,.39);
+ add(g,'box',0xc8d8ff,.038,.58,.035,0,1.55,.286);
+ for(const x of [-.31,.31])add(g,'box',0x183b66,.12,.31,.038,x,1.45,.286);
+ for(const x of [-.6,.6])add(g,'sphere',0xeabb89,.15,.18,.16,x,1.05,.04);
+ // Mochila discreta e alças
+ add(g,'box',0x273d55,.72,.83,.38,0,1.52,-.43);
+ add(g,'box',0x6cb0ba,.48,.28,.050,0,1.57,-.64);
+ add(g,'box',0xe5cf8b,.12,.10,.065,0,1.49,-.68);
+ for(const x of [-.31,.31])add(g,'box',0x141c2b,.09,.79,.13,x,1.51,-.19);
+ // Tênis que seguem a rotação das pernas.
+ for(const limb of [leftLeg,rightLeg]){
+  if(!limb)continue;
+  add(limb,'box',0xf6f8ff,.36,.17,.52,0,-.87,.17);
+  add(limb,'box',0x232e40,.35,.075,.59,0,-.97,.20);
+  add(limb,'box',0x6ea4ef,.19,.05,.10,0,-.76,.44);
+ }
+ for(const arm of [leftArm,rightArm]){
+  if(!arm)continue;
+  add(arm,'sphere',0xe5ae7f,.18,.18,.18,0,-.87,0);
+  add(arm,'box',0x263d6b,.32,.14,.35,0,-.65,0);
+ }
+}
 // Clima ambiente: neve, pétalas, cinzas e magia com UMA única chamada GPU.
 // Ancorado no jogador para acompanhar a câmera, com contagem pequena no Android.
 let atmosphere=null;
@@ -630,5 +674,5 @@ function weather(three,scene,player,biome,dt){
  }
  fx.geo.attributes.position.needsUpdate=true;
 }
-window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,weather,trees,species:SPECIES};
+window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,weather,trees,player,species:SPECIES};
 })();
