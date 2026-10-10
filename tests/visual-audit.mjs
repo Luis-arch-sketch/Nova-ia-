@@ -166,21 +166,25 @@ try{
     const spawned=await page.evaluate(()=>{
       S.sp=1234567;
       const before=S.limitedWorld?.length||0;
-      adminSpawnLimited(3,true);
-      const current=eggs.filter(e=>e.s===LIMITED_ID).length;
+      adminSpawnLimited(100,true);
+      adminSpawnLimited(100,true);
+      const created=eggs.filter(e=>e.s===LIMITED_ID);
+      const count=created.length;
+      const positions=new Set(created.map(e=>e.mesh.position.x+','+e.mesh.position.z));
       save();
-      return {before,created:current};
+      return {before,created:count,unique:positions.size};
     });
-    assert.equal(spawned.created-spawned.before,3,'Três novos LIMITED aparecem no mundo');
+    assert.equal(spawned.created-spawned.before,200,'Duzentos LIMITED após 2 invocações');
+    assert.equal(spawned.unique,spawned.created,'Ovos não empilhados em coordenadas iguais');
     await page.reload({waitUntil:'domcontentloaded'});
-    await page.waitForTimeout(2800);
+    await page.waitForTimeout(4200);
     const restored=await page.evaluate(()=>({
       eggs:eggs.filter(e=>e.s===LIMITED_ID).length,
       saved:S.limitedWorld?.length||0,
       speed:S.sp
     }));
-    assert.equal(restored.saved,spawned.before+3,'LIMITED persistidos no save');
-    assert.equal(restored.eggs,spawned.before+3,'LIMITED restaurados na cena');
+    assert.equal(restored.saved,spawned.before+200,'LIMITED persistidos no save');
+    assert.equal(restored.eggs,spawned.before+200,'LIMITED restaurados na cena');
     assert(restored.speed>=1234567,'Speed manteve valor salvo');
     await page.evaluate(()=>{P.x=42;P.z=-220;P.stun=1.5});
     await page.locator('#recoverBtn').click();
