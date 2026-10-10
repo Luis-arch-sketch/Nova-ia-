@@ -1,0 +1,39 @@
+name: Roube um Ovo - Auditoria visual
+on:
+  push:
+    branches: [roube-um-ovo-3d-multiplayer]
+    paths:
+      - 'server.js'
+      - 'index.html'
+      - 'animals3d.js'
+      - 'servers-ui.js'
+      - 'tests/visual-audit.mjs'
+      - '.github/workflows/visual-audit.yml'
+  workflow_dispatch:
+
+jobs:
+  android-and-desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependencies
+        run: |
+          npm ci
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Testar jogo real no Chromium
+        run: node tests/visual-audit.mjs
+      - name: Capturas Android e desktop
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roube-ovo-chromium-captures
+          path: test-results/*.png
+          if-no-files-found: ignore
+          retention-days: 7
