@@ -101,13 +101,14 @@ button:disabled{opacity:.5}
 @media(max-width:450px){#top{right:4px;gap:3px}#top button{font-size:10px;padding:7px 5px}#hud{max-width:59vw;font-size:11px}}
 
 #roomButton{background:#ad53de;color:white;font-weight:900}
+#recoverBtn{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));top:calc(180px + env(safe-area-inset-top,0px));z-index:44;background:#244f80;color:#fff;border:1px solid #a9d9ff;font-size:12px;padding:8px 10px;opacity:.9}
 #roomPanel{display:none;position:fixed;z-index:85;inset:7% 5%;background:#12203bed;color:#fff;border:2px solid #dd91fc;border-radius:18px;box-shadow:0 12px 40px #0009;padding:16px;box-sizing:border-box;overflow-y:auto;touch-action:pan-y}
 #roomPanel h2{color:#ff9bdd;margin:4px 0 10px}#roomPanel input{padding:12px;font-size:17px;max-width:100%;width:100%;box-sizing:border-box;color:white;background:#1c3557;border:1px solid #a3bee5;border-radius:8px}
 #roomPanel button{margin:6px 5px 4px 0}#roomStatus{font-size:13px;color:#cfe3ff;white-space:pre-line}#roomPlayerList{font-size:13px;color:#ffe7ff}
 </style></head><body>
 <canvas id=c></canvas><div id=hud></div>
 <div id=top><button id=bam>⚙ Admin</button><button id=bRank>🏆 Placar</button><button id=roomButton>🌍 Salas</button><button id=bm>Loja</button><button id=bf>Tela cheia</button></div>
-<div id=js></div><div id=jk></div><button class=b id=bj>Pular</button><button class=b id=ba>Ação</button>
+<div id=js></div><div id=jk></div><button class=b id=bj>Pular</button><button class=b id=ba>Ação</button><button id=recoverBtn type=button title="Recuperar movimento sem apagar o progresso">🛠 Destravar</button>
 <div id="roomPanel"><button id="roomClose" style="float:right">✕</button><h2>🌍 Multiplayer por salas</h2><p>Entre na mesma sala que seus amigos para vê-los no mapa. Somente o ADMIN pode transmitir eventos.</p><label>Nome de jogador (2–20 caracteres)</label><input id="roomName" maxlength="20" placeholder="Seu nome" autocomplete="off"><label>Código da sala (3–12 caracteres)</label><input id="roomCode" maxlength="12" placeholder="EX.: OVOS123" autocomplete="off"><button id="roomJoin">🚪 Entrar / criar sala</button><button id="roomLeave">Sair da sala</button><div id="roomStatus" aria-live="polite">Desconectado</div><h3>👥 Jogadores</h3><div id="roomPlayerList">—</div><small>Salas sincronizam jogadores e eventos. Ovos, pets e dinheiro ainda são individuais. O ADMIN online exige autenticação do servidor.</small><hr style="border:0;border-top:1px solid #87a9d766;margin:17px 0 12px"><h3 style="color:#ffb6ee">💾 Meu progresso</h3><p style="font-size:13px;color:#d6e6ff">O jogo salva neste navegador. Para trocar de endereço ou aparelho, exporte um backup e restaure no novo jogo.</p><div id="saveState" aria-live="polite" style="font-size:13px;padding:8px;background:#243a5a;border-radius:9px;color:#eaf5ff">Verificando salvamento…</div><button id="saveNowBtn" type="button">💾 Salvar agora</button><button id="saveBackupBtn" type="button">📦 Baixar backup</button><button id="restoreBackupBtn" type="button">📥 Restaurar backup</button><input id="restoreBackupFile" type="file" accept=".json,application/json" style="display:none"><p style="font-size:12px;color:#bcd6ff">Para recuperar um progresso do endereço antigo, abra o jogo antigo no mesmo navegador, entre em <strong>Admin → Dados → Exportar backup</strong>, depois use “Restaurar backup” aqui. Guarde o arquivo com cuidado.</p></div><div id=pn></div><div id=ms></div><div id=an></div><div id="abBanner" aria-live="polite"><strong id="abTitle"></strong><span id="abClock"></span></div><div id="abMessage" aria-live="assertive"><span class="broadcastBadge">👑 MENSAGEM DO ADMIN</span><div class="broadcastText" id="abMessageText"></div><div class="broadcastProgress"><span id="abMessageBar"></span></div></div><div id="rankOverlay"><div id="rankCard" role="dialog" aria-modal="true" aria-label="Placar de jogadores"><div class="rankHeader"><strong>🏆 MELHORES JOGADORES</strong><button id="rankClose" type="button">✕ Fechar</button></div><p>Ranking local de jogadores registrados • Administrador oculto</p><div id="rankList"></div><small>Este jogo é local. Para um placar online entre dispositivos, será necessário um servidor.</small></div></div><div id="adWrap" role="dialog" aria-modal="true" aria-label="Painel de administrador"><div id="adPanel" class="locked"><div id="adTop"><div><h2>⚙ Painel Admin</h2><small>Roube um Ovo 3D • Acesso com chave</small></div><button id="adClose" aria-label="Fechar painel">✕ Fechar</button></div><div id="adAuth"><form id="adLogin" autocomplete="off"><div class="adLockIcon" aria-hidden="true">🔐</div><h3>Área do Administrador</h3><p>Digite sua chave especial para liberar os comandos do jogo.</p><label for="adKey">Chave de acesso</label><input id="adKey" name="adminKey" type="password" placeholder="Sua chave especial" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required><button id="adEnter" type="submit">🔓 Desbloquear painel</button><div id="adAuthError" role="status" aria-live="polite"></div></form></div><div id="adTabs"></div><div id="adContent"></div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -254,7 +255,7 @@ const mkLimitedAura=(e,isPet=false)=>{
  const fireSprites=Array.from({length:LIMITED_LOW_FX?5:10},(_,i)=>{const m=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:i%2?0xffcf4c:0xff4510,...o}));m.scale.set(2.6,7.5,1);g.add(m);return m});
  const sparks=Array.from({length:LIMITED_LOW_FX?6:12},(_,i)=>{const m=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:i%2?0xfff5a6:0xffd030,...o}));m.scale.set(.45,.45,1);g.add(m);return m});
  const label3=label('🔥 LIMITED ∞ 🔥',512,64,11);label3.position.y=14;g.add(label3);
- const light=new T.PointLight(0xff5925,LIMITED_LOW_FX?.32:.65,LIMITED_LOW_FX?10:15);light.position.y=4;g.add(light);
+ const light=new T.PointLight(0xff5925,LIMITED_LOW_FX?0:.65,LIMITED_LOW_FX?10:15);light.position.y=4;if(!LIMITED_LOW_FX)g.add(light);
  g.userData={limited:true,glow,core,rings,flames,fireSprites,sparks,label3,light,isPet};sc.add(g);e.aura=g;return g;
 };
 const limitedAuraUp=(e,dt)=>{const a=e.aura;if(!a)return;const u=a.userData;e.mesh.getWorldPosition(AV);a.position.copy(AV);if(e.st!=='pet'&&e.st!=='carregado')a.position.y-=Math.max(0,(e.base?.y||0)-.5);
@@ -364,7 +365,8 @@ cv.addEventListener('pointermove',e=>{
  if(e.pointerId===jp){let dx=e.clientX-jo.x,dy=e.clientY-jo.y;const d=Math.hypot(dx,dy),m=55;if(d>m){dx*=m/d;dy*=m/d}J.x=dx/m;J.y=-dy/m;$('jk').style.left=jo.x+dx-25+'px';$('jk').style.top=jo.y+dy-25+'px'}
  else if(e.pointerId===cp){P.yaw-=(e.clientX-ls.x)*.006;P.pitch=Math.max(-.1,Math.min(1.3,P.pitch+(e.clientY-ls.y)*.005));ls={x:e.clientX,y:e.clientY}}});
 const pu=e=>{if(e.pointerId===jp){jp=null;J.x=J.y=0;$('js').style.display=$('jk').style.display='none'}if(e.pointerId===cp)cp=null};
-cv.addEventListener('pointerup',pu);cv.addEventListener('pointercancel',pu);
+cv.addEventListener('pointerup',pu);cv.addEventListener('pointercancel',pu);cv.addEventListener('lostpointercapture',pu);
+addEventListener('blur',()=>{jp=cp=null;J.x=J.y=0;Object.keys(K).forEach(x=>K[x]=0);$('js').style.display=$('jk').style.display='none'});
 cv.addEventListener('wheel',e=>{P.dist=Math.max(4,Math.min(18,P.dist+e.deltaY*.01))});
 $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e.preventDefault();doAct()};
 const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
@@ -381,11 +383,16 @@ const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
  const [ix,iy]=mvIn(),mg=Math.hypot(ix,iy);if(P.train&&mg>.3)P.train=false;
- let sp=walk(eff())*A.moveMult*abuseMoveMult()/(carry&&!A.weightless?1+CFG.w*carry.w:1);if(P.stun>0){P.stun-=dt;sp=0}
+ const rawSp=walk(eff())*A.moveMult*abuseMoveMult()/(carry&&!A.weightless?1+CFG.w*carry.w:1);
+ let sp=Number.isFinite(rawSp)?Math.max(.1,Math.min(rawSp,1400)):walk(0);
+ if(P.stun>0){P.stun-=dt;sp=0}
  const s_=Math.sin(P.yaw),c_=Math.cos(P.yaw);let tx=(-s_*iy+c_*ix)*sp,tz=(-c_*iy-s_*ix)*sp;
  if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}
  const k=Math.min(1,dt*10);P.vx+=(tx-P.vx)*k;P.vz+=(tz-P.vz)*k;P.x+=P.vx*dt;P.z+=P.vz*dt;
  P.vy-=30*abuseGravity()*dt;P.y+=P.vy*dt;if(P.y<0){P.y=0;P.vy=0}
+ if(!Number.isFinite(P.x)||!Number.isFinite(P.z)||!Number.isFinite(P.y)||!Number.isFinite(P.vx)||!Number.isFinite(P.vz)){
+  P.x=0;P.z=8;P.y=0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
+  if(tt<=0)toast('🛠 Movimento recuperado automaticamente.');}
  P.x=Math.max(-99,Math.min(99,P.x));P.z=Math.max(zlim,Math.min(50,P.z));if(!P.train)push(P,.5);
  const v2=Math.hypot(P.vx,P.vz);P.ph+=dt*(P.train?12:v2*.9);const sw=Math.sin(P.ph)*(P.train?1:Math.min(1,v2/6));
  lL.rotation.x=sw*.9;lR.rotation.x=-sw*.9;aL.rotation.x=aR.rotation.x=carry?-1.4:P.y>.05?-2.6:0;if(!carry&&P.y<=.05){aL.rotation.x=-sw*.9;aR.rotation.x=sw*.9}
@@ -676,7 +683,7 @@ const adminUI=(resetScroll=false)=>{
  }
  ct.innerHTML=h+`<div class="adStatus" role="status">${adEsc(adminMessage)}</div>`;ct.scrollTop=st;
 };
-const toggleAdmin=force=>{adminVisible=typeof force==='boolean'?force:!adminVisible;$('adWrap').style.display=adminVisible?'flex':'none';adminLock();if(adminVisible){if(open){open=false;ui()}J.x=J.y=0;Object.keys(K).forEach(x=>K[x]=0);$('js').style.display=$('jk').style.display='none';$('adKey').focus()}else{document.activeElement?.blur?.()}};
+const toggleAdmin=force=>{adminVisible=typeof force==='boolean'?force:!adminVisible;$('adWrap').style.display=adminVisible?'flex':'none';adminLock();if(adminVisible){if(open){open=false;ui()}J.x=J.y=0;Object.keys(K).forEach(x=>K[x]=0);$('js').style.display=$('jk').style.display='none';$('adKey').focus()}else{document.activeElement?.blur?.();const ids=[jp,cp];jp=cp=null;J.x=J.y=0;ids.forEach(id=>{try{if(id!==null&&cv.hasPointerCapture(id))cv.releasePointerCapture(id)}catch(e){}})}};
 const adStatus=msg=>{adminMessage=msg;toast(msg);const el=$('adContent').querySelector('.adStatus');if(el)el.textContent=msg};
 const adFinish=msg=>{save();saveAdmin();recalc();upGates();upHud();adminUI();adStatus(msg)};
 const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
@@ -788,7 +795,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  default:throw Error('Ação desconhecida: '+act);
  }
  adFinish(msg);
- if(act==='spawnLimited'){toggleAdmin(false);toast('🔥 LIMITED ∞ invocado! Painel fechado: use o joystick para andar.');}
+ if(act==='spawnLimited'){toggleAdmin(false);P.train=false;P.stun=0;P.vx=P.vz=0;J.x=J.y=0;toast('🔥 LIMITED ∞ na última área! Movimento liberado.');}
  }catch(e){adStatus('⚠ '+(e&&e.message?e.message:'Erro no comando'));}
 };
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
@@ -834,6 +841,16 @@ $('saveState').textContent=d&&((d.pets?.length||0)>0||(d.$||0)>0||(d.sp||0)>0)?'
 try{$('roomName').value=localStorage.getItem('rue3d_mp_name')||'';$('roomCode').value=localStorage.getItem('rue3d_mp_room')||''}catch(e){}
 // Seus eventos são transmitidos pela rede somente após verificação do ADMIN no servidor.
 const mpBroadcastAction=(action,kind)=>{if(!MP.connected||!MP.owner||MP.settingRemote)return; if(kind==='start'&&ABUSE.active){const e=ABUSE.active;mpSend({type:'admin-event',action:'start',id:e.id,settings:{duration:e.duration,interval:e.interval,wave:e.wave}})}else if(kind==='stop')mpSend({type:'admin-event',action:'stop'});else if(kind==='announce')mpSend({type:'admin-announce',text:String(action).slice(0,160),seconds:10});};
+const recoverMovement=()=>{
+ save();P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.x=0;P.y=0;P.z=8;P.pitch=.45;P.yaw=0;
+ const ids=[jp,cp];jp=cp=null;J.x=J.y=0;Object.keys(K).forEach(k=>K[k]=0);
+ ids.forEach(id=>{try{if(id!==null&&cv.hasPointerCapture(id))cv.releasePointerCapture(id)}catch(e){}});
+ $('js').style.display=$('jk').style.display='none';
+ open=false;ui();$('roomPanel').style.display='none';rankToggle(false);
+ if(adminVisible)toggleAdmin(false);else $('adWrap').style.display='none';
+ cam.position.set(0,6,17);cam.lookAt(0,2,8);upHud();toast('✅ Personagem destravado! Seu progresso foi mantido.');
+};
+$('recoverBtn').onclick=recoverMovement;
 $('bRank').onclick=()=>rankToggle(true);$('rankClose').onclick=()=>rankToggle(false);$('rankOverlay').addEventListener('click',e=>{if(e.target===$('rankOverlay'))rankToggle(false)});$('bam').onclick=()=>toggleAdmin();$('adClose').onclick=()=>toggleAdmin(false);$('adLogin').addEventListener('submit',adminLogin);document.addEventListener('visibilitychange',()=>{if(document.hidden&&adminVisible)toggleAdmin(false)});
 $('adWrap').addEventListener('click',e=>{if(e.target===$('adWrap'))toggleAdmin(false)});
 $('adTabs').addEventListener('click',e=>{if(!adminVisible||!adminUnlocked)return;const b=e.target.closest('[data-tab]');if(!b)return;adminTab=+b.dataset.tab;adminUI(true)});
