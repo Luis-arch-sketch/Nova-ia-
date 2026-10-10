@@ -690,10 +690,12 @@ const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
 const adminSpawnLimited=()=>{
  if(S.pets.some(p=>p.s===LIMITED_ID)||(carry&&carry.s===LIMITED_ID)||eggs.some(e=>e.s===LIMITED_ID)||S.inc.some(p=>p?.s===LIMITED_ID))throw Error('Já existe um LIMITED ∞ neste jogo. É um exemplar exclusivo.');
  if(eggs.length>=200)throw Error('Limite de ovos no mapa.');
- const e=newEgg(0,7);e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=3;e.w=1;e.st='caido';e.gr=1;e.nest=null;
- e.mesh=eggMesh(e);e.mesh.castShadow=false; // sem sombras gigantes em aparelhos Android
-  e.base=e.mesh.scale.clone();const eggX=P.x+(P.x>70?-14:14);e.mesh.position.set(Math.max(-90,Math.min(90,eggX)),.45+e.base.y,Math.max(-928,Math.min(40,P.z)));
- eggs.push(e);mkLimitedAura(e);rareFx([e]);abuseFlash(0xff5918,LIMITED_LOW_FX?7:15);abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞! OVO GIGANTE COM AURA DE FOGO E RENDA INFINITA!',12);
+ // Spawn fixo no último bioma (Floresta Encantada), independente da posição do jogador.
+ const lastBiome=BI.length-1,areaZ=-65-70*lastBiome;
+ const e=newEgg(lastBiome,7);e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=3;e.w=1;e.st='caido';e.gr=1;e.nest=null;
+ e.mesh=eggMesh(e);e.mesh.castShadow=false; // preserva os efeitos e alivia GPU do Android
+ e.base=e.mesh.scale.clone();e.mesh.position.set(16,.45+e.base.y,areaZ-5);
+ eggs.push(e);mkLimitedAura(e);rareFx([e]);abuseFlash(0xff5918,LIMITED_LOW_FX?7:15);abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞ NA FLORESTA ENCANTADA! OVO GIGANTE COM AURA DE FOGO E RENDA INFINITA!',12);
  return e;
 };
 const adminClearEggs=()=>{for(const e of eggs){sc.remove(e.mesh);if(e.aura)sc.remove(e.aura);if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null)};
@@ -722,7 +724,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'abStop':abuseStop(true);mpBroadcastAction(null,'stop');msg='Evento encerrado';break;
  case 'abRandom':abuseStart(['secret','eternal','divine','mixed','cosmic','money','profit2','profit10','training','speed','hatch','luck','rainbow','gold','meteor','moon','eclipse','sun','freeze','fury','fireworks'][Math.floor(Math.random()*21)]);mpBroadcastAction(null,'start');msg='Evento surpresa iniciado';break;
  case 'abMarathon':abuseMarathon();msg='Maratona de 5 eventos iniciada';break;
- case 'spawnLimited':adminSpawnLimited();if(MP.connected&&MP.owner)mpSend({type:'admin-limited'});msg='🔥 Ovo LIMITED ∞ gigante invocado!';break;
+ case 'spawnLimited':adminSpawnLimited();if(MP.connected&&MP.owner)mpSend({type:'admin-limited'});msg='🔥 Ovo LIMITED ∞ invocado na Floresta Encantada, última área!';break;
   case 'rankOpen':rankToggle(true);msg='Placar exibido';break;
   case 'rankAdd':{const name=String(AS.rankName||'').trim().slice(0,28);if(!name)throw Error('Digite o nome do jogador.');if(/^(admin|administrador|dono|owner)$/i.test(name))throw Error('O administrador fica fora do placar.');const money=adValidNumber('rankMoney',0,1e100),speed=adValidNumber('rankSpeed',0,1e100);const old=LEAD.findIndex(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase());if(old>=0)LEAD[old]={name,money,speed};else {if(LEAD.length>=300)throw Error('Limite de 300 jogadores locais.');LEAD.push({name,money,speed});}rankSave();rankShow();msg='Jogador registrado no placar';break;}
   case 'rankClear':if(!confirm('Remover todos os outros jogadores do placar local?'))return;LEAD=[];rankSave();rankShow();msg='Placar limpo';break;
