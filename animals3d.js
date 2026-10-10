@@ -289,6 +289,60 @@ function create(three,id,k,col,scene){
  if(kind==='unicorn'){for(let i=0;i<5;i++)add('cone',i%2?0xe3b6f8:0xa4e5f4,[.12,.29,.12],[0,2.13-i*.06,.42-i*.21]).rotation.x=.3;}
  if(kind==='kraken')for(let i=0;i<6;i++){const a=i*Math.PI/3;add('sphere',0xbacaf4,[.14,.20,.18],[Math.cos(a)*.83,.46,Math.sin(a)*.81]);}
  // Assinatura 3D específica: listras ou manchas, adereços únicos por espécie.
+ // Guardiões lendários: anatomias especiais, não apenas bichos maiores da mesma cor.
+ if(kind==='cerberus'){
+   // Três cabeças caninas independentes, três narizes, olhos e crinas de lava.
+   for(const side of [-1,1]){
+     add('sphere',base,[.42,.42,.45],[side*.82,1.64,.82]);
+     add('sphere',0xcf6549,[.31,.19,.32],[side*.82,1.43,1.23]);
+     add('sphere',0x231b21,[.13,.12,.13],[side*.82,1.47,1.51]);
+     for(const eye of [-1,1])add('sphere',0xffe97e,[.095,.095,.055],[side*.82+eye*.20,1.78,1.22]);
+     for(const ear of [-1,1])add('cone',0x622231,[.18,.39,.17],[side*.82+ear*.26,2.12,.75]).rotation.z=ear*.17;
+   }
+   for(let t=0;t<3;t++)add('cone',0xff712a,[.24,.53,.21],[(t-1)*.35,1.84,-.58-t*.20]);
+   add('sphere',0x9a282d,[1.08,.44,.8],[0,.93,.13]);
+ }
+ if(kind==='trex'){
+   // Silhueta de dinossauro: cauda pesada, focinho longo e dentes pontudos.
+   tail(2.15,.49);
+   add('sphere',base,[.55,.29,.68],[0,2.09,1.06]);
+   for(const eye of [-1,1])add('sphere',0xfef6b5,[.16,.13,.09],[eye*.33,2.32,1.13]);
+   for(let t=0;t<5;t++)add('cone',0xf2eddf,[.07,.27,.07],[(t-2)*.18,1.77,1.53]).rotation.x=Math.PI;
+ }
+ if(kind==='sphinx'){
+   // Sphinx royal: asas arqueadas, colar e diadema do deserto.
+   wings(true);
+   add('box',0xffd875,[1.07,.18,.17],[0,1.58,.97]);
+   add('cone',0xfde3a0,[.23,.97,.23],[0,2.53,.78]);
+   for(const side of [-1,1])add('sphere',0xf6bb5d,[.32,.53,.18],[side*.55,1.74,.55]);
+ }
+ if(id===68){ // Chefe Cosmic Skeleton
+   add('sphere',0xf1f1dc,[.52,.42,.46],[0,2.15,.55]);
+   for(const eye of [-1,1])add('sphere',0x161b35,[.16,.20,.09],[eye*.21,2.24,.96]);
+   for(let j=0;j<4;j++)add('box',0xdce2eb,[.64,.065,.12],[0,1.60-j*.16,.58]);
+   for(const side of [-1,1])add('cylinder',0xebebd6,[.11,.69,.11],[side*.62,1.20,.14]);
+ }
+ if(id===78){ // Oni Tiger
+   for(const side of [-1,1])add('cone',0x9c2346,[.26,.92,.26],[side*.40,2.32,.66]).rotation.z=side*.22;
+   for(const side of [-1,1])add('sphere',0xf25762,[.24,.15,.08],[side*.29,1.74,1.22]);
+   add('sphere',0xf0d8c9,[.32,.19,.22],[0,1.37,1.22]);
+ }
+ if(id===86){ // Gorilla King
+   add('box',0x465575,[1.67,.64,.60],[0,1.74,-.02]);
+   add('cylinder',0xffcd3f,[.65,.32,.63],[0,2.66,.46]);
+   for(let t=-2;t<=2;t++)add('cone',0xffdd67,[.16,.49,.17],[t*.27,2.99,.46]);
+   add('sphere',0x65d8ec,[.24,.24,.13],[0,2.63,.94]);
+ }
+ if(id===102){ // Celestial Sunlion
+   add('sphere',0xffd469,[.83,.81,.44],[0,1.61,.38]);
+   for(let k=0;k<9;k++){
+     const a=k*Math.PI*2/9;
+     const ray=add('cone',k%2?0xffb245:0xffeb86,[.17,.62,.15],[Math.sin(a)*.70,1.64+Math.cos(a)*.66,.36]);
+     ray.rotation.z=-a;
+   }
+   add('sphere',0xffebc1,[.50,.50,.47],[0,1.65,.93]);
+   for(const side of [-1,1])add('sphere',0x442c34,[.10,.11,.09],[side*.24,1.79,1.33]);
+ }
  if(kind==='redpanda'||kind==='raccoon')for(const zz of [-.40,-.73,-1.04])add('sphere',light,[.31,.08,.13],[0,1.00,zz]);
  if(kind==='owl'||kind==='tiger'||kind==='leopard')markings(3);
  if(id%5===0&&family!=='fish'&&family!=='arachnid')add('sphere',light,[.16,.12,.20],[0,1.02,.83]);
