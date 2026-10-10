@@ -27,3 +27,9 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## 🎮 Outro jogo do criador: Roube um Ovo 3D
+
+🥚 **[Jogar Roube um Ovo 3D gratuitamente](https://roube-um-ovo-3d.lovable.app/)** — jogo 3D para celular e navegador, com exploração de biomas, ovos raros, incubação de pets e progressão. Jogue diretamente pelo link, sem instalar.
+
+> O jogo funciona individualmente no navegador; eventos multiplayer ao vivo ainda dependem de um servidor compartilhado.
