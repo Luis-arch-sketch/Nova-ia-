@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 
 const port=3057;
@@ -80,6 +80,31 @@ try{
   assert(pageVisuals.every(x=>x.meshCount>=7),'Each species model has detail');
   assert(new Set(pageVisuals.map(x=>x.kind)).size>=17,'Distinct species shapes');
   console.log(mode.toUpperCase()+' VISUALS '+JSON.stringify(pageVisuals));
+  if(mode==='desktop'){
+    const image=await page.evaluate(()=>{
+      const showcase=new THREE.Scene();showcase.background=new THREE.Color(0x26344a);
+      showcase.add(new THREE.HemisphereLight(0xffffff,0x5c7d83,1.35));
+      const lamp=new THREE.DirectionalLight(0xffe7c4,1.35);lamp.position.set(7,16,13);showcase.add(lamp);
+      const floor=new THREE.Mesh(new THREE.PlaneGeometry(45,34),new THREE.MeshLambertMaterial({color:0x6f9e87}));
+      floor.rotation.x=-Math.PI/2;floor.position.y=-.06;showcase.add(floor);
+      const ids=[0,1,3,4,5,8,15,20,33,42,52,61,77,83,95,103];
+      for(let i=0;i<ids.length;i++){
+        const species=ids[i];
+        const color=new THREE.Color().setHSL((species*37%360)/360,.59,.59);
+        const m=window.RoubeOvoVisuals.create(THREE,species,.96,color,showcase);
+        m.position.set((i%8-3.5)*3.85,0,-3-Math.floor(i/8)*5.8);
+        const pl=new THREE.Mesh(new THREE.CylinderGeometry(1.45,1.5,.12,20),new THREE.MeshLambertMaterial({color:0xc3c6b9}));
+        pl.position.set(m.position.x,.01,m.position.z);showcase.add(pl);
+      }
+      const qc=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.3,130);
+      qc.position.set(0,11,23);qc.lookAt(0,1,-4);
+      R.render(showcase,qc);
+      return document.getElementById('c').toDataURL('image/png');
+    });
+    assert(image.startsWith('data:image/png;base64,'),'3D gallery screenshot valid');
+    await writeFile('test-results/animal-gallery.png',Buffer.from(image.split(',')[1],'base64'));
+    console.log('ANIMAL GALLERY captured: 16 species');
+  }
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
  }
