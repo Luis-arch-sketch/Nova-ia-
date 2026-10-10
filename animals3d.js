@@ -366,6 +366,102 @@ function terrain(three,rx,ry){
  texture.anisotropy=3;
  return texture;
 }
+// Pontos de referência por bioma. Criados com somente seis instâncias
+// para preservar o desempenho no Android mesmo ao olhar ao longo do mapa.
+function landmarks(three,scene,biomes){
+ init(three);
+ const groups={sphere:[],box:[],cone:[],cylinder:[],tetra:[],torus:[]};
+ const push=(shape,b,xyz,dim,tint,rot)=>{
+  groups[shape].push({p:xyz,s:dim,c:tint??biomePalettes[b][1],r:rot||[0,0,0]});
+ };
+ biomes.forEach((_,b)=>{
+  const x=b%2?31:-31,z=-65-70*b,dark=biomePalettes[b][2],bright=biomePalettes[b][1],main=biomePalettes[b][0];
+  const P=(shape,dx,y,dz,sx,sy,sz,color,rz=0,rx=0)=>push(shape,b,[x+dx,y,z+dz],[sx,sy,sz],color,[rx,0,rz]);
+  // Mesma base para a leitura espacial; materiais e elementos são diferentes por área.
+  P('cylinder',0,.30,0,3.35,.60,3.35,dark);
+  switch(b){
+   case 0: // Floresta: tronco, copa em camadas, grandes cogumelos dourados
+    P('cylinder',0,4,0,.75,7,.72,0x745134);
+    for(let i=0;i<3;i++)P('cone',0,5.8+i*1.6,0,3.5-i*.65,3.1,3.5-i*.65,main);
+    for(let i=-1;i<=1;i++){P('cylinder',i*1.8,.55,2,.24,.9,.24,0xf5e6c9);P('sphere',i*1.8,1.15,2,1.1,.48,1.1,0xe23d47)}
+    break;
+   case 1: // Lago: junco, cisne de pedra e gotículas
+    P('sphere',0,3,0,1.65,1.0,2.5,main);
+    P('cylinder',0,4.15,1.8,.33,2.4,.33,bright,.35);
+    P('sphere',0,5.55,2.05,.70,.64,.69,0xebf7ff);
+    for(let i=-2;i<=2;i++){P('cylinder',i*1.2,1.6,2.8,.13,2.8,.13,0x4f9365);P('cone',i*1.2,3.3,2.8,.28,.8,.28,0x9d6f45)}
+    break;
+   case 2: // Deserto: pirâmide de arenito, obeliscos e cactus
+    P('cone',0,3.35,0,4.0,6.3,4.0,main);
+    for(let i of [-1,1]){P('cylinder',i*3.5,2.3,1.2,.40,4.5,.40,dark);P('cone',i*3.5,4.8,1.2,.65,1.3,.65,bright)}
+    P('cylinder',-3,.85,-2,.31,1.65,.31,0x508862);
+    P('cylinder',-3.38,1.35,-2,.17,1,.16,0x508862,.45);
+    break;
+   case 3: // Selva: monólito com folhas gigantes e flores
+    P('cylinder',0,3,0,1,5.4,1,dark);
+    for(let i=0;i<5;i++){const a=i*1.256;P('sphere',Math.sin(a)*2.4,5+Math.sin(a)*.6,Math.cos(a)*2.4,2.1,.39,.9,main,a)}
+    P('sphere',0,5.3,0,1.4,1.05,1.4,bright);
+    for(const i of [-1,1])P('cone',i*2.5,2.3,-1.6,1,3,1,0x6fd68a,.5*i);
+    break;
+   case 4: // Neve: cristais em prismas
+    P('tetra',0,5.3,0,2.1,4.8,2.1,0xb5efff);
+    for(let i=-2;i<=2;i++)P('tetra',i*1.45,2.3+(i%2?1:0),1.5,0.95,2.7,1.0,i%2?0x80bbf3:0xe4f9ff,.24*i);
+    break;
+   case 5: // Vulcão: cratera, fluxos de lava e brasas
+    P('cone',0,3.9,0,3.9,7.4,3.9,0x4b2a32);
+    P('torus',0,7.4,0,2.1,.33,2.1,0xff802b,0,Math.PI/2);
+    for(let i=-2;i<=2;i++){P('cone',i*.9,4.25-i*i*.15,3.1,0.34,3.0,0.32,0xff5120);P('sphere',i*.85,7.5+(i%2),-.5,.30,.3,.3,0xffce48)}
+    break;
+   case 6: // Abissal: coral ramificado e bolhas
+    P('cylinder',0,3.1,0,.56,5.7,.56,0xf7798a);
+    for(let i=-2;i<=2;i++){P('cylinder',i*.74,3.6+(i%2)*.65,0,.22,2.8,.22,0xffb2ba,i*.28);P('sphere',i*1.45,4+(i%3)*1.2,1.8,.52,.52,.52,0x92edff)}
+    break;
+   case 7: // Pré-história: ossos fósseis e pegadas gigantes
+    for(const j of [-1,1]){P('cylinder',j*1.5,3.3,0,.35,5.7,.35,0xe4d2a0,j*.46);P('sphere',j*3.1,4.9,0,.65,.65,.65,0xf9eacb)}
+    P('torus',0,4.9,0,2.35,.32,2.2,0xf7e9c9);
+    for(let i=0;i<3;i++)P('sphere',i*1.15-1.1,.7,3.3,.66,.15,.96,dark);
+    break;
+   case 8: // Cósmico: planeta, anéis e meteoros brilhantes
+    P('sphere',0,5.4,0,2.1,2.1,2.1,0x6869db);
+    P('torus',0,5.4,0,3.1,.11,3.1,0xeecbff,.43,.7);
+    for(let i=0;i<6;i++){const a=i*1.047;P('tetra',Math.sin(a)*3.2,7.2+Math.cos(a)*1.6,Math.cos(a)*3.2,.45,.72,.45,i%2?0xffd6b9:0x7cf9f7)}
+    break;
+   case 9: // Cerejeiras: árvore de flores com pétalas caídas
+    P('cylinder',0,3.6,0,.59,6.7,.59,0x754c62);
+    for(let i=0;i<7;i++){const a=i*2.399;P('sphere',Math.sin(a)*1.9,6.5+Math.cos(a)*.9,Math.cos(a)*1.9,1.65,1.0,1.45,i%2?0xffaddc:0xffd9ee)}
+    for(let i=0;i<6;i++)P('sphere',(i%3-1)*1.7,.55,-3+Math.floor(i/3)*1.4,.30,.08,.40,0xffb1db);
+    break;
+   case 10: // Titãs: colunas monumentais com pedra talhada
+    for(const i of [-1,1]){P('cylinder',i*2.3,3.4,0,.72,6.2,.72,0x868995);P('box',i*2.3,6.65,0,1.7,.57,1.6,0xe2d5b2);P('box',i*2.3,.5,0,2,.5,1.8,0x636a73)}
+    P('box',0,7.0,0,6.6,.65,1.25,0xc5b9a5);
+    break;
+   case 11: // Anjos e Demônios: portal celestial, halo e chamas
+    for(const i of [-1,1]){P('cone',i*2.5,3.1,0,.87,5.2,.87,i<0?0xffffff:0x752d44);P('sphere',i*2.1,5,0,.95,1.45,.4,i<0?0xfff3d5:0xe5485b,.23*i)}
+    P('torus',0,6.2,0,2.3,.18,2.3,0xffec9a,.3);
+    P('sphere',0,3.3,-1.6,.58,.64,.58,0xf9e9db);
+    break;
+   case 12: // Encantada: enormes cogumelos e cristal astral
+    for(let i=-1;i<=1;i++){P('cylinder',i*2.15,1.8+(i===0?1:0),0,.40,2.7+(i===0?1.7:0),.4,0xf3f5ee);P('sphere',i*2.15,3.5+(i===0?1.8:0),0,1.75+(i===0?.6:0),.68,1.45,i===0?0xd791f4:0x85e4c7)}
+    P('tetra',0,7.7,0,.85,1.7,.85,0xb8a2ff);
+    for(const i of [-1,1])P('torus',i*2.4,4.3,1.4,1,.12,1,0xfbc8ff,.32);
+    break;
+  }
+ });
+ const M=new T.Matrix4(),Q=new T.Quaternion(),E=new T.Euler(),V=new T.Vector3(),S=new T.Vector3();
+ for(const [name,part] of Object.entries(groups)){
+  if(!part.length)continue;
+  const inst=new T.InstancedMesh(shared[name],new T.MeshLambertMaterial({color:0xffffff,side:T.DoubleSide}),part.length);
+  part.forEach((p,i)=>{
+   Q.setFromEuler(E.set(p.r[0],p.r[1],p.r[2]));
+   M.compose(V.set(...p.p),Q,S.set(...p.s));
+   inst.setMatrixAt(i,M);inst.setColorAt(i,new T.Color(p.c));
+  });
+  inst.instanceMatrix.needsUpdate=true;
+  if(inst.instanceColor)inst.instanceColor.needsUpdate=true;
+  inst.castShadow=false;inst.receiveShadow=false;
+  inst.frustumCulled=false;scene.add(inst);
+ }
+}
 function decorate(three,scene,biomes){
  init(three);
  // Somente InstancedMesh: novos detalhes sem centenas de draw calls no Android.
@@ -390,6 +486,7 @@ function decorate(three,scene,biomes){
   base.castShadow=false;top.castShadow=false;base.receiveShadow=false;top.receiveShadow=false;
   base.frustumCulled=top.frustumCulled=false;scene.add(base,top);
  }
+ landmarks(three,scene,biomes);
 }
 window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,species:SPECIES};
 })();
