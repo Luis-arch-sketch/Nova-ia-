@@ -63,7 +63,7 @@ const applyGraphicUpgrade=html=>{
  if(html.split('<script>\n').length!==2)throw new Error('Script principal não encontrado');
  // Embutir os modelos para evitar falhas de carregamento de arquivos separados no Android.
  const animalsSource=fs.readFileSync(path.join(__dirname,'animals3d.js'),'utf8');
- html=html.replace('</style>','@media(max-width:450px){#hud{top:calc(42px + env(safe-area-inset-top,0px));gap:2px;max-width:63vw}}\\n</style>');
+ html=html.replace('</style>','@media(max-width:450px){#hud{top:calc(42px + env(safe-area-inset-top,0px));gap:2px;max-width:63vw}}\n</style>');
  return html.replace('<script>\n','<script>\n'+animalsSource+'\n</script>\n<script>\n');
 };
 const gameHtml=installServerBrowser(applyGraphicUpgrade(applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))));
