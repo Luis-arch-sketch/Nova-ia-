@@ -122,10 +122,14 @@ try{
     for(const [id,name] of [[2,'deserto'],[5,'vulcao'],[8,'cosmico'],[12,'encantada']]){
       const pic=await page.evaluate((b)=>{
         const x=b%2?31:-31,z=-65-70*b;
-        const origin=cam.position.clone(),quat=cam.quaternion.clone();
+        const origin=cam.position.clone(),quat=cam.quaternion.clone(),previous={x:P.x,z:P.z};
+        P.x=x;P.z=z;P.vx=P.vz=0;
+        // Mostra clima e céu do bioma verdadeiro, como o jogador veria ao chegar.
+        for(let i=0;i<65;i++)step(.05);
         cam.position.set(x+15,10,z+21);cam.lookAt(x,3.9,z);
         R.render(sc,cam);
         const pic=document.getElementById('c').toDataURL('image/png');
+        P.x=previous.x;P.z=previous.z;P.vx=P.vz=0;
         cam.position.copy(origin);cam.quaternion.copy(quat);
         return pic;
       },id);
