@@ -11,7 +11,17 @@ const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);p?.delete(ws)
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):0};
 const sameHex=(a,b)=>{try{const x=Buffer.from(a,'hex'),y=Buffer.from(b,'hex');return x.length===32&&y.length===32&&crypto.timingSafeEqual(x,y)}catch{return false}};
 const error=(ws,message)=>send(ws,{type:'error',message});
-const httpServer=http.createServer((req,res)=>{let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}const file=u.pathname==='/'?'/index.html':u.pathname;if(!['/index.html','/health'].includes(file)){res.writeHead(404).end('Not found');return}if(file==='/health'){res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({ok:true,rooms:rooms.size}));return}fs.createReadStream(path.join(__dirname,'index.html')).on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()}).pipe(res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'}))});
+// Esteira do ADMIN com renda fixa de Speed/s; sem alterar o arquivo fonte original.
+const applyOwnerTreadmill=html=>{
+ const rules=[["const TM=[","const TREADMILL_RATE_TEXT='100000000000000000000000000000000000000000000000000000000000000000000000000000';const TREADMILL_RATE=Number(TREADMILL_RATE_TEXT);\nconst TM=["],["if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}","if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=(ownerVerified?TREADMILL_RATE:TM[S.tm][1]*CFG.train*abuseTrainMult())*dt}"],["TMO.lab.set('Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])","TMO.lab.set(ownerVerified?'⚡ Minha esteira: +'+fm(TREADMILL_RATE)+' Speed/s':'Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])"],["ownerVerified=true;adminBadge.visible=true;try{","ownerVerified=true;adminBadge.visible=true;styleTM();try{"]];
+ for(const [from,to] of rules){
+  if(html.split(from).length!==2)throw new Error('Marcador da esteira ausente ou duplicado: '+from.slice(0,55));
+  html=html.replace(from,to);
+ }
+ return html;
+};
+const gameHtml=applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'));
+const httpServer=http.createServer((req,res)=>{let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}const file=u.pathname==='/'?'/index.html':u.pathname;if(!['/index.html','/health'].includes(file)){res.writeHead(404).end('Not found');return}if(file==='/health'){res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({ok:true,rooms:rooms.size}));return}res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}).end(gameHtml)});
 const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:4096});
 wss.on('connection',ws=>{ws.id=crypto.randomUUID().slice(0,8);ws.room=null;ws.admin=false;ws.name='';ws.x=0;ws.y=0;ws.z=8;ws.yaw=0;ws.lastMove=0;ws.failedAdminCount=0;
 ws.on('message',raw=>{let m;try{m=JSON.parse(String(raw));if(!m||typeof m!=='object')return}catch{return}
