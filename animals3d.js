@@ -232,6 +232,62 @@ function create(three,id,k,col,scene){
   if(kind==='skeleton')add('sphere',0xf9f0d9,[.46,.22,.22],[0,1.20,.56]);
   if(kind==='fruit')add('cone',0x629635,[.47,.62,.40],[0,2.58,.05]);
  }
+ // Silhueta personalizada por espécie, para animais não parecerem o mesmo modelo recolorido.
+ const naturalColors={"chicken":16378578,"dog":12421457,"bird":6269146,"owl":9531466,"raccoon":7897994,"fox":14382908,"bear":8477763,"fish":5679290,"turtle":6915418,"duck":16309899,"frog":5487732,"penguin":3951714,"walrus":10059117,"axolotl":16360393,"camel":12951644,"scorpion":9139802,"tiger":14391118,"gorilla":6120309,"panda":15265260,"redpanda":13469507,"peacock":3770293,"crab":13920365,"phoenix":15693378,"shark":6458282,"orca":4937323,"whale":7185338,"angelfish":7789020};
+ const silhouettes={"chicken":[0.85,0.85,0.95],"dog":[0.92,1,1.2],"bird":[0.94,0.88,0.96],"owl":[1.06,1.3,0.88],"raccoon":[0.91,0.92,1.06],"fox":[0.78,0.91,1.28],"bear":[1.22,1.15,1.1],"tiger":[1.05,1.1,1.46],"lion":[1.12,1.2,1.37],"camel":[1.07,1.28,1.4],"turtle":[1.3,0.78,1.24],"fish":[1.12,0.86,1.5],"shark":[1.22,0.85,1.65],"whale":[1.48,0.92,1.77],"skywhale":[1.46,1.05,1.88],"frog":[1.28,0.78,1.1],"panda":[1.22,1.18,1.08],"walrus":[1.35,0.81,1.35],"penguin":[0.85,1.25,0.86],"dragon":[1.12,1.16,1.35],"trex":[0.89,1.39,1.6],"unicorn":[1.02,1.26,1.23],"cerberus":[1.25,1.14,1.21],"kitsune":[0.95,1.05,1.24],"octopus":[1.18,0.99,1.23],"kraken":[1.36,1.3,1.3]};
+ const form=silhouettes[kind];
+ if(form)root.scale.set(form[0],form[1],form[2]);
+ // Cores zoológicas dos pets comuns; raridades especiais mantêm as cores originais.
+ if(slot<5&&naturalColors[kind]!==undefined&&id!==104)
+   base.color.lerp(new T.Color(naturalColors[kind]),.66);
+ // Marcadores anatômicos exclusivos — focinhos, caudas, plumagem e padrões.
+ if(kind==='chicken'){
+  for(let i=0;i<3;i++)add('cone',0xd92d2d,[.16,.37,.15],[(i-1)*.16,2.15,.60]).rotation.z=(i-1)*-.2;
+  add('sphere',0xdb3e39,[.13,.27,.13],[0,1.27,1.12]);
+ }
+ if(kind==='dog'){
+  for(const sx of [-1,1]){const ear=add('sphere',0x7d5137,[.26,.45,.16],[sx*.46,1.95,.60]);ear.rotation.z=sx*.65;}
+  add('sphere',0x32282b,[.23,.16,.17],[0,1.50,1.37]);
+ }
+ if(kind==='owl'){
+  for(const sx of [-1,1]){add('sphere',0xf0c981,[.27,.30,.10],[sx*.27,1.67,1.23]);add('sphere',0x1e2025,[.13,.19,.10],[sx*.27,1.69,1.34]);}
+  add('cone',0xc68d39,[.16,.25,.15],[0,1.50,1.38]).rotation.x=.6;
+ }
+ if(kind==='raccoon'){
+  for(const sx of [-1,1])add('sphere',0x282e38,[.29,.23,.11],[sx*.28,1.70,1.24]);
+  for(let i=0;i<4;i++)add('sphere',i%2?0xe6ebeb:0x333943,[.33,.16,.16],[0,.95,-1.0-i*.16]);
+ }
+ if(kind==='fox'||kind==='kitsune'){
+  add('cone',0xfff1dc,[.38,.92,.34],[0,1.14,-1.62]).rotation.x=-Math.PI/2.8;
+  add('sphere',0xffffff,[.31,.20,.28],[0,1.31,1.16]);
+  if(kind==='kitsune')for(const sx of [-1,1])add('cone',0xffdcb9,[.20,1.03,.17],[sx*.50,1.05,-1.40]).rotation.x=-1.35;
+ }
+ if(kind==='bear'||kind==='panda'){
+  for(const sx of [-1,1])add('sphere',kind==='panda'?0x24252c:0x67432e,[.23,.24,.22],[sx*.37,1.95,.63]);
+  add('sphere',0xe3c3a0,[.40,.25,.27],[0,1.42,1.22]);
+  add('sphere',0x353334,[.18,.13,.10],[0,1.49,1.47]);
+ }
+ if(kind==='tiger'){
+  for(const sx of [-1,1])for(let i=0;i<5;i++){
+   const mark=add('box',0x3e281e,[.06,.24,.12],[sx*.80,1.01,-.74+i*.34]);mark.rotation.z=sx*.20;
+  }
+ }
+ if(kind==='lion'){add('sphere',0xb97936,[.73,.70,.32],[0,1.60,.43]);add('sphere',base,[.48,.48,.47],[0,1.67,.88]);}
+ if(kind==='walrus'){for(const sx of [-1,1])add('cone',0xfff3da,[.13,.62,.14],[sx*.24,1.03,1.40]).rotation.x=Math.PI/2.6;}
+ if(kind==='penguin'){add('sphere',0xf2f0e3,[.53,.74,.18],[0,1.01,.73]);for(const sx of [-1,1])add('sphere',0x222e39,[.58,.11,.34],[sx*.76,1.05,-.10]);}
+ if(kind==='panda')for(const sx of [-1,1])add('sphere',0x202129,[.31,.41,.31],[sx*.65,.95,.40]);
+ if(kind==='camel')for(const zz of [-.38,.36])add('sphere',0xaf8445,[.37,.44,.38],[0,1.69,zz]);
+ if(kind==='scorpion')for(const sx of [-1,1]){add('sphere',0x8b4935,[.42,.30,.36],[sx*1.16,1.10,.63]);add('cone',0xbc6948,[.22,.49,.17],[sx*1.45,1.29,.72]).rotation.z=sx*.9;}
+ if(kind==='dragon'||kind==='phoenix'||kind==='skywhale'){
+  for(const sx of [-1,1]){
+   const sail=add('cone',id===104?0xff9039:accent,[.38,1.25,.20],[sx*1.55,1.71,-.60]);
+   sail.rotation.z=sx*.88;sail.rotation.x=-.25;
+  }
+ }
+ if(kind==='trex'){for(const sx of [-1,1])add('sphere',base,[.19,.23,.21],[sx*.68,1.77,.60]);add('sphere',0xeee2d3,[.41,.12,.24],[0,2.11,1.00]);}
+ if(kind==='turtle'||kind==='ankylosaur')for(let i=0;i<6;i++)add('sphere',0xb9d2a5,[.14,.09,.17],[Math.cos(i)*.64,1.55,Math.sin(i)*.60-.12]);
+ if(kind==='unicorn'){for(let i=0;i<5;i++)add('cone',i%2?0xe3b6f8:0xa4e5f4,[.12,.29,.12],[0,2.13-i*.06,.42-i*.21]).rotation.x=.3;}
+ if(kind==='kraken')for(let i=0;i<6;i++){const a=i*Math.PI/3;add('sphere',0xbacaf4,[.14,.20,.18],[Math.cos(a)*.83,.46,Math.sin(a)*.81]);}
  // Assinatura 3D específica: listras ou manchas, adereços únicos por espécie.
  if(kind==='redpanda'||kind==='raccoon')for(const zz of [-.40,-.73,-1.04])add('sphere',light,[.31,.08,.13],[0,1.00,zz]);
  if(kind==='owl'||kind==='tiger'||kind==='leopard')markings(3);
