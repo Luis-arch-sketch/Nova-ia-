@@ -65,6 +65,18 @@ try{
   assert(state.webgl,'WebGL context created');
   assert(state.renderer?.calls>0,'Three.js must render at least one call');
   assert.equal(errors.length,0,'Game JavaScript runtime errors: '+JSON.stringify(errors));
+  if(mobile){
+    // Toque Android de verdade pelo protocolo Chromium, usando o joystick existente.
+    const session=await context.newCDPSession(page);
+    const startPos=await page.evaluate(()=>({x:P.x,z:P.z}));
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:76,y:645,id:1}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:76,y:575,id:1}]});
+    await page.waitForTimeout(1700);
+    await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    const endPos=await page.evaluate(()=>({x:P.x,z:P.z}));
+    console.log('ANDROID JOYSTICK '+JSON.stringify({start:startPos,end:endPos,deltaZ:endPos.z-startPos.z}));
+    assert(endPos.z<startPos.z-.30,'Android joystick must move player forward');
+  }
   const pageVisuals=await page.evaluate(()=>{
    const sample=[0,1,2,3,4,5,6,7,10,15,20,26,33,42,52,61,77,83,95,103,104];
    const codes=[];
