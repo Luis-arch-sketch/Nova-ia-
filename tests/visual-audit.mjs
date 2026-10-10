@@ -119,21 +119,21 @@ try{
     await writeFile('test-results/animal-gallery.png',Buffer.from(image.split(',')[1],'base64'));
     console.log('ANIMAL GALLERY captured: 16 species');
     const bossGallery=await page.evaluate(()=>{
-      const scene=new THREE.Scene();scene.background=new THREE.Color(0x29364a);
-      scene.add(new THREE.HemisphereLight(0xffffff,0x56727d,1.45));
-      const light=new THREE.DirectionalLight(0xffe4b4,1.4);light.position.set(8,17,12);scene.add(light);
-      const ground=new THREE.Mesh(new THREE.PlaneGeometry(55,40),new THREE.MeshLambertMaterial({color:0x637f78}));
+      const scene=new THREE.Scene();scene.background=new THREE.Color(0x203048);
+      scene.add(new THREE.HemisphereLight(0xedf5ff,0x465765,.70));
+      const light=new THREE.DirectionalLight(0xffe4b4,.90);light.position.set(8,17,12);scene.add(light);
+      const ground=new THREE.Mesh(new THREE.PlaneGeometry(55,40),new THREE.MeshLambertMaterial({color:0x485a66}));
       ground.rotation.x=-Math.PI/2;ground.position.y=-.04;scene.add(ground);
       const ids=[7,15,23,45,61,68,78,86,94,102,103,104];
       ids.forEach((id,i)=>{
         const c=new THREE.Color().setHSL((id*37%360)/360,.6,.53);
-        const g=window.RoubeOvoVisuals.create(THREE,id,id===104?.46:.87,c,scene);
-        g.position.set((i%6-2.5)*4.8,0,-3-Math.floor(i/6)*7.4);
+        const g=window.RoubeOvoVisuals.create(THREE,id,id===104?.60:1.10,c,scene);
+        g.position.set((i%6-2.5)*4.1,0,-3-Math.floor(i/6)*6.1);
         const p=new THREE.Mesh(new THREE.CylinderGeometry(1.62,1.65,.18,16),new THREE.MeshLambertMaterial({color:0xb2a991}));
         p.position.set(g.position.x,.02,g.position.z);scene.add(p);
       });
       const cam2=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.2,130);
-      cam2.position.set(0,12,24);cam2.lookAt(0,1,-4);R.render(scene,cam2);
+      cam2.position.set(0,8,15);cam2.lookAt(0,1,-5.5);R.render(scene,cam2);
       return document.getElementById('c').toDataURL('image/png');
     });
     assert(bossGallery.startsWith('data:image/png;base64,'),'Boss gallery is a screenshot');
