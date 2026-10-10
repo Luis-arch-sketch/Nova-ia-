@@ -366,6 +366,98 @@ function terrain(three,rx,ry){
  texture.anisotropy=3;
  return texture;
 }
+// Árvores e vegetação realmente diferentes para cada área, com somente
+// cinco materiais e cinco instâncias no GPU Android.
+function trees(three,scene,biomes,ob,random){
+ init(three);
+ const groups={sphere:[],cone:[],cylinder:[],box:[],tetra:[]};
+ const add=(shape,x,y,z,w,h,d,c,rz=0,rx=0)=>groups[shape].push({p:[x,y,z],s:[w,h,d],c,r:[rx,0,rz]});
+ const choose=(b,base,j,x,z,h)=>{
+  const palette=b<0?[0x347e47,0x68b57d,0x745334]:biomePalettes[b],green=palette[0],bright=palette[1],brown=palette[2];
+  const t=(height=h)=>add('cylinder',x,height*.5,z,.34,height,.34,b===10?0x9c9da5:b===6?0xed879b:b===2?0x5b9f61:0x866b52);
+  switch(b){
+   case 1: // aguapés, junco e beira d'água
+    t(h*.70);add('sphere',x,h*.86,z,.85,.37,.92,0x62bfa5);
+    for(const sx of [-1,1])add('cone',x+sx*.65,h*.74,z,.18,1.1,.18,0x558665);
+    break;
+   case 2: // cactus com braços, sem pinheiros verdes no deserto
+    t(h*1.05);
+    add('cylinder',x-.39,h*.48,z,.18,.93,.18,0x4b9366,.45);
+    add('cylinder',x+.42,h*.65,z,.17,.85,.17,0x4b9366,-.42);
+    add('sphere',x,h*1.02,z,.37,.28,.36,0x6db580);
+    break;
+   case 3: // floresta tropical com folhas largas
+    t(h*1.2);
+    for(let k=0;k<3;k++)add('sphere',x+(k-1)*.85,h*1.16+(k%2)*.37,z,.88,.62,1.0,k===1?0x1a854c:0x46af4b);
+    break;
+   case 4: // árvores de gelo
+    t(h*.7);
+    for(let k=0;k<3;k++)add('cone',x,h*.63+k*.62,z,1.35-k*.26,2.2-k*.32,1.35-k*.26,k%2?0x99dfff:0xe6f8ff);
+    break;
+   case 5: // obsidiana, rochas de lava
+    add('tetra',x,h*.5,z,1.05,h,1.05,0x37282d,.11*j);
+    add('tetra',x+.65,h*.32,z+.35,.36,h*.60,.35,0xef5427);
+    break;
+   case 6: // coral abissal ramificado
+    t(h*.66);
+    add('sphere',x,h*.82,z,.69,.43,.6,0xe879a9);
+    for(const sx of [-1,1])add('cylinder',x+sx*.52,h*.75,z,.17,h*.63,.17,sx<0?0xf79c95:0x85eaff,sx*.52);
+    break;
+   case 7: // samambaias e palmeiras pré-históricas
+    t(h*1.1);
+    for(let k=0;k<4;k++)add('sphere',x+Math.sin(k*1.57)*1.0,h*1.08,z+Math.cos(k*1.57)*.85,1.18,.26,.4,0x669257,(k-2)*.31);
+    break;
+   case 8: // cristais cósmicos (sem troncos de pinheiro)
+    add('tetra',x,h*.62,z,.78,h*1.20,.79,j%2?0x8d70d5:0xc18aff);
+    add('sphere',x+.68,h*.9,z,.35,.35,.35,0x83ddec);
+    break;
+   case 9: // sakura — copas rosas espessas
+    t(h*.95);
+    for(let k=0;k<3;k++)add('sphere',x+(k-1)*.6,h*.95+(k%2)*.35,z,.82,.65,.82,k%2?0xffd9f0:0xf99acd);
+    break;
+   case 10: // pilares de pedra talhados
+    add('cylinder',x,h*.45,z,.60,h*.88,.60,0x868c9e);
+    add('box',x,h*.95,z,1.6,.29,1.45,0xcac8c0);
+    add('box',x,.18,z,1.35,.35,1.28,0x6d697a);
+    break;
+   case 11: // folhas claras, flores angelicais
+    t(h*.90);
+    add('sphere',x,h*.90,z,1.27,.71,1.21,j%2?0xffe5bf:0xf1d1e5);
+    add('cone',x,h*1.26,z,.35,.84,.35,0xfff4aa);
+    break;
+   case 12: // cogumelos encantados, brilhantes
+    add('cylinder',x,h*.37,z,.29,h*.74,.29,0xf2e8dd);
+    add('sphere',x,h*.79,z,1.18,.52,1.13,j%2?0xc592f6:0x87e6c8);
+    add('sphere',x+.49,h*.93,z-.3,.19,.1,.19,0xf5e8ff);
+    break;
+   default: // bosque inicial de árvores redondas
+    t(h*.96);
+    if(j%3===0)add('sphere',x,h*1.07,z,1.25,1.06,1.20,0x489a4a);
+    else for(let k=0;k<2;k++)add('cone',x,h*.71+k*.65,z,1.25-k*.3,2.25-k*.4,1.25-k*.3,k?0x4ca959:0x327e46);
+    break;
+  }
+ };
+ for(let k=0;k<252;k++){
+  const b=Math.min(12,Math.floor(k/18)-1),zc=-65-70*b;
+  let x,z,n=0;
+  do{
+   x=(random()*2-1)*96;
+   z=b<0?50-random()*75:zc+(random()-.5)*66;
+  }while((Math.abs(x)<10||(b<0?Math.abs(x)<24&&z>-14:Math.hypot(x,z-zc)<28))&&++n<100);
+  const h=3.6+random()*2.5;
+  choose(b,0,k,x,z,h);
+  ob.push({x,z,r:1.1});
+ }
+ const M=new T.Matrix4(),Q=new T.Quaternion(),E=new T.Euler(),p=new T.Vector3(),ss=new T.Vector3();
+ for(const [name,items] of Object.entries(groups)){
+  if(!items.length)continue;
+  const group=new T.InstancedMesh(shared[name],new T.MeshLambertMaterial({color:0xffffff,side:T.DoubleSide}),items.length);
+  items.forEach((it,j)=>{Q.setFromEuler(E.set(...it.r));M.compose(p.set(...it.p),Q,ss.set(...it.s));group.setMatrixAt(j,M);group.setColorAt(j,new T.Color(it.c));});
+  group.instanceMatrix.needsUpdate=true;
+  if(group.instanceColor)group.instanceColor.needsUpdate=true;
+  group.castShadow=false;group.frustumCulled=false;scene.add(group);
+ }
+}
 // Pontos de referência por bioma. Criados com somente seis instâncias
 // para preservar o desempenho no Android mesmo ao olhar ao longo do mapa.
 function landmarks(three,scene,biomes){
@@ -538,5 +630,5 @@ function weather(three,scene,player,biome,dt){
  }
  fx.geo.attributes.position.needsUpdate=true;
 }
-window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,weather,species:SPECIES};
+window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,weather,trees,species:SPECIES};
 })();
