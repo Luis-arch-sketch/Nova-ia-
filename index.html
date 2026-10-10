@@ -328,14 +328,14 @@ let carry=null;
 const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(dx,dz),m=b.r+r;if(d<m&&d>1e-4){o.x=b.x+dx/d*m;o.z=b.z+dz/d*m}}};
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
 const findEgg=()=>{let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
-const take=e=>{eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);
+const take=e=>{eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
  const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
-const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);beep(200,.15)};
+const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID)persistLimitedWorld();beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
 const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
-const dep=k=>{const e=carry;if(e?.s===LIMITED_ID)setWorldLimited(false);carry=null;P.g.remove(e.mesh);if(e.aura){sc.remove(e.aura);e.aura=null}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');save()};
-const hatch=k=>{const s=S.inc[k];if(s?.s===LIMITED_ID)setWorldLimited(false);S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
+const dep=k=>{const e=carry;carry=null;P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
+const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
  toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+fm(LIMITED_RATE)+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
  const z=Math.min(3,Math.max(...l.map(p=>p.z))+(Math.random()<.5?1:0)),m=[...new Set(l.flatMap(p=>p.m))].filter(()=>Math.random()<.6);
@@ -425,7 +425,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  /* ovos crescendo */
  for(const e of eggs)if(e.gr<1){e.gr=Math.min(1,e.gr+dt/2.5);e.mesh.scale.copy(e.base).multiplyScalar(e.gr);e.mesh.position.y=.45+e.base.y*e.gr}
  /* depósito */
- for(const e of eggs)auraUp(e,dt);if(carry)auraUp(carry,dt);
+ manageLimitedAuras(dt);for(const e of eggs)auraUp(e,dt);if(carry)auraUp(carry,dt);
  if(carry&&near(0,-4,3.6)){const k2=S.inc.indexOf(null);if(k2>=0)dep(k2);else if(tt<=0)toast('Todas as incubadoras estão cheias.')}
  /* incubadoras */
  IV.forEach((o,k2)=>{const s=S.inc[k2];o.e.visible=!!s;if(s){const f=Math.min(1,(Date.now()-s.a)/(s.b-s.a));o.e.material.color.setHSL((s.s*37%360)/360,.65,.62);o.e.scale.set(.55,.75,.55).multiplyScalar(.6+f*.6*SZ[s.z][1]);o.e.position.y=1+o.e.scale.y;o.e.rotation.z=f>.85?Math.sin(TT*30)*.2:0}});
@@ -440,7 +440,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  S.$+=tot*dt*abuseRentMult();
  if(Date.now()/1e3>=nextReset){nextReset=Date.now()/1e3+CFG.reset;nite=1;toast('Os ninhos renovaram. Novos ovos nasceram!');abuseRegrow();beep(260,.5,'sine',.06)}
  if(nite>0)nite=Math.max(0,nite-dt/4);bg.copy(day).lerp(nit,A.night?1:nite*.85);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.3:1-.6*nite);abuseSky(dt)
- if(A.autoSecret&&eggs.length<190){adminAutoTime+=dt;if(adminAutoTime>=Math.max(5,+A.autoSecretEvery||30)){adminAutoTime=0;adminSpawnEgg(Math.floor(Math.random()*BI.length),5,Math.floor(Math.random()*SZ.length),'nest',false)}}else adminAutoTime=0;
+ if(A.autoSecret){adminAutoTime+=dt;if(adminAutoTime>=Math.max(5,+A.autoSecretEvery||30)){adminAutoTime=0;if(eggs.filter(e=>e.s!==LIMITED_ID).length<190)adminSpawnEgg(Math.floor(Math.random()*BI.length),5,Math.floor(Math.random()*SZ.length),'nest',false)}}else adminAutoTime=0;
   if(A.autoHatch||abuseIs('hatch')){for(let i=0;i<S.inc.length;i++)if(S.inc[i])hatch(i)}
   if(tt>0){tt-=dt;if(tt<=0)$('ms').style.opacity=0}
  sec+=dt;if(sec>=1){sec=0;upGates();S.inc.forEach((s,k2)=>{if(s&&Date.now()>=s.b)hatch(k2);IV[k2].l.set(S.inc[k2]?SPC[S.inc[k2].s].n+' '+ft((S.inc[k2].b-Date.now())/1e3):'vazio')});if(open)ui();const ac=$('abPanelClock');if(ac&&ABUSE.active)ac.textContent='Faltam '+Math.ceil(ABUSE.active.left)+'s • '+ABUSE.active.details}
@@ -613,7 +613,7 @@ const rankShow=()=>{const list=$('rankList');const order=[...LEAD].filter(x=>!x.
 };
 const rankToggle=flag=>{$('rankOverlay').style.display=flag?'flex':'none';if(flag){if(adminVisible)toggleAdmin(false);rankShow()}};
 const adminTabs=['Início','Ovos','Pets','Mundo','Config.','🔥 Abuse / Eventos','🏆 Placar','Dados'];
-const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'1',eggCount:'1',eggWhere:'nest',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'50',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
+const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'1',eggCount:'1',eggWhere:'nest',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'50',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
 AS.chanceSecret=String(CFG.rare[7]*100);AS.chanceEternal=String(CFG.rare[8]*100);AS.chanceDivine=String(CFG.rare[9]*100);
 AS.resetSeconds=String(CFG.reset);AS.trainMult=String(CFG.train);AS.moveMult=String(A.moveMult);AS.jumpMult=String(A.jumpMult);AS.autoSeconds=String(A.autoSecretEvery);AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));
 let adminMessage='Painel conectado ao jogo. Escolha uma ação.';
@@ -672,7 +672,7 @@ const adminUI=(resetScroll=false)=>{
  h+=`<div class="abActive"><strong>${ABUSE.active?'🟢 '+adEsc(ABUSE.active.label):'⚪ Nenhum evento ativo'}</strong><div id="abPanelClock">${ABUSE.active?'Faltam '+Math.ceil(ABUSE.active.left)+'s • '+ABUSE.active.details:'Escolha um evento abaixo para começar.'}</div><div class="adControls">${adBtn('abStop','⏹ Encerrar evento','danger')}${adBtn('abRandom','🎲 Evento surpresa','secondary')}${adBtn('abMarathon','🎊 Maratona (5 eventos)','secondary')}</div></div>`;
  h+='<div class="adGrid">';
  h+=adCard('⏳ Controle do evento',`${adField('abDuration','Duração em segundos (15–900)','number','min="15" max="900"')}${adField('abInterval','Segundos entre ondas (3–60)','number','min="3" max="60"')}${adField('abWave','Ovos por onda (1–10)','number','min="1" max="10"')}${adSelect('abBiome','Bioma da chuva de ovos',[[-1,'Perto do jogador'],...BI.map((b,i)=>[i,b.n])])}<div class="adHint">Eventos respeitam o limite de 200 ovos no mapa, evitando travamentos no celular.</div>`);
- h+=adCard('👑 LIMITED ∞ • Ovo exclusivo',`<p>Ovo IMENSO com aura de fogo. Nasce na Floresta Encantada, última área. Invocar novamente reposiciona o ovo existente, sem duplicá-lo. O Admin permanece desbloqueado nesta sessão.</p><div class="adControls">${adBtn('spawnLimited','🔥 Invocar / Reinvocar LIMITED ∞')}</div><p class="adHint">Exclusivo: 1 LIMITED por perfil. O ovo solto permanece salvo ao recarregar.</p>`);
+ h+=adCard('👑 LIMITED ∞ • Ovos sem limite total',`<p>Invoque quantos ovos LIMITED quiser na Floresta Encantada. Cada pet LIMITED pode render $${fm(LIMITED_RATE)}/s. Só o ADMIN invoca.</p>${adField('limitedCount','Quantidade por comando (1–100)','number','min="1" max="100" step="1"')}<div class="adControls">${adBtn('spawnLimited','🔥 Invocar 1 LIMITED ∞')}${adBtn('spawnLimitedBatch','🔥 Invocar quantidade')}</div><p class="adHint">Pode repetir os comandos quantas vezes quiser. Efeitos de fogo otimizados para Android.</p>`);
   h+=adCard('🥚 Chuvas de raridades',`<div class="abCaption">Ovos físicos aparecem imediatamente e continuam surgindo a cada onda até o fim.</div><div class="abPreset">${adBtn('ab_secret','🔵 Chuva Secret')}${adBtn('ab_eternal','💠 Chuva Eternal')}${adBtn('ab_divine','🌸 Chuva Divine')}${adBtn('ab_mixed','🌈 Chuva de raridades')}${adBtn('ab_cosmic','🪐 Festival Cósmico')}</div>`);
  h+=adCard('💰 Dinheiro e evolução',`<div class="abPreset">${adBtn('ab_money','💸 Chuva de dinheiro')}${adBtn('ab_profit2','💵 Renda 2×')}${adBtn('ab_profit10','💎 Renda 10×')}${adBtn('ab_training','⚡ Treino 10×')}${adBtn('ab_speed','🏃 Corrida 3×')}${adBtn('ab_hatch','🐣 Chocagem instantânea')}</div>`);
  h+=adCard('🍀 Sorte e maravilhas',`<div class="abPreset">${adBtn('ab_luck','🍀 Sorte extrema')}${adBtn('ab_rainbow','🎨 Festival Rainbow')}${adBtn('ab_gold','🌟 Chuva dourada')}${adBtn('ab_meteor','☄️ Meteoros Divinos')}${adBtn('ab_moon','🌙 Gravidade lunar')}</div>`);
@@ -713,7 +713,7 @@ const toggleAdmin=force=>{
 const adStatus=msg=>{adminMessage=msg;toast(msg);const el=$('adContent').querySelector('.adStatus');if(el)el.textContent=msg};
 const adFinish=msg=>{save();saveAdmin();recalc();upGates();upHud();adminUI();adStatus(msg)};
 const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
- if(eggs.length>=200)return null;
+ if(eggs.filter(e=>e.s!==LIMITED_ID).length>=200)return null;
  b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));z=Math.max(0,Math.min(3,Math.floor(z)));
  const e=newEgg(b,j),n=NS[b*8+j];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
  if(where==='nest'&&!n.e){n.e=e;e.nest=n;e.mesh.position.set(n.x,.45+e.base.y,n.z)}
@@ -721,28 +721,57 @@ const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
  eggs.push(e);if(AUR[e.r])mkAura(e);if(fx&&e.r>=7)rareFx([e]);return e;
 };
 const WORLD_LIMITED_KEY='rue3d_limited_world_v1';
-const setWorldLimited=present=>{try{if(present)localStorage.setItem(WORLD_LIMITED_KEY,'1');else localStorage.removeItem(WORLD_LIMITED_KEY)}catch(e){}};
-const adminSpawnLimited=(silent=false)=>{
- if(S.pets.some(p=>p.s===LIMITED_ID)||(carry&&carry.s===LIMITED_ID)||S.inc.some(p=>p?.s===LIMITED_ID))
-  throw Error('O LIMITED ∞ já está com você, na incubadora ou na coleção. Apenas um pode existir.');
- // Invocar outra vez reposiciona o mesmo ovo na última área, sem duplicar.
- const lastBiome=BI.length-1,areaZ=-65-70*lastBiome,spawnZ=areaZ-5;
- let e=eggs.find(e=>e.s===LIMITED_ID);
- if(e){e.mesh.position.set(16,.45+e.base.y,spawnZ);e.st='caido';e.gr=1;}
- else{
-  if(eggs.length>=200)throw Error('Limite de ovos no mapa.');
-  e=newEgg(lastBiome,7);e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=3;e.w=1;e.st='caido';e.gr=1;e.nest=null;
-  e.mesh=eggMesh(e);e.mesh.castShadow=false;e.base=e.mesh.scale.clone();
-  e.mesh.position.set(16,.45+e.base.y,spawnZ);eggs.push(e);mkLimitedAura(e);
- }
- setWorldLimited(true);
- if(!silent){
-  rareFx([e]);abuseFlash(0xff5918,LIMITED_LOW_FX?7:15);
-  abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞ NA FLORESTA ENCANTADA! OVO GIGANTE COM AURA DE FOGO E RENDA GIGANTE POR SEGUNDO!',12);
- }
- return e;
+const persistLimitedWorld=()=>{
+ S.limitedWorld=eggs.filter(e=>e.s===LIMITED_ID).map(e=>({x:e.mesh.position.x,z:e.mesh.position.z}));
+ S.limitedCarried=!!(carry&&carry.s===LIMITED_ID);
+ try{if(S.limitedWorld.length||S.limitedCarried)localStorage.setItem(WORLD_LIMITED_KEY,'1');else localStorage.removeItem(WORLD_LIMITED_KEY)}catch(err){}
+ save();
 };
-const adminClearEggs=()=>{setWorldLimited(false);for(const e of eggs){sc.remove(e.mesh);if(e.aura)sc.remove(e.aura);if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null)};
+const makeLimitedEgg=(x,z)=>{
+ const b=BI.length-1,e=newEgg(b,7);
+ e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=3;e.w=1;e.st='caido';e.gr=1;e.nest=null;
+ e.mesh=eggMesh(e);e.mesh.castShadow=false;e.base=e.mesh.scale.clone();
+ e.mesh.position.set(Math.max(-92,Math.min(92,x)),.45+e.base.y,Math.max(-937,Math.min(-867,z)));
+ eggs.push(e);return e;
+};
+const disposeLimitedAura=e=>{
+ const g=e.aura;if(!g)return;
+ sc.remove(g);
+ g.traverse(o=>{const m=o.material;if(!m)return;const mats=Array.isArray(m)?m:[m];
+  mats.forEach(mat=>{if(mat.map&&mat.map!==GLOW)mat.map.dispose();mat.dispose()});
+ });
+ e.aura=null;
+};
+const adminSpawnLimited=(count=1,silent=false)=>{
+ if(!Number.isSafeInteger(count)||count<1||count>100)throw Error('Escolha de 1 a 100 LIMITED por comando. Repita à vontade!');
+ const centerZ=-65-70*(BI.length-1);
+ let first=null;
+ for(let k=0;k<count;k++){
+  const serial=Number.isSafeInteger(S.limitedSerial)?S.limitedSerial:0;
+  S.limitedSerial=serial+1;
+  // Espalha os ovos na última área em posições diferentes.
+  const x=-84+(serial%15)*12,z=centerZ-30+(Math.floor(serial/15)%6)*11;
+  const e=makeLimitedEgg(x,z);if(!first)first=e;
+ }
+ persistLimitedWorld();
+ if(!silent){
+  rareFx([first]);abuseFlash(0xff5918,LIMITED_LOW_FX?5:12);
+  abuseAnnounce('🔥 O ADMIN INVOCOU '+count+' OVO'+(count>1?'S':'')+' LIMITED ∞ NA FLORESTA ENCANTADA!',12);
+ }
+ return count;
+};
+let limitedAuraClock=0;
+const manageLimitedAuras=dt=>{
+ limitedAuraClock+=dt;if(limitedAuraClock<.4)return;limitedAuraClock=0;
+ const nearby=eggs.filter(e=>e.s===LIMITED_ID&&Math.abs(e.mesh.position.z-P.z)<100&&Math.abs(e.mesh.position.x-P.x)<100);
+ nearby.sort((a,b)=>((a.mesh.position.x-P.x)**2+(a.mesh.position.z-P.z)**2)-((b.mesh.position.x-P.x)**2+(b.mesh.position.z-P.z)**2));
+ const visible=new Set(nearby.slice(0,LIMITED_LOW_FX?3:8));
+ for(const e of eggs)if(e.s===LIMITED_ID){
+  if(visible.has(e)){if(!e.aura)mkLimitedAura(e)}
+  else if(e.aura)disposeLimitedAura(e);
+ }
+};
+const adminClearEggs=()=>{for(const e of eggs){sc.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null);persistLimitedWorld()};
 const adminGivePet=(s,z,m=[])=>{s=Math.max(0,Math.min(SPC.length-1,s));z=Math.max(0,Math.min(3,z));const p={id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m:[...m]};S.pets.push(p);S.idx[s]=1;return p};
 const adminTele=b=>{P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.y=0;P.x=0;P.z=b<0?8:-65-70*Math.min(BI.length-1,b);return b<0?'base':BI[b].n};
 const adValidNumber=(key,min=0,max=1e30)=>{const v=Number(AS[key]);if(!Number.isFinite(v)||v<min||v>max)throw Error(`Valor inválido para ${key}.`);return v};
@@ -768,7 +797,10 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'abStop':abuseStop(true);mpBroadcastAction(null,'stop');msg='Evento encerrado';break;
  case 'abRandom':abuseStart(['secret','eternal','divine','mixed','cosmic','money','profit2','profit10','training','speed','hatch','luck','rainbow','gold','meteor','moon','eclipse','sun','freeze','fury','fireworks'][Math.floor(Math.random()*21)]);mpBroadcastAction(null,'start');msg='Evento surpresa iniciado';break;
  case 'abMarathon':abuseMarathon();msg='Maratona de 5 eventos iniciada';break;
- case 'spawnLimited':adminSpawnLimited();if(MP.connected&&MP.owner)mpSend({type:'admin-limited'});msg='🔥 LIMITED ∞ invocado/reinvocado na última área!';break;
+ case 'spawnLimited':case 'spawnLimitedBatch':{const count=act==='spawnLimited'?1:adNum('limitedCount',1,100,5)|0;
+ const created=adminSpawnLimited(count);
+ if(MP.connected&&MP.owner)mpSend({type:'admin-limited'});
+ msg='🔥 '+created+' ovos LIMITED ∞ invocados na Floresta Encantada!';break;}
   case 'rankOpen':rankToggle(true);msg='Placar exibido';break;
   case 'rankAdd':{const name=String(AS.rankName||'').trim().slice(0,28);if(!name)throw Error('Digite o nome do jogador.');if(/^(admin|administrador|dono|owner)$/i.test(name))throw Error('O administrador fica fora do placar.');const money=adValidNumber('rankMoney',0,1e100),speed=adValidNumber('rankSpeed',0,1e100);const old=LEAD.findIndex(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase());if(old>=0)LEAD[old]={name,money,speed};else {if(LEAD.length>=300)throw Error('Limite de 300 jogadores locais.');LEAD.push({name,money,speed});}rankSave();rankShow();msg='Jogador registrado no placar';break;}
   case 'rankClear':if(!confirm('Remover todos os outros jogadores do placar local?'))return;LEAD=[];rankSave();rankShow();msg='Placar limpo';break;
@@ -828,11 +860,11 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'saveNow':msg='Progresso e painel admin salvos';break;
  case 'export':{save();saveAdmin();const data={version:2,exportedAt:new Date().toISOString(),game:S,admin:A,leaderboard:LEAD,config:{rare:CFG.rare,reset:CFG.reset,train:CFG.train}},blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Roube-um-Ovo-3D-backup.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);msg='Backup JSON exportado';break}
  case 'import':{if(!AS.json.trim())throw Error('Selecione um JSON ou cole o backup.');const data=JSON.parse(AS.json);if(!confirm('Substituir seu progresso pelo conteúdo do backup?'))return;const c=adminRestore(data);AS.json='';msg='Backup restaurado: '+c+' pets';break}
- case 'resetGame':if(!confirm('ATENÇÃO: Apagar todo o progresso salvo e as configurações de admin?'))return;localStorage.removeItem(KEY);localStorage.removeItem(ADMIN_KEY);localStorage.removeItem(LEAD_KEY);setWorldLimited(false);location.reload();return;
+ case 'resetGame':if(!confirm('ATENÇÃO: Apagar todo o progresso salvo e as configurações de admin?'))return;localStorage.removeItem(KEY);localStorage.removeItem(ADMIN_KEY);localStorage.removeItem(LEAD_KEY);localStorage.removeItem(WORLD_LIMITED_KEY);location.reload();return;
  default:throw Error('Ação desconhecida: '+act);
  }
  adFinish(msg);
- if(act==='spawnLimited'){P.train=false;P.stun=0;P.vx=P.vz=0;J.x=J.y=0;toast('🔥 LIMITED ∞ na última área! Admin Abuse continua disponível.');}
+ if(act==='spawnLimited'||act==='spawnLimitedBatch'){P.train=false;P.stun=0;P.vx=P.vz=0;J.x=J.y=0;toast('🔥 LIMITEDs criados na última área! Admin Abuse disponível.');}
  }catch(e){adStatus('⚠ '+(e&&e.message?e.message:'Erro no comando'));}
 };
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
@@ -899,7 +931,14 @@ $('adContent').addEventListener('click',e=>{const b=e.target.closest('[data-admi
 recalc();
 {const o=Math.min((Date.now()-S.t)/1e3,CFG.offCap)*tot*CFG.off;if(o>=1){S.$+=o;setTimeout(()=>toast('Renda offline: +$'+fm(o)),600)}}
 ensureTM(S.pid);regrow(true);
-try{if(localStorage.getItem(WORLD_LIMITED_KEY)==='1'&&!hasLimited()&&!S.inc.some(e=>e?.s===LIMITED_ID))adminSpawnLimited(true)}catch(err){console.warn('Falha ao restaurar LIMITED ∞:',err)}
+try{
+ let stored=Array.isArray(S.limitedWorld)?S.limitedWorld.filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)):[];
+ // Migração da versão anterior que guardava apenas um marcador de presença.
+ if(!Array.isArray(S.limitedWorld)&&localStorage.getItem(WORLD_LIMITED_KEY)==='1'&&!hasLimited()&&!S.inc.some(p=>p?.s===LIMITED_ID))stored=[{x:16,z:-910}];
+ if(S.limitedCarried)stored.push({x:16,z:-910});
+ for(const p of stored)makeLimitedEgg(p.x,p.z);
+ S.limitedCarried=false;persistLimitedWorld();
+}catch(err){console.warn('Falha ao restaurar LIMITEDs:',err)}
 upGates();upHud();cam.position.set(0,6,17);
 toast('Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
 requestAnimationFrame(loop);
