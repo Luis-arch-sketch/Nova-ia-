@@ -116,6 +116,22 @@ try{
     assert(image.startsWith('data:image/png;base64,'),'3D gallery screenshot valid');
     await writeFile('test-results/animal-gallery.png',Buffer.from(image.split(',')[1],'base64'));
     console.log('ANIMAL GALLERY captured: 16 species');
+    // Fotos reais de elementos exclusivos dos biomas, renderizadas no jogo.
+    for(const [id,name] of [[2,'deserto'],[5,'vulcao'],[8,'cosmico'],[12,'encantada']]){
+      const pic=await page.evaluate((b)=>{
+        const x=b%2?31:-31,z=-65-70*b;
+        const origin=cam.position.clone(),quat=cam.quaternion.clone();
+        cam.position.set(x+15,10,z+21);cam.lookAt(x,3.9,z);
+        R.render(sc,cam);
+        const pic=document.getElementById('c').toDataURL('image/png');
+        cam.position.copy(origin);cam.quaternion.copy(quat);
+        return pic;
+      },id);
+      assert(pic.startsWith('data:image/png;base64,'),'Biome screenshot produced');
+      await writeFile('test-results/bioma-'+name+'.png',Buffer.from(pic.split(',')[1],'base64'));
+    }
+    console.log('LANDMARKS captured: Desert / Volcano / Cosmic / Enchanted');
+
   }
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
