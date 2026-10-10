@@ -243,31 +243,32 @@ const auraUp=(e,dt)=>{if(e.s===LIMITED_ID){limitedAuraUp(e,dt);return;}const a=e
  u.rg.forEach((m,i)=>{m.rotation.z+=dt*(i?-1.6:1.9)});
  u.sp.forEach((m,i)=>{const t=(TT*.5+i/8)%1,an=TT*1.4+i*.785;m.position.set(Math.cos(an)*1.5*k,t*4*k-.5,Math.sin(an)*1.5*k);m.scale.setScalar(.12*k*Math.sin(t*Math.PI))})};
 /* LIMITED ∞ — efeitos volumétricos 3D otimizado para Android */
+const LIMITED_LOW_FX=(navigator.maxTouchPoints||0)>0 || innerWidth<760; // efeitos leves no Android
 const LIMIT_FLAME_GEO=new T.ConeGeometry(.5,1.9,6),LIMIT_RING_GEO=new T.TorusGeometry(6.6,.16,6,40);
 const mkLimitedAura=(e,isPet=false)=>{
  const g=new T.Group(),o={blending:T.AdditiveBlending,transparent:true,depthWrite:false,fog:false};
  const glow=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:0xff540d,...o}));glow.scale.set(25,25,1);glow.position.y=3;g.add(glow);
  const core=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:0xffd336,...o}));core.scale.set(13,13,1);core.position.y=4;g.add(core);
  const rings=[0,1].map(i=>{const m=new T.Mesh(LIMIT_RING_GEO,new T.MeshBasicMaterial({color:i?0xffd04e:0xff5316,opacity:i?.65:.9,...o}));m.rotation.x=Math.PI/2+(i?.27:0);m.position.y=i?2.7:.3;m.scale.setScalar(i?1.25:1);g.add(m);return m});
- const flames=Array.from({length:15},(_,i)=>{const m=new T.Mesh(LIMIT_FLAME_GEO,new T.MeshBasicMaterial({color:i%3?0xff4c06:0xffd44b,transparent:true,opacity:.8,depthWrite:false,side:T.DoubleSide}));g.add(m);return m});
- const fireSprites=Array.from({length:12},(_,i)=>{const m=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:i%2?0xffcf4c:0xff4510,...o}));m.scale.set(2.6,7.5,1);g.add(m);return m});
- const sparks=Array.from({length:16},(_,i)=>{const m=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:i%2?0xfff5a6:0xffd030,...o}));m.scale.set(.45,.45,1);g.add(m);return m});
+ const flames=Array.from({length:LIMITED_LOW_FX?7:12},(_,i)=>{const m=new T.Mesh(LIMIT_FLAME_GEO,new T.MeshBasicMaterial({color:i%3?0xff4c06:0xffd44b,transparent:true,opacity:.8,depthWrite:false,side:T.DoubleSide}));g.add(m);return m});
+ const fireSprites=Array.from({length:LIMITED_LOW_FX?5:10},(_,i)=>{const m=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:i%2?0xffcf4c:0xff4510,...o}));m.scale.set(2.6,7.5,1);g.add(m);return m});
+ const sparks=Array.from({length:LIMITED_LOW_FX?6:12},(_,i)=>{const m=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:i%2?0xfff5a6:0xffd030,...o}));m.scale.set(.45,.45,1);g.add(m);return m});
  const label3=label('🔥 LIMITED ∞ 🔥',512,64,11);label3.position.y=14;g.add(label3);
- const light=new T.PointLight(0xff5925,.8,17);light.position.y=4;g.add(light);
+ const light=new T.PointLight(0xff5925,LIMITED_LOW_FX?.32:.65,LIMITED_LOW_FX?10:15);light.position.y=4;g.add(light);
  g.userData={limited:true,glow,core,rings,flames,fireSprites,sparks,label3,light,isPet};sc.add(g);e.aura=g;return g;
 };
 const limitedAuraUp=(e,dt)=>{const a=e.aura;if(!a)return;const u=a.userData;e.mesh.getWorldPosition(AV);a.position.copy(AV);if(e.st!=='pet'&&e.st!=='carregado')a.position.y-=Math.max(0,(e.base?.y||0)-.5);
  const factor=e.st==='carregado'?.17:e.st==='pet'?.65:1;a.scale.setScalar(Math.max(.001,factor*(e.gr??1)));
  const t=TT;u.gl.material.opacity=.55+.14*Math.sin(t*3);u.gl.scale.set(25+2*Math.sin(t*2),25+2*Math.sin(t*2),1);
  u.rings.forEach((m,i)=>{m.rotation.z+=(i?1:-1)*dt*.75;m.position.y=(i?2.7:.3)+Math.sin(t*2+i)*.25});
- u.flames.forEach((m,i)=>{const v=(t*.5+i/15)%1,a=t*.64+i*Math.PI*2/15,rad=4.4+1.8*Math.sin(t*1.7+i);
+ u.flames.forEach((m,i)=>{const v=(t*.5+i/u.flames.length)%1,a=t*.64+i*Math.PI*2/u.flames.length,rad=4.4+1.8*Math.sin(t*1.7+i);
   m.position.set(Math.cos(a)*rad,.5+v*9,Math.sin(a)*rad);
   m.scale.set(.95+v*.6,1.5+(1-v)*2.2,.95+v*.6);m.rotation.z=Math.sin(t*3+i)*.18;
   m.material.opacity=Math.max(.12,.9*(1-v));
  });
- u.fireSprites.forEach((m,i)=>{const v=(t*.40+i/12)%1,ang=i*6.283/12+t*.27;const rad=3.7+Math.sin(t+i)*1.3;m.position.set(Math.cos(ang)*rad,1.5+v*9,Math.sin(ang)*rad);m.scale.set(1.7+Math.sin(t*5+i)*.4,5.5+(1-v)*4,1);m.material.opacity=Math.max(.1,(1-v)*.62)});
- u.sparks.forEach((m,i)=>{const v=(t*.27+i/16)%1,ang=i*6.283/16-t*.5,rad=3+v*5;m.position.set(Math.cos(ang)*rad,2+v*12,Math.sin(ang)*rad);m.scale.setScalar(.2+(1-v)*.5);m.material.opacity=Math.max(.05,(1-v)*.95)});
- u.light.intensity=.6+.25*Math.sin(t*4);u.label3.position.y=14+Math.sin(t*2)*.5;
+ u.fireSprites.forEach((m,i)=>{const v=(t*.40+i/u.fireSprites.length)%1,ang=i*6.283/u.fireSprites.length+t*.27;const rad=3.7+Math.sin(t+i)*1.3;m.position.set(Math.cos(ang)*rad,1.5+v*9,Math.sin(ang)*rad);m.scale.set(1.7+Math.sin(t*5+i)*.4,5.5+(1-v)*4,1);m.material.opacity=Math.max(.1,(1-v)*.62)});
+ u.sparks.forEach((m,i)=>{const v=(t*.27+i/u.sparks.length)%1,ang=i*6.283/u.sparks.length-t*.5,rad=3+v*5;m.position.set(Math.cos(ang)*rad,2+v*12,Math.sin(ang)*rad);m.scale.setScalar(.2+(1-v)*.5);m.material.opacity=Math.max(.05,(1-v)*.95)});
+ u.light.intensity=(LIMITED_LOW_FX?.3:.6)+.12*Math.sin(t*4);u.label3.position.y=14+Math.sin(t*2)*.5;
 };
 const gs=i=>i?walk(BI[i].req)*CFG.gm:CFG.g0;
 const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08);m.position.copy(home);return{b:i,m,home,st:'sleep',t:0,l:(()=>{const l=label('',256,64,6);sc.add(l);return l})()}});
@@ -690,8 +691,9 @@ const adminSpawnLimited=()=>{
  if(S.pets.some(p=>p.s===LIMITED_ID)||(carry&&carry.s===LIMITED_ID)||eggs.some(e=>e.s===LIMITED_ID)||S.inc.some(p=>p?.s===LIMITED_ID))throw Error('Já existe um LIMITED ∞ neste jogo. É um exemplar exclusivo.');
  if(eggs.length>=200)throw Error('Limite de ovos no mapa.');
  const e=newEgg(0,7);e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=3;e.w=1;e.st='caido';e.gr=1;e.nest=null;
- e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.mesh.position.set(Math.max(-90,Math.min(90,P.x+5)),.45+e.base.y,Math.max(-928,Math.min(40,P.z-5)));
- eggs.push(e);mkLimitedAura(e);rareFx([e]);abuseFlash(0xff5918,28);abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞! OVO GIGANTE COM AURA DE FOGO E RENDA INFINITA!',12);
+ e.mesh=eggMesh(e);e.mesh.castShadow=false; // sem sombras gigantes em aparelhos Android
+  e.base=e.mesh.scale.clone();const eggX=P.x+(P.x>70?-14:14);e.mesh.position.set(Math.max(-90,Math.min(90,eggX)),.45+e.base.y,Math.max(-928,Math.min(40,P.z)));
+ eggs.push(e);mkLimitedAura(e);rareFx([e]);abuseFlash(0xff5918,LIMITED_LOW_FX?7:15);abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞! OVO GIGANTE COM AURA DE FOGO E RENDA INFINITA!',12);
  return e;
 };
 const adminClearEggs=()=>{for(const e of eggs){sc.remove(e.mesh);if(e.aura)sc.remove(e.aura);if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null)};
@@ -784,6 +786,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  default:throw Error('Ação desconhecida: '+act);
  }
  adFinish(msg);
+ if(act==='spawnLimited'){toggleAdmin(false);toast('🔥 LIMITED ∞ invocado! Painel fechado: use o joystick para andar.');}
  }catch(e){adStatus('⚠ '+(e&&e.message?e.message:'Erro no comando'));}
 };
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
