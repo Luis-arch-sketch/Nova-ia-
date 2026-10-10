@@ -9,7 +9,7 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);touch-action:none;user-select:none;-webkit-user-select:none;font:600 14px system-ui,sans-serif;color:var(--tx)}
 #c{position:fixed;inset:0;width:100vw;height:100dvh;display:block}
 #hud{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));top:calc(8px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:4px;pointer-events:none;max-width:70vw}
-#hud div{background:var(--hd);color:#fff;padding:4px 9px;border-radius:10px;width:fit-content}
+#hud div{background:var(--hd);color:#fff;padding:4px 9px;border-radius:10px;width:fit-content;max-width:100%;overflow-wrap:anywhere;word-break:break-word}
 button{font:inherit;border:0;border-radius:12px;background:var(--ac);color:#2a1d00;padding:8px 12px;touch-action:manipulation}
 button:disabled{opacity:.5}
 #top{position:fixed;right:calc(8px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));display:flex;gap:6px}
@@ -43,7 +43,7 @@ button:disabled{opacity:.5}
 #adPanel .adGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:9px 0}
 #adPanel .adCard{background:#1c2b40;border:1px solid #344861;border-radius:13px;padding:12px;min-width:0}
 #adPanel .adCard strong{display:block;margin-bottom:5px;color:#fff}
-#adPanel .adStat{font-size:21px;font-weight:850;color:#ffd25a;overflow-wrap:anywhere}
+#adPanel .adStat{font-size:21px;font-weight:850;color:#ffd25a;overflow-wrap:anywhere;word-break:break-word}
 #adPanel .adFull{grid-column:1/-1}
 #adPanel .adControls{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 2px}
 #adPanel button{background:#ffd25a;color:#1b2432;border-radius:9px;font-weight:750;padding:9px 11px;cursor:pointer;min-height:38px}
@@ -141,8 +141,11 @@ const TR=[['Grey',1.5,2e3,0x9e9e9e],['Green',2,1e5,0x4caf50],['Blue',2.5,2e6,0x2
 const CAP=[7,7,9,10,11,12,13,14,15,16,17,18],BC=[0,1e3,1e6,75e6,5e8,1e9,5e10,5e11,1e12,25e12,1e14,5e14];
 const SPC=[];BI.forEach((b,i)=>b.sp.forEach((n,j)=>SPC.push({id:SPC.length,n,b:i,r:j,inc:CFG.inc*4**i*(1+1.5*j)})));
 // A espécie LIMITED é reservada: só a ação autenticada pode criá-la.
-const LIMITED_ID=SPC.length,LIMITED_BANK=1e30;
-SPC.push({id:LIMITED_ID,n:'LIMITED ∞ • Dragão de Fogo',b:0,r:10,inc:LIMITED_BANK});
+// 1 seguido de 77 zeros/s: renda LIMITADA, com valor fixo (e exibição exata).
+const LIMITED_RATE_TEXT='100000000000000000000000000000000000000000000000000000000000000000000000000000';
+const LIMITED_RATE=Number(LIMITED_RATE_TEXT);
+const LIMITED_ID=SPC.length;
+SPC.push({id:LIMITED_ID,n:'LIMITED ∞ • Dragão de Fogo',b:0,r:10,inc:LIMITED_RATE});
 /* ===== Estado e save (local) ===== */
 const KEY='rue3d_v1';
 let S={pid:'p'+Math.random().toString(36).slice(2,9),sp:0,$:0,tm:0,bl:0,tr:-1,own:[],pets:[],inc:[null,null,null,null],idx:{},t:Date.now(),id:1};
@@ -161,10 +164,10 @@ CFG.train=Number.isFinite(+A.trainMult)?Math.max(.1,Math.min(1000,+A.trainMult))
 const saveAdmin=()=>{A.reset=CFG.reset;A.trainMult=CFG.train;A.chances={7:CFG.rare[7]*100,8:CFG.rare[8]*100,9:CFG.rare[9]*100};try{localStorage.setItem(ADMIN_KEY,JSON.stringify(A))}catch(e){}};
 
 const hasLimited=()=>S.pets.some(p=>p.s===LIMITED_ID);
-const moneyView=()=>hasLimited()?'∞':fm(S.$);
-const incomeView=()=>hasLimited()?'∞':fm(tot);
+const moneyView=()=>Number.isFinite(S.$)?(S.$>=1e30?S.$.toExponential(2):fm(S.$)):'⚠ Saldo inválido';
+const incomeView=()=>hasLimited()?LIMITED_RATE_TEXT:fm(tot);
 const eff=()=>S.sp*(S.tr>=0?TR[S.tr][1]:1),walk=s=>Math.min(70,8+3.2*Math.log10(1+s));
-const pinc=p=>p.s===LIMITED_ID?LIMITED_BANK:SPC[p.s].inc*SZ[p.z][2]*(1+p.m.reduce((a,k)=>a+MUT[k][1]-1,0));
+const pinc=p=>p.s===LIMITED_ID?LIMITED_RATE:SPC[p.s].inc*SZ[p.z][2]*(1+p.m.reduce((a,k)=>a+MUT[k][1]-1,0));
 let AP=[],tot=0,dirty=true;
 const recalc=()=>{AP=[...S.pets].sort((a,b)=>pinc(b)-pinc(a)).slice(0,CAP[S.bl]);tot=AP.reduce((a,p)=>a+pinc(p),0);dirty=true};
 let sd=7;const rn=()=>(sd=sd*16807%2147483647)/2147483647;
@@ -323,7 +326,7 @@ const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const 
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
 const dep=k=>{const e=carry;if(e?.s===LIMITED_ID)setWorldLimited(false);carry=null;P.g.remove(e.mesh);if(e.aura){sc.remove(e.aura);e.aura=null}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');save()};
 const hatch=k=>{const s=S.inc[k];if(s?.s===LIMITED_ID)setWorldLimited(false);S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
- toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Dinheiro infinito por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
+ toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+LIMITED_RATE_TEXT+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
  const z=Math.min(3,Math.max(...l.map(p=>p.z))+(Math.random()<.5?1:0)),m=[...new Set(l.flatMap(p=>p.m))].filter(()=>Math.random()<.6);
  S.pets.push({id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m});recalc();save();beep(740,.3,'triangle');toast('Fusão concluída: '+SPC[s].n+' '+SZ[z][0])};
@@ -423,7 +426,8 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  tpT+=dt;if(S.tr>=0&&tpT>.03&&v2>3){tpT=0;const m=TP[tpI++%28];m.position.set(P.x+(Math.random()-.5)*.6,P.y+.3+Math.random()*1.4,P.z+(Math.random()-.5)*.6);m.material.color.setHex(TR[S.tr][3]);m.life=.7;m.visible=true;m.scale.setScalar(.35)}
  TP.forEach(m=>{if(m.life>0){m.life-=dt;m.material.opacity=Math.max(0,m.life/.7);m.scale.multiplyScalar(.985);if(m.life<=0)m.visible=false}});
  /* economia, reset dos ninhos (noite curta) */
- S.$+=tot*dt*abuseRentMult();if(hasLimited())S.$=LIMITED_BANK; // renda ∞: reabastece o saldo em cada frame sem usar Infinity no JSON
+ // Cada segundo aumenta o dinheiro pela renda dos pets: LIMITED tem quantia finita.
+ S.$+=tot*dt*abuseRentMult();
  if(Date.now()/1e3>=nextReset){nextReset=Date.now()/1e3+CFG.reset;nite=1;toast('Os ninhos renovaram. Novos ovos nasceram!');abuseRegrow();beep(260,.5,'sine',.06)}
  if(nite>0)nite=Math.max(0,nite-dt/4);bg.copy(day).lerp(nit,A.night?1:nite*.85);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.3:1-.6*nite);abuseSky(dt)
  if(A.autoSecret&&eggs.length<190){adminAutoTime+=dt;if(adminAutoTime>=Math.max(5,+A.autoSecretEvery||30)){adminAutoTime=0;adminSpawnEgg(Math.floor(Math.random()*BI.length),5,Math.floor(Math.random()*SZ.length),'nest',false)}}else adminAutoTime=0;
@@ -724,7 +728,7 @@ const adminSpawnLimited=(silent=false)=>{
  setWorldLimited(true);
  if(!silent){
   rareFx([e]);abuseFlash(0xff5918,LIMITED_LOW_FX?7:15);
-  abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞ NA FLORESTA ENCANTADA! OVO GIGANTE COM AURA DE FOGO E RENDA INFINITA!',12);
+  abuseAnnounce('🔥 O ADMIN INVOCOU O LIMITED ∞ NA FLORESTA ENCANTADA! OVO GIGANTE COM AURA DE FOGO E RENDA GIGANTE POR SEGUNDO!',12);
  }
  return e;
 };
@@ -882,9 +886,9 @@ $('adContent').addEventListener('change',async e=>{if(e.target.name)AS[e.target.
 $('adContent').addEventListener('click',e=>{const b=e.target.closest('[data-admin]');if(b)adminHandle(b.dataset.admin)});
 
 /* ===== Início ===== */
-recalc();if(hasLimited())S.$=LIMITED_BANK;
+recalc();
 {const o=Math.min((Date.now()-S.t)/1e3,CFG.offCap)*tot*CFG.off;if(o>=1){S.$+=o;setTimeout(()=>toast('Renda offline: +$'+fm(o)),600)}}
-if(hasLimited())S.$=LIMITED_BANK;ensureTM(S.pid);regrow(true);
+ensureTM(S.pid);regrow(true);
 try{if(localStorage.getItem(WORLD_LIMITED_KEY)==='1'&&!hasLimited()&&!S.inc.some(e=>e?.s===LIMITED_ID))adminSpawnLimited(true)}catch(err){console.warn('Falha ao restaurar LIMITED ∞:',err)}
 upGates();upHud();cam.position.set(0,6,17);
 toast('Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
