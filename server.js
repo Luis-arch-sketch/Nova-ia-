@@ -1,7 +1,7 @@
 'use strict';
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
-const PORT=Number(process.env.PORT||3000),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map();
+const PORT=Number(process.env.PORT||3000),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map(),roomLimitedEggs=new Map();
 let serverSequence=1;
 const send=(ws,o)=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o));};
 const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,admin:ws.admin});
@@ -30,7 +30,7 @@ const listPublicRooms=requested=>{
 };
 const broadcast=(room,obj,except=null)=>{for(const c of peers(room))if(c!==except)send(c,obj)};
 const broadcastPresence=room=>broadcast(room,{type:'players',players:[...peers(room)].map(publicUser)});
-const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);p?.delete(ws);ws.room=null;ws.admin=false;if(p?.size===0)rooms.delete(r);else broadcastPresence(r)};
+const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);p?.delete(ws);ws.room=null;ws.admin=false;if(p?.size===0){rooms.delete(r);roomLimitedEggs.delete(r);}else broadcastPresence(r)};
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):0};
 const sameHex=(a,b)=>{try{const x=Buffer.from(a,'hex'),y=Buffer.from(b,'hex');return x.length===32&&y.length===32&&crypto.timingSafeEqual(x,y)}catch{return false}};
 const error=(ws,message)=>send(ws,{type:'error',message});
@@ -109,8 +109,8 @@ const name=String(m.name||'').trim();
 if(!/^[A-Z0-9-]{3,12}$/.test(room)||name.length<2||name.length>20||/^admin$/i.test(name)){error(ws,'Nome ou código de sala inválido');return}
 leave(ws);if(peers(room).size>=MAX_ROOM){error(ws,'Sala cheia: máximo 16 jogadores');return}
 ws.room=room;ws.name=name;ws.admin=false;ws.x=0;ws.y=0;ws.z=8;
-if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
-send(ws,{type:'joined',id:ws.id,room,players:[...peers(room)].map(publicUser)});broadcastPresence(room);return}
+if(!rooms.has(room)){rooms.set(room,new Set());roomLimitedEggs.set(room,[])}rooms.get(room).add(ws);
+send(ws,{type:'joined',id:ws.id,room,players:[...peers(room)].map(publicUser),limitedEggs:roomLimitedEggs.get(room)||[]});broadcastPresence(room);return}
 if(!ws.room)return;
 if(m.type==='move'){const now=Date.now();if(now-ws.lastMove<45)return;ws.lastMove=now;
 ws.x=bound(m.x,-99,99);ws.y=bound(m.y,-1,50);ws.z=bound(m.z,-945,50);ws.yaw=bound(m.yaw,-100,100);
@@ -128,6 +128,17 @@ if(m.action!=='start'||!valid.has(m.id))return;
 const settings={duration:bound(m.settings?.duration,15,900),interval:bound(m.settings?.interval,3,60),wave:bound(m.settings?.wave,1,10)};
 broadcast(ws.room,{type:'event',kind:'event',action:'start',id:m.id,settings},ws);return}
 if(m.type==='admin-announce'){const text=String(m.text||'').slice(0,160).trim();if(text)broadcast(ws.room,{type:'event',kind:'announce',text,seconds:bound(m.seconds,4,30)},ws);return}
-if(m.type==='admin-limited')broadcast(ws.room,{type:'event',kind:'limited'},ws);
+if(m.type==='admin-limited'){
+ // Só o ADMIN autenticado pode criar ovos exclusivos nesta sala.
+ const eggs=Array.isArray(m.eggs)?m.eggs.slice(0,100).filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Math.abs(p.x)<=92&&p.z>=-937&&p.z<=-867).map(p=>({x:p.x,z:p.z})):[];
+ if(!eggs.length)return;
+ const saved=roomLimitedEggs.get(ws.room)||[];
+ saved.push(...eggs);roomLimitedEggs.set(ws.room,saved);
+ broadcast(ws.room,{type:'event',kind:'limited',eggs},ws);return;
+}
+if(m.type==='admin-limited-clear'){
+ roomLimitedEggs.set(ws.room,[]);
+ broadcast(ws.room,{type:'event',kind:'limited-clear'},ws);return;
+}
 });ws.on('close',()=>leave(ws));ws.on('error',()=>leave(ws))});
 httpServer.listen(PORT,'0.0.0.0',()=>{console.log('Roube um Ovo 3D salas: http://localhost:'+PORT);if(!ADMIN_HASH)console.warn('Configure ADMIN_PASSWORD_HASH para liberar o admin online.')});
