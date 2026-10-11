@@ -807,6 +807,8 @@ const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
 };
 const WORLD_LIMITED_KEY='rue3d_limited_world_v1';
 const persistLimitedWorld=()=>{
+ // A sala online tem seu próprio mundo; saves locais só guardam progresso.
+ if(typeof MP!=='undefined'&&MP.connected){S.limitedWorld=[];S.limitedCarried=false;save();return}
  S.limitedWorld=eggs.filter(e=>e.s===LIMITED_ID).map(e=>({x:e.mesh.position.x,z:e.mesh.position.z}));
  S.limitedCarried=!!(carry&&carry.s===LIMITED_ID);
  try{if(S.limitedWorld.length||S.limitedCarried)localStorage.setItem(WORLD_LIMITED_KEY,'1');else localStorage.removeItem(WORLD_LIMITED_KEY)}catch(err){}
@@ -827,6 +829,21 @@ const disposeLimitedAura=e=>{
  });
  e.aura=null;
 };
+const clearRoomLimitedEggs=()=>{
+ for(let i=eggs.length-1;i>=0;i--){
+  const e=eggs[i];if(e.s!==LIMITED_ID)continue;
+  if(e.aura)disposeLimitedAura(e);
+  sc.remove(e.mesh);if(e.nest)e.nest.e=null;eggs.splice(i,1);
+ }
+ if(carry&&carry.s===LIMITED_ID){
+  P.g.remove(carry.mesh);if(carry.aura)disposeLimitedAura(carry);carry=null;
+ }
+};
+const syncRoomLimitedEggs=list=>{
+ clearRoomLimitedEggs();
+ if(!Array.isArray(list))return;
+ for(const p of list)if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
+};
 const adminSpawnLimited=(count=1,silent=false)=>{
  if(!Number.isSafeInteger(count)||count<1||count>100)throw Error('Escolha de 1 a 100 LIMITED por comando. Repita à vontade!');
  const centerZ=-65-70*(BI.length-1);
@@ -839,6 +856,10 @@ const adminSpawnLimited=(count=1,silent=false)=>{
   const e=makeLimitedEgg(x,z);if(!first)first=e;
  }
  persistLimitedWorld();
+ if(MP.connected&&MP.owner){
+  const recent=eggs.filter(e=>e.s===LIMITED_ID).slice(-count);
+  mpSend({type:'admin-limited',eggs:recent.map(e=>({x:e.mesh.position.x,z:e.mesh.position.z}))});
+ }
  if(!silent){
   rareFx([first]);abuseFlash(0xff5918,LIMITED_LOW_FX?5:12);
   abuseAnnounce('🔥 O ADMIN INVOCOU '+count+' OVO'+(count>1?'S':'')+' LIMITED ∞ NA FLORESTA ENCANTADA!',12);
@@ -856,7 +877,7 @@ const manageLimitedAuras=dt=>{
   else if(e.aura)disposeLimitedAura(e);
  }
 };
-const adminClearEggs=()=>{for(const e of eggs){sc.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null);persistLimitedWorld()};
+const adminClearEggs=()=>{for(const e of eggs){sc.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null);persistLimitedWorld();if(MP.connected&&MP.owner)mpSend({type:'admin-limited-clear'})};
 const adminGivePet=(s,z,m=[])=>{s=Math.max(0,Math.min(SPC.length-1,s));z=Math.max(0,Math.min(3,z));const p={id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m:[...m]};S.pets.push(p);S.idx[s]=1;return p};
 const adminTele=b=>{P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.y=0;P.x=0;P.z=b<0?8:-65-70*Math.min(BI.length-1,b);return b<0?'base':BI[b].n};
 const adValidNumber=(key,min=0,max=1e30)=>{const v=Number(AS[key]);if(!Number.isFinite(v)||v<min||v>max)throw Error(`Valor inválido para ${key}.`);return v};
@@ -884,7 +905,6 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'abMarathon':abuseMarathon();msg='Maratona de 5 eventos iniciada';break;
  case 'spawnLimited':case 'spawnLimitedBatch':{const count=act==='spawnLimited'?1:adNum('limitedCount',1,100,5)|0;
  const created=adminSpawnLimited(count);
- if(MP.connected&&MP.owner)mpSend({type:'admin-limited'});
  msg='🔥 '+created+' ovos LIMITED ∞ invocados na Floresta Encantada!';break;}
   case 'rankOpen':rankToggle(true);msg='Placar exibido';break;
   case 'rankAdd':{const name=String(AS.rankName||'').trim().slice(0,28);if(!name)throw Error('Digite o nome do jogador.');if(/^(admin|administrador|dono|owner)$/i.test(name))throw Error('O administrador fica fora do placar.');const money=adValidNumber('rankMoney',0,1e100),speed=adValidNumber('rankSpeed',0,1e100);const old=LEAD.findIndex(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase());if(old>=0)LEAD[old]={name,money,speed};else {if(LEAD.length>=300)throw Error('Limite de 300 jogadores locais.');LEAD.push({name,money,speed});}rankSave();rankShow();msg='Jogador registrado no placar';break;}
@@ -965,7 +985,7 @@ const mpEndpoint=()=>{
 };
 const mpSend=o=>{if(MP.socket?.readyState===WebSocket.OPEN)MP.socket.send(JSON.stringify(o))};
 const mpDispose=id=>{const v=MP.views.get(id);if(!v)return;sc.remove(v.group);v.materials.forEach(m=>m.dispose());v.geometries.forEach(g=>g.dispose());if(v.texture)v.texture.dispose();MP.views.delete(id)};
-const mpClear=()=>{for(const id of MP.views.keys())mpDispose(id);MP.players.clear();MP.self='';MP.connected=false;MP.owner=false;$('roomPlayerList').textContent='—'};
+const mpClear=()=>{clearRoomLimitedEggs();for(const id of MP.views.keys())mpDispose(id);MP.players.clear();MP.self='';MP.connected=false;MP.owner=false;$('roomPlayerList').textContent='—'};
 const mpBadge=(name,isAdmin)=>{const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=isAdmin?'#5b1f55':'#102448';ctx.fillRect(5,5,502,118);ctx.strokeStyle=isAdmin?'#ff76da':'#73d8ff';ctx.lineWidth=6;ctx.strokeRect(8,8,496,112);ctx.font='bold 46px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=isAdmin?'#ff94e6':'#ffffff';ctx.fillText((isAdmin?'👑 ADMIN':name).slice(0,20),256,65,480);return new T.CanvasTexture(c)};
 const mpBuild=(id,u)=>{const grp=new T.Group(),geoms=[],mats=[];const add=(geom,mat,x,y,z)=>{const m=new T.Mesh(geom,mat);m.position.set(x,y,z);grp.add(m);geoms.push(geom);mats.push(mat);return m};
  add(new T.BoxGeometry(.9,1,.55),new T.MeshLambertMaterial({color:0x48cf9d}),0,1.45,0);
@@ -975,8 +995,11 @@ const mpBuild=(id,u)=>{const grp=new T.Group(),geoms=[],mats=[];const add=(geom,
  sc.add(grp);const v={group:grp,geometries:geoms,materials:mats,texture,label,admin:!!u.admin,name:u.name};MP.views.set(id,v);return v};
 const mpDraw=()=>{const list=[...MP.players.values()].map(p=>(p.admin?'👑 ADMIN • ':'👤 ')+p.name);$('roomPlayerList').textContent=list.join(' | ')||'—';};
 const mpApplyUsers=users=>{const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)mpBuild(u.id,u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
-const mpRemoteEvent=ev=>{MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st=ev.settings||{duration:60,interval:10,wave:1};abuseStart(ev.id,st)}else if(ev.action==='stop')abuseStop(true)}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){abuseAnnounce('🔥 O ADMIN invocou o LIMITED ∞ exclusivo! Prepare-se para novos desafios!',12);abuseFlash(0xff5918,16)}}catch(e){console.warn('Evento remoto',e)}finally{MP.settingRemote=false}};
-const mpJoin=()=>{const name=$('roomName').value.trim().slice(0,20),room=$('roomCode').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12);if(name.length<2||room.length<3){mpStatus('Escolha um nome (mínimo 2) e uma sala (mínimo 3).');return}if(/^admin$/i.test(name)){mpStatus('O nome ADMIN é exclusivo do dono. Escolha outro nome.');return}mpDisconnect();MP.name=name;MP.room=room;localStorage.setItem('rue3d_mp_name',name);localStorage.setItem('rue3d_mp_room',room);const ws=new WebSocket(mpEndpoint());MP.socket=ws;mpStatus('Conectando ao servidor…');ws.onopen=()=>mpSend({type:'join',room,name});ws.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return}if(msg.type==='joined'){MP.connected=true;MP.self=msg.id;MP.room=msg.room;mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);mpApplyUsers(msg.players||[]);toast('🌍 Você entrou na sala '+MP.room)}else if(msg.type==='players')mpApplyUsers(msg.players||[]);else if(msg.type==='event')mpRemoteEvent(msg);else if(msg.type==='admin-ok'){MP.owner=true;ownerVerified=true;adminBadge.visible=true;mpStatus('👑 ADMIN autenticado no servidor da sala '+MP.room)}else if(msg.type==='error'){mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message)}else if(msg.type==='room-info')mpStatus('🌍 Sala '+MP.room+' • '+msg.count+' jogadores')} ;ws.onerror=()=>mpStatus('⚠ Servidor indisponível. Hospede o pacote com o servidor Node.js ou configure /ws.');ws.onclose=()=>{if(MP.socket===ws){mpClear();mpStatus('Desconectado. Toque em Entrar para reconectar.')}}};
+const mpRemoteEvent=ev=>{MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st=ev.settings||{duration:60,interval:10,wave:1};abuseStart(ev.id,st)}else if(ev.action==='stop')abuseStop(true)}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){
+ for(const p of ev.eggs||[])if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
+ abuseAnnounce('🔥 O ADMIN invocou o LIMITED ∞ exclusivo nesta sala!',12);abuseFlash(0xff5918,16);
+}else if(ev.kind==='limited-clear'){clearRoomLimitedEggs()}}catch(e){console.warn('Evento remoto',e)}finally{MP.settingRemote=false}};
+const mpJoin=()=>{const name=$('roomName').value.trim().slice(0,20),room=$('roomCode').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12);if(name.length<2||room.length<3){mpStatus('Escolha um nome (mínimo 2) e uma sala (mínimo 3).');return}if(/^admin$/i.test(name)){mpStatus('O nome ADMIN é exclusivo do dono. Escolha outro nome.');return}mpDisconnect();MP.name=name;MP.room=room;localStorage.setItem('rue3d_mp_name',name);localStorage.setItem('rue3d_mp_room',room);const ws=new WebSocket(mpEndpoint());MP.socket=ws;mpStatus('Conectando ao servidor…');ws.onopen=()=>mpSend({type:'join',room,name});ws.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return}if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;MP.self=msg.id;MP.room=msg.room;mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);mpApplyUsers(msg.players||[]);toast('🌍 Você entrou na sala '+MP.room)}else if(msg.type==='players')mpApplyUsers(msg.players||[]);else if(msg.type==='event')mpRemoteEvent(msg);else if(msg.type==='admin-ok'){MP.owner=true;ownerVerified=true;adminBadge.visible=true;mpStatus('👑 ADMIN autenticado no servidor da sala '+MP.room)}else if(msg.type==='error'){mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message)}else if(msg.type==='room-info')mpStatus('🌍 Sala '+MP.room+' • '+msg.count+' jogadores')} ;ws.onerror=()=>mpStatus('⚠ Servidor indisponível. Hospede o pacote com o servidor Node.js ou configure /ws.');ws.onclose=()=>{if(MP.socket===ws){mpClear();mpStatus('Desconectado. Toque em Entrar para reconectar.')}}};
 const mpDisconnect=()=>{if(MP.socket){try{MP.socket.close()}catch(e){}}MP.socket=null;mpClear()};
 const mpUpdate=dt=>{if(!MP.connected)return;const now=performance.now();if(now-MP.lastTx>90){MP.lastTx=now;mpSend({type:'move',x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y})}for(const [id,v] of MP.views){const u=MP.players.get(id);if(u){const p=new T.Vector3(u.x||0,u.y||0,u.z||0);v.group.position.lerp(p,Math.min(1,dt*12));v.group.rotation.y=u.yaw||0}}};
 $('roomButton').onclick=()=>{$('roomPanel').style.display='block'};
@@ -1019,13 +1042,12 @@ recalc();
 {const o=Math.min((Date.now()-S.t)/1e3,CFG.offCap)*tot*CFG.off;if(o>=1){S.$+=o;setTimeout(()=>toast('Renda offline: +$'+fm(o)),600)}}
 ensureTM(S.pid);regrow(true);
 try{
- let stored=Array.isArray(S.limitedWorld)?S.limitedWorld.filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)):[];
- // Migração da versão anterior que guardava apenas um marcador de presença.
- if(!Array.isArray(S.limitedWorld)&&localStorage.getItem(WORLD_LIMITED_KEY)==='1'&&!hasLimited()&&!S.inc.some(p=>p?.s===LIMITED_ID))stored=[{x:16,z:-910}];
- if(S.limitedCarried)stored.push({x:16,z:-910});
- for(const p of stored)makeLimitedEgg(p.x,p.z);
- S.limitedCarried=false;persistLimitedWorld();
-}catch(err){console.warn('Falha ao restaurar LIMITEDs:',err)}
+ // Migra os LIMITED antigos para histórico sem reutilizá-los em servidores novos.
+ const old=Array.isArray(S.limitedWorld)?S.limitedWorld.filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)):[];
+ if(old.length&&!Array.isArray(S.archivedLimitedWorld))S.archivedLimitedWorld=old;
+ S.limitedWorld=[];S.limitedCarried=false;
+ localStorage.removeItem(WORLD_LIMITED_KEY);save();
+}catch(err){console.warn('Falha ao isolar LIMITEDs antigos:',err)}
 upGates();upHud();cam.position.set(0,6,17);
 toast('Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
 requestAnimationFrame(loop);
