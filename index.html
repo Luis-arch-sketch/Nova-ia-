@@ -241,23 +241,20 @@ const upGates=()=>{GT.forEach(g=>g.l.set(g.b.n+(g.req?': recomendado Speed '+fm(
 const NS=[],eggs=[];
 BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
 
-/* FAUNA DA FLORESTA — guaxinins verdadeiros em seu habitat natural.
-   O MOB de ID 4 também continua aparecendo após chocar seu ovo.
-   Sem vitrine, teleporte, botão especial ou alterações em salvamentos. */
-const raccoonWilds=[];
+/* GUARDIÃO DA PARTE 4 DA FLORESTA: guaxinim original do Quaternius.
+   É um guardião jogável, não uma vitrine: patrulha seu ninho e persegue
+   quem rouba o ovo Guaxinim (espécie id 4). */
+let raccoonGuard=null;
 if(window.RoubeOvoVisuals?.create){
- const raccoonHabitat=NS.find(n=>n.b===0&&n.j===4); // ninho da espécie Guaxinim
- const wildSites=[
-  {x:2,z:-34,rx:3.4,rz:2.2,phase:0},
-  {x:raccoonHabitat.x+3,z:raccoonHabitat.z+4,rx:2.7,rz:2.1,phase:Math.PI}
- ];
- for(const site of wildSites){
-  const mob=window.RoubeOvoVisuals.create(T,4,.78,0x89847c,sc);
-  mob.position.set(site.x,0,site.z);
-  const nameTag=label('🦝 Guaxinim',320,64,3.3);
-  nameTag.position.set(site.x,3.0,site.z);
-  sc.add(nameTag);
-  raccoonWilds.push({mob,nameTag,...site});
+ const protectedNest=NS.find(n=>n.b===0&&n.j===4);
+ if(protectedNest){
+  const home=new T.Vector3(protectedNest.x+1.5,0,protectedNest.z+1.5);
+  const m=window.RoubeOvoVisuals.create(T,4,0.83,0x89847c,sc);
+  m.position.copy(home);
+  const l=label('🦝 GUAXINIM GUARDIÃO',480,72,4.7);
+  l.position.set(home.x,3.8,home.z);
+  sc.add(l);
+  raccoonGuard={m,home,l,st:'patrol',t:0,phase:0};
  }
 }
 
@@ -350,7 +347,10 @@ const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(d
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
 const findEgg=()=>{let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
 const take=e=>{eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
- const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
+ // O ovo Guaxinim é defendido pelo próprio guaxinim, não pelo guardião genérico.
+ if(e.s===4&&raccoonGuard){if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=CFG.wake}}
+ else{const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}}
+ beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID)persistLimitedWorld();beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
 const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
@@ -416,16 +416,42 @@ let TT=0,nextReset=Date.now()/1e3+CFG.reset,nite=0,sec=0,hq=0,sv=0,tpI=0,tpT=0,l
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
- // Guaxinins passeiam próximos aos seus pontos naturais na Floresta.
- for(const wild of raccoonWilds){
-  const a=TT*.36+wild.phase;
-  wild.mob.position.set(wild.x+Math.sin(a)*wild.rx,0,wild.z+Math.cos(a)*wild.rz);
-  wild.mob.rotation.y=Math.atan2(Math.cos(a)*wild.rx,-Math.sin(a)*wild.rz);
-  wild.nameTag.position.set(wild.mob.position.x,3.0,wild.mob.position.z);
-  const near=Math.abs(P.z-wild.mob.position.z)<145&&Math.abs(P.x-wild.mob.position.x)<100;
-  wild.mob.visible=near;
-  wild.nameTag.visible=near;
-  if(near&&window.RoubeOvoVisuals)window.RoubeOvoVisuals.animate(wild.mob,TT,wild.phase);
+ // Guardião da parte 4: patrulha, alerta, persegue, acerta e volta ao ninho.
+ if(raccoonGuard){
+  const g=raccoonGuard,p=g.m.position,dist=Math.hypot(P.x-g.home.x,P.z-g.home.z);
+  const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
+  if(frozen&&g.st!=='patrol'){g.st='ret';g.t=0}
+  if(g.st==='wake'){
+   g.t-=dt;
+   if(g.t<=0){g.st='chase';beep(160,.2,'sawtooth',.045)}
+  }
+  if(g.st==='chase'){
+   if(!carry||dist>95||frozen)g.st='ret';
+   else{
+    const speed=Math.max(12,gs(0)*1.7)*abuseMoveMult();
+    const dx=P.x-p.x,dz=P.z-p.z,len=Math.hypot(dx,dz)||1;
+    const speedStep=Math.min(len,speed*dt);
+    p.x+=dx/len*speedStep;p.z+=dz/len*speedStep;
+    g.m.rotation.y=Math.atan2(dx,dz);
+    if(len<2.75)hit(g);
+   }
+  }
+  if(g.st==='ret'){
+   const dx=g.home.x-p.x,dz=g.home.z-p.z,len=Math.hypot(dx,dz);
+   if(len<.6){g.st='patrol';g.phase=TT;p.copy(g.home)}
+   else{const move=Math.min(len,8*dt);p.x+=dx/len*move;p.z+=dz/len*move;g.m.rotation.y=Math.atan2(dx,dz)}
+  }else if(g.st==='patrol'){
+   const a=TT*.65;
+   p.set(g.home.x+Math.sin(a)*2.1,0,g.home.z+Math.cos(a)*2.1);
+   g.m.rotation.y=Math.atan2(Math.cos(a),-Math.sin(a));
+  }
+  p.y=0;
+  g.m.userData.mobAction=g.st==='chase'?'run':g.st==='patrol'?'walk':g.st==='ret'?'walk':'idle';
+  g.l.set(g.st==='chase'?'🦝 GUAXINIM PERSEGUINDO!':g.st==='wake'?'🦝 ALERTA!':'🦝 GUAXINIM GUARDIÃO');
+  g.l.position.set(p.x,3.8,p.z);
+  const near=Math.abs(P.z-p.z)<150&&Math.abs(P.x-p.x)<120;
+  g.m.visible=near;g.l.visible=near;
+  if(near&&window.RoubeOvoVisuals)window.RoubeOvoVisuals.animate(g.m,TT,0);
  }
 
  const [ix,iy]=mvIn(),mg=Math.hypot(ix,iy);if(P.train&&mg>.3)P.train=false;
