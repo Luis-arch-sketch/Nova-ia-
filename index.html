@@ -242,7 +242,7 @@ const NS=[],eggs=[];
 BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
 
 /* GUARDIÃO DA PARTE 4 DA FLORESTA: guaxinim original do Quaternius.
-   É um guardião jogável, não uma vitrine: patrulha seu ninho e persegue
+   Fica parado defendendo o ninho da parte 4 e só persegue
    quem rouba o ovo Guaxinim (espécie id 4). */
 let raccoonGuard=null;
 if(window.RoubeOvoVisuals?.create){
@@ -254,7 +254,7 @@ if(window.RoubeOvoVisuals?.create){
   const l=label('🦝 GUAXINIM GUARDIÃO',480,72,4.7);
   l.position.set(home.x,3.8,home.z);
   sc.add(l);
-  raccoonGuard={m,home,l,st:'patrol',t:0,phase:0};
+  raccoonGuard={m,home,l,st:'guard',t:0};
  }
 }
 
@@ -416,11 +416,11 @@ let TT=0,nextReset=Date.now()/1e3+CFG.reset,nite=0,sec=0,hq=0,sv=0,tpI=0,tpT=0,l
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
- // Guardião da parte 4: patrulha, alerta, persegue, acerta e volta ao ninho.
+ // Guardião da parte 4: parado no ninho, alerta ao roubo, persegue, acerta e retorna.
  if(raccoonGuard){
   const g=raccoonGuard,p=g.m.position,dist=Math.hypot(P.x-g.home.x,P.z-g.home.z);
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
-  if(frozen&&g.st!=='patrol'){g.st='ret';g.t=0}
+  if(frozen&&g.st!=='guard'){g.st='ret';g.t=0}
   if(g.st==='wake'){
    g.t-=dt;
    if(g.t<=0){g.st='chase';beep(160,.2,'sawtooth',.045)}
@@ -438,15 +438,14 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
   }
   if(g.st==='ret'){
    const dx=g.home.x-p.x,dz=g.home.z-p.z,len=Math.hypot(dx,dz);
-   if(len<.6){g.st='patrol';g.phase=TT;p.copy(g.home)}
+   if(len<.6){g.st='guard';p.copy(g.home)}
    else{const move=Math.min(len,8*dt);p.x+=dx/len*move;p.z+=dz/len*move;g.m.rotation.y=Math.atan2(dx,dz)}
-  }else if(g.st==='patrol'){
-   const a=TT*.65;
-   p.set(g.home.x+Math.sin(a)*2.1,0,g.home.z+Math.cos(a)*2.1);
-   g.m.rotation.y=Math.atan2(Math.cos(a),-Math.sin(a));
+  }else if(g.st==='guard'){
+   // Protege o ovo da parte 4 sem ficar vagando pelo mapa.
+   p.copy(g.home);
   }
   p.y=0;
-  g.m.userData.mobAction=g.st==='chase'?'run':g.st==='patrol'?'walk':g.st==='ret'?'walk':'idle';
+  g.m.userData.mobAction=g.st==='chase'?'run':g.st==='ret'?'walk':'idle';
   g.l.set(g.st==='chase'?'🦝 GUAXINIM PERSEGUINDO!':g.st==='wake'?'🦝 ALERTA!':'🦝 GUAXINIM GUARDIÃO');
   g.l.position.set(p.x,3.8,p.z);
   const near=Math.abs(P.z-p.z)<150&&Math.abs(P.x-p.x)<120;
