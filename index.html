@@ -130,7 +130,7 @@ const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,i
 const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED'],RS=[0,1,2,3,4,7,8,9]; // RS: raridade de cada posição de espécie no bioma
 
 const BI=[
-['Floresta',0x6cc24a,0x2e8b3a,0,'Chicken','Chicken,Dog,Bird,Burrowing Owl,Raccoon,Fox,Bear,Brr Brr Patapim'],
+['Floresta',0x6cc24a,0x2e8b3a,0,'Chicken','Chicken,Dog,Bird,Burrowing Owl,Guaxinim,Fox,Bear,Brr Brr Patapim'],
 ['Lago',0x3d9bd8,0x2fae8c,900,'Swan','Frog,Duckling,Catfish,Turtle,Trulimero Trulicina,Swan,Axolotl,Leviathan'],
 ['Deserto',0xe5c46b,0x5a9a3c,1e4,'Scorpion','Jerboa,Fennec,Camel,Tob Tobi Tob Tob,Snake,Sand Spider,Scorpion,Royal Sphinx'],
 ['Selva',0x2f8f3d,0x1d6b2a,4e4,'Tiger','Chimpanzee,Toucan,Crocodile,Gorilla,Orangutini Ananassini,Spider,Tiger,King Snake'],
@@ -240,6 +240,27 @@ const upGates=()=>{GT.forEach(g=>g.l.set(g.b.n+(g.req?': recomendado Speed '+fm(
 /* ===== Ninhos, ovos, guardiões ===== */
 const NS=[],eggs=[];
 BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
+
+/* FAUNA DA FLORESTA — guaxinins verdadeiros em seu habitat natural.
+   O MOB de ID 4 também continua aparecendo após chocar seu ovo.
+   Sem vitrine, teleporte, botão especial ou alterações em salvamentos. */
+const raccoonWilds=[];
+if(window.RoubeOvoVisuals?.create){
+ const raccoonHabitat=NS.find(n=>n.b===0&&n.j===4); // ninho da espécie Guaxinim
+ const wildSites=[
+  {x:2,z:-34,rx:3.4,rz:2.2,phase:0},
+  {x:raccoonHabitat.x+3,z:raccoonHabitat.z+4,rx:2.7,rz:2.1,phase:Math.PI}
+ ];
+ for(const site of wildSites){
+  const mob=window.RoubeOvoVisuals.create(T,4,.78,0x89847c,sc);
+  mob.position.set(site.x,0,site.z);
+  const nameTag=label('🦝 Guaxinim',320,64,3.3);
+  nameTag.position.set(site.x,3.0,site.z);
+  sc.add(nameTag);
+  raccoonWilds.push({mob,nameTag,...site});
+ }
+}
+
 const newEgg=(b,j)=>{const z=pick(SZ);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
 const eggMesh=e=>{const limited=e.s===LIMITED_ID,c=limited?new T.Color(0xff410c):new T.Color().setHSL((e.s*37%360)/360,.65,.62),m=new T.Mesh(GS,new T.MeshLambertMaterial({color:c,emissive:limited?0xff7e17:c.clone().multiplyScalar(e.j>=5?.45:0),emissiveIntensity:limited?.75:1}));m.castShadow=true;m.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited?3.8:1));sc.add(m);return m};
 const regrow=first=>{const nw=[],sp=n=>{const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw)};
@@ -395,6 +416,18 @@ let TT=0,nextReset=Date.now()/1e3+CFG.reset,nite=0,sec=0,hq=0,sv=0,tpI=0,tpT=0,l
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
+ // Guaxinins passeiam próximos aos seus pontos naturais na Floresta.
+ for(const wild of raccoonWilds){
+  const a=TT*.36+wild.phase;
+  wild.mob.position.set(wild.x+Math.sin(a)*wild.rx,0,wild.z+Math.cos(a)*wild.rz);
+  wild.mob.rotation.y=Math.atan2(Math.cos(a)*wild.rx,-Math.sin(a)*wild.rz);
+  wild.nameTag.position.set(wild.mob.position.x,3.0,wild.mob.position.z);
+  const near=Math.abs(P.z-wild.mob.position.z)<145&&Math.abs(P.x-wild.mob.position.x)<100;
+  wild.mob.visible=near;
+  wild.nameTag.visible=near;
+  if(near&&window.RoubeOvoVisuals)window.RoubeOvoVisuals.animate(wild.mob,TT,wild.phase);
+ }
+
  const [ix,iy]=mvIn(),mg=Math.hypot(ix,iy);if(P.train&&mg>.3)P.train=false;
  // O ADMIN confirmado corre 10x; os outros jogadores mantêm a velocidade normal.
  const runMultiplier=ownerVerified&&A.personalFast===true?10:A.moveMult;
