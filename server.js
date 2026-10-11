@@ -45,7 +45,7 @@ const applyOwnerTreadmill=html=>{
 };
 // Script pequeno servido junto ao jogo, preservando a esteira 100Qav/s e saves.
 const installServerBrowser=html=>{
- const rules=[["const mpJoin=()=>{","const mpJoin=(mode='join')=>{"],["if(name.length<2||room.length<3)","if(name.length<2||(mode==='join'&&room.length<3))"],["ws.onopen=()=>mpSend({type:'join',room,name});","ws.onopen=()=>mpSend({type:mode,room,name});"],["$('roomJoin').onclick=mpJoin;","$('roomJoin').onclick=()=>mpJoin('join');"],["if(msg.type==='joined'){MP.connected=true;","if(msg.type==='joined'){$('roomCode').value=msg.room;try{localStorage.setItem('rue3d_mp_room',msg.room)}catch(e){}MP.connected=true;"]];
+ const rules=[["const mpJoin=()=>{","const mpJoin=(mode='join')=>{"],["if(name.length<2||room.length<3)","if(name.length<2||(mode==='join'&&room.length<3))"],["ws.onopen=()=>mpSend({type:'join',room,name});","ws.onopen=()=>mpSend({type:mode,room,name});"],["$('roomJoin').onclick=mpJoin;","$('roomJoin').onclick=()=>mpJoin('join');"],["if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;","if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);$('roomCode').value=msg.room;try{localStorage.setItem('rue3d_mp_room',msg.room)}catch(e){}MP.connected=true;"]];
  for(const [from,to] of rules){
   if(html.split(from).length!==2)throw new Error('Trecho multiplayer inesperado: '+from.slice(0,65));
   html=html.replace(from,to);
