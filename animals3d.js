@@ -138,76 +138,105 @@ function create(three,id,k,col,scene){
    add('cone',large?0xf3e0bf:light,[large?.19:.13,large?.8:.5,.16],[x,2.29,.81]).rotation.z=x*.12;
   }
  };
- // MOBs 3 e 4: geometrias exclusivas, testáveis em três dimensões.
- // Eles não reutilizam o corpo genérico da família nem dependem de GLB remoto.
+ // 3º e 4º MOB: anatomias próprias; nada de reaproveitar corpo de pato.
+ // Usar cores locais fixas: a tinta de raridade não apaga a máscara do guaxinim.
  if(id===3){
-  // 3º MOB: coruja-das-tocas PEQUENA (rosto achatado, olhos frontais e asas largas).
-  const brown=mat(0x77533c),tan=mat(0xb58c62),ivory=mat(0xf2e2be),gold=mat(0xe9a62f),black=mat(0x151719);
-  add('sphere',brown,[.65,.77,.56],[0,1.04,0]);
-  add('sphere',ivory,[.47,.58,.36],[0,1.02,.36]);
-  const h=head([.59,.60,.48],[0,1.83,.19]);
+  // CORUJA: postura vertical, enorme disco facial, olhos voltados à frente e penas laterais.
+  const feather=mat(0x714b30),feather2=mat(0x976a46),sand=mat(0xcaa77b),
+        face=mat(0xf5dfac),ink=mat(0x202024),iris=mat(0xeeae22);
+  const poly=(c,s,p,pa=root)=>{
+   const o=new T.Mesh(new T.IcosahedronGeometry(1,1),c);
+   o.scale.set(...s);o.position.set(...p);pa.add(o);return o;
+  };
+  // Cabeça maior que o tronco, silhueta quase cilíndrica — diferente de uma galinha.
+  poly(feather,[.55,.82,.51],[0,.87,-.03]);
+  poly(sand,[.43,.66,.24],[0,.90,.43]);
+  for(let i=0;i<5;i++)
+   poly(i%2?face:sand,[.12,.30,.085],[(i-2)*.16,.96+(i%2)*.06,.66]);
+  const h=new T.Group();h.position.set(0,1.83,.09);root.add(h);motions.head=h;
+  poly(feather,[.72,.65,.52],[0,0,0],h);
+  // Disco facial bipartido de coruja, bordas em coração ao redor dos olhos.
   for(const sx of [-1,1]){
-   add('sphere',ivory,[.29,.35,.13],[sx*.265,.015,.445],h);
-   add('sphere',tan,[.22,.255,.095],[sx*.265,.025,.548],h);
-   add('sphere',gold,[.167,.177,.067],[sx*.265,.055,.618],h);
-   add('sphere',black,[.09,.118,.042],[sx*.265,.055,.668],h);
-   add('sphere',ivory,[.036,.037,.018],[sx*.242,.113,.708],h);
-   const tuft=add('cone',brown,[.19,.44,.18],[sx*.45,.52,.03],h);tuft.rotation.z=-sx*.32;
+   poly(sand,[.43,.48,.16],[sx*.29,-.01,.40],h);
+   poly(face,[.365,.407,.135],[sx*.29,-.03,.52],h);
+   poly(feather2,[.26,.30,.045],[sx*.29,.04,.637],h);
+   poly(iris,[.22,.235,.044],[sx*.29,.045,.681],h);
+   poly(ink,[.13,.167,.042],[sx*.29,.045,.728],h);
+   poly(face,[.048,.058,.020],[sx*.26,.105,.758],h);
+   const brow=add('cone',feather,[.21,.55,.20],[sx*.41,.53,.09],h);brow.rotation.z=-sx*.29;
   }
-  add('cone',gold,[.145,.29,.14],[0,-.22,.60],h).rotation.x=Math.PI*.52;
+  // Bico curto em gancho para baixo, nunca um bico de pato.
+  const hook=add('cone',iris,[.165,.37,.155],[0,-.28,.65],h);
+  hook.rotation.x=-.18;
+  // Asas compactas presas ao tórax, cinco penas pontiagudas em cada lado.
   for(const sx of [-1,1]){
-   const wing=new T.Group();wing.position.set(sx*.57,1.30,-.08);root.add(wing);
-   const main=add('sphere',brown,[.24,.55,.40],[sx*.18,0,-.14],wing);main.rotation.z=sx*.36;
+   const w=new T.Group();w.position.set(sx*.53,1.15,-.13);root.add(w);
+   poly(feather,[.25,.48,.42],[sx*.08,-.08,0],w);
    for(let f=0;f<5;f++){
-    const feather=add('sphere',f%2?brown:tan,[.085,.26+.03*f,.12],
-      [sx*(.18+f*.09),-.24+f*.035,-.28+f*.05],wing);
-    feather.rotation.z=sx*(.32+f*.09);
+    const tip=add('cone',f%2?feather2:feather,[.105,.43-.037*f,.10],
+      [sx*(.11+f*.06),-.38+(f*.08),-.25+f*.09],w);
+    tip.rotation.z=-sx*(.26+f*.08);
    }
-   motions.wings.push({p:wing,sx});
-   add('cylinder',brown,[.115,.34,.115],[sx*.34,.29,.27]);
-   for(let claw=-1;claw<=1;claw++)
-    add('cone',gold,[.043,.20,.043],[sx*.34+claw*.085,.105,.49]).rotation.x=Math.PI/2;
+   motions.wings.push({p:w,sx});
+   add('cylinder',feather2,[.12,.33,.12],[sx*.31,.26,.20]);
+   for(let c=-1;c<=1;c++){
+    const talon=add('cone',iris,[.047,.19,.047],[sx*.31+c*.095,.075,.39]);
+    talon.rotation.x=Math.PI/2;
+   }
   }
-  for(let i=-2;i<=2;i++){
-   const feather=add('sphere',i%2?tan:brown,[.11,.09,.34],[i*.135,.73,-.66]);
-   feather.rotation.y=i*.16;
+  for(let t=-2;t<=2;t++)poly(t%2?feather:feather2,[.105,.13,.37],[t*.13,.66,-.55]);
+  // Tufos verticais nas laterais da cabeça tornam a coruja reconhecível por trás.
+  for(const sx of [-1,1]){
+   const tuft=add('cone',feather,[.19,.43,.17],[sx*.52,2.43,-.05]);
+   tuft.rotation.z=-sx*.27;
   }
  }else if(id===4){
-  // 4º MOB: guaxinim GRANDE, de quatro patas, máscara preta e cauda anelada.
-  const fur=mat(0x777d7b),furLight=mat(0xa9ada7),cream=mat(0xe9dfd0),mask=mat(0x292e32),dark=mat(0x25292c);
-  add('sphere',fur,[.87,.65,1.20],[0,1.03,-.10]);
-  add('sphere',furLight,[.67,.45,.54],[0,.94,.56]);
-  const h=head([.65,.53,.61],[0,1.60,.88]);
-  add('sphere',cream,[.45,.28,.16],[0,-.22,.57],h);
-  add('sphere',dark,[.17,.12,.13],[0,-.12,.72],h);
+  // GUAXINIM: tronco horizontal alongado, quatro patas, olhos com máscara e cauda ANELADA.
+  const fur=mat(0x757676),under=mat(0xa7a6a0),white=mat(0xe8e3d8),
+        mask=mat(0x202127),dark=mat(0x141519),tailGray=mat(0xbbb8af);
+  const poly=(c,s,p,pa=root)=>{
+   const o=new T.Mesh(new T.IcosahedronGeometry(1,1),c);
+   o.scale.set(...s);o.position.set(...p);pa.add(o);return o;
+  };
+  poly(fur,[.63,.49,1.18],[0,.89,-.21]);
+  poly(under,[.49,.27,.91],[0,.62,.13]);
+  // Pescoço curto e cabeça baixa, orientada no eixo +Z.
+  const h=new T.Group();h.position.set(0,1.08,.72);root.add(h);motions.head=h;
+  poly(fur,[.53,.39,.46],[0,.12,.05],h);
+  poly(white,[.44,.26,.18],[0,-.09,.47],h);
+  // Faixa preta de máscara atravessa ambos os olhos: marca registrada do guaxinim.
+  poly(mask,[.49,.18,.105],[0,.20,.426],h);
   for(const sx of [-1,1]){
-   add('sphere',mask,[.30,.255,.13],[sx*.255,.085,.505],h);
-   add('sphere',cream,[.15,.15,.05],[sx*.255,.105,.615],h);
-   add('sphere',dark,[.086,.10,.036],[sx*.255,.105,.662],h);
-   const ear=add('cone',fur,[.24,.41,.22],[sx*.47,.49,.08],h);ear.rotation.z=-sx*.10;
-   add('cone',cream,[.115,.24,.095],[sx*.47,.48,.24],h).rotation.z=-sx*.10;
-   for(let w=0;w<3;w++){
-    const whisker=add('cylinder',cream,[.012,.31,.012],[sx*(.45+w*.045),-.25+w*.065,.69],h);
-    whisker.rotation.z=sx*(1.26+w*.12);
-   }
+   poly(mask,[.265,.24,.075],[sx*.235,.18,.502],h);
+   poly(white,[.115,.128,.036],[sx*.225,.21,.570],h);
+   poly(dark,[.066,.08,.028],[sx*.225,.21,.607],h);
+   const ear=add('cone',fur,[.20,.31,.17],[sx*.40,.50,-.01],h);ear.rotation.z=-sx*.12;
+   add('cone',white,[.097,.17,.070],[sx*.41,.49,.12],h).rotation.z=-sx*.12;
+   poly(white,[.22,.13,.18],[sx*.15,-.10,.61],h);
   }
+  poly(dark,[.125,.084,.115],[0,-.10,.77],h);
+  // Quatro patas visíveis, com pés e dedos escuros.
   for(const sx of [-1,1])for(const zz of [-1,1]){
-   const paw=new T.Group();paw.position.set(sx*.59,.69,zz*.73);root.add(paw);
-   add('cylinder',fur,[.20,.65,.21],[0,-.23,0],paw);
-   add('sphere',dark,[.25,.14,.33],[0,-.55,.14],paw);
-   for(let digit=-1;digit<=1;digit++)
-    add('sphere',cream,[.062,.052,.12],[digit*.12,-.585,.40],paw);
-   motions.legs.push(paw);
+   const leg=new T.Group();leg.position.set(sx*.41,.73,zz*.72);root.add(leg);
+   poly(fur,[.21,.40,.23],[0,-.25,0],leg);
+   poly(mask,[.24,.12,.30],[0,-.59,.20],leg);
+   for(let c=-1;c<=1;c++)poly(dark,[.060,.045,.13],[c*.12,-.64,.42],leg);
+   motions.legs.push(leg);
   }
-  // Anéis verdadeiros: sete volumes concatenados alternando preto e cinza.
-  const stripeColors=[fur,dark,furLight,dark,furLight,dark,furLight,dark];
-  const t=new T.Group();t.position.set(0,1.13,-1.08);root.add(t);
-  for(let i=0;i<stripeColors.length;i++){
-   const cur=add('sphere',stripeColors[i],[.25-i*.012,.22,.24],
-     [Math.sin(i*.31)*.22,.04+i*.10,-i*.285],t);
-   cur.rotation.y=Math.sin(i*.31)*.14;
+  // Cauda longa e bem grossa, projetada para trás e para o lado.
+  // Dez segmentos alternam cinza/preto criando anéis legíveis em distância.
+  const tt=new T.Group();tt.position.set(.06,1.02,-1.18);root.add(tt);
+  for(let i=0;i<10;i++){
+   const band=i%2?mask:(i%4===0?tailGray:fur);
+   poly(band,[.26-i*.012,.235-i*.008,.205],
+    [.14*Math.sin(i*.22)+i*.07,.14*Math.sin(i*.18)+i*.065,-.20-i*.25],tt);
   }
-  motions.tail=t;
+  motions.tail=tt;
+  // Cheeks and shoulder stripes emphasize the face and running silhouette.
+  for(const sx of [-1,1]){
+   poly(under,[.14,.31,.29],[sx*.56,.98,.33]);
+   poly(mask,[.12,.07,.39],[sx*.57,1.12,-.28]);
+  }
  }else if(family==='fish'){
   body([.65,.57,1.15+(v%3)*.13]);head([.5,.47,.48],[0,1.10,.70]);
   eyes(.31,1.27,1.11,.115);fins();
