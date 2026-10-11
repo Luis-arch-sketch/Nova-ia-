@@ -138,8 +138,77 @@ function create(three,id,k,col,scene){
    add('cone',large?0xf3e0bf:light,[large?.19:.13,large?.8:.5,.16],[x,2.29,.81]).rotation.z=x*.12;
   }
  };
- // Anatomias próprias por família; cada espécie tem marcação, paleta e acessórios exclusivos.
- if(family==='fish'){
+ // MOBs 3 e 4: geometrias exclusivas, testáveis em três dimensões.
+ // Eles não reutilizam o corpo genérico da família nem dependem de GLB remoto.
+ if(id===3){
+  // 3º MOB: coruja-das-tocas PEQUENA (rosto achatado, olhos frontais e asas largas).
+  const brown=mat(0x77533c),tan=mat(0xb58c62),ivory=mat(0xf2e2be),gold=mat(0xe9a62f),black=mat(0x151719);
+  add('sphere',brown,[.65,.77,.56],[0,1.04,0]);
+  add('sphere',ivory,[.47,.58,.36],[0,1.02,.36]);
+  const h=head([.59,.60,.48],[0,1.83,.19]);
+  for(const sx of [-1,1]){
+   add('sphere',ivory,[.29,.35,.13],[sx*.265,.015,.445],h);
+   add('sphere',tan,[.22,.255,.095],[sx*.265,.025,.548],h);
+   add('sphere',gold,[.167,.177,.067],[sx*.265,.055,.618],h);
+   add('sphere',black,[.09,.118,.042],[sx*.265,.055,.668],h);
+   add('sphere',ivory,[.036,.037,.018],[sx*.242,.113,.708],h);
+   const tuft=add('cone',brown,[.19,.44,.18],[sx*.45,.52,.03],h);tuft.rotation.z=-sx*.32;
+  }
+  add('cone',gold,[.145,.29,.14],[0,-.22,.60],h).rotation.x=Math.PI*.52;
+  for(const sx of [-1,1]){
+   const wing=new T.Group();wing.position.set(sx*.57,1.30,-.08);root.add(wing);
+   const main=add('sphere',brown,[.24,.55,.40],[sx*.18,0,-.14],wing);main.rotation.z=sx*.36;
+   for(let f=0;f<5;f++){
+    const feather=add('sphere',f%2?brown:tan,[.085,.26+.03*f,.12],
+      [sx*(.18+f*.09),-.24+f*.035,-.28+f*.05],wing);
+    feather.rotation.z=sx*(.32+f*.09);
+   }
+   motions.wings.push({p:wing,sx});
+   add('cylinder',brown,[.115,.34,.115],[sx*.34,.29,.27]);
+   for(let claw=-1;claw<=1;claw++)
+    add('cone',gold,[.043,.20,.043],[sx*.34+claw*.085,.105,.49]).rotation.x=Math.PI/2;
+  }
+  for(let i=-2;i<=2;i++){
+   const feather=add('sphere',i%2?tan:brown,[.11,.09,.34],[i*.135,.73,-.66]);
+   feather.rotation.y=i*.16;
+  }
+ }else if(id===4){
+  // 4º MOB: guaxinim GRANDE, de quatro patas, máscara preta e cauda anelada.
+  const fur=mat(0x777d7b),furLight=mat(0xa9ada7),cream=mat(0xe9dfd0),mask=mat(0x292e32),dark=mat(0x25292c);
+  add('sphere',fur,[.87,.65,1.20],[0,1.03,-.10]);
+  add('sphere',furLight,[.67,.45,.54],[0,.94,.56]);
+  const h=head([.65,.53,.61],[0,1.60,.88]);
+  add('sphere',cream,[.45,.28,.16],[0,-.22,.57],h);
+  add('sphere',dark,[.17,.12,.13],[0,-.12,.72],h);
+  for(const sx of [-1,1]){
+   add('sphere',mask,[.30,.255,.13],[sx*.255,.085,.505],h);
+   add('sphere',cream,[.15,.15,.05],[sx*.255,.105,.615],h);
+   add('sphere',dark,[.086,.10,.036],[sx*.255,.105,.662],h);
+   const ear=add('cone',fur,[.24,.41,.22],[sx*.47,.49,.08],h);ear.rotation.z=-sx*.10;
+   add('cone',cream,[.115,.24,.095],[sx*.47,.48,.24],h).rotation.z=-sx*.10;
+   for(let w=0;w<3;w++){
+    const whisker=add('cylinder',cream,[.012,.31,.012],[sx*(.45+w*.045),-.25+w*.065,.69],h);
+    whisker.rotation.z=sx*(1.26+w*.12);
+   }
+  }
+  for(const sx of [-1,1])for(const zz of [-1,1]){
+   const paw=new T.Group();paw.position.set(sx*.59,.69,zz*.73);root.add(paw);
+   add('cylinder',fur,[.20,.65,.21],[0,-.23,0],paw);
+   add('sphere',dark,[.25,.14,.33],[0,-.55,.14],paw);
+   for(let digit=-1;digit<=1;digit++)
+    add('sphere',cream,[.062,.052,.12],[digit*.12,-.585,.40],paw);
+   motions.legs.push(paw);
+  }
+  // Anéis verdadeiros: sete volumes concatenados alternando preto e cinza.
+  const stripeColors=[fur,dark,furLight,dark,furLight,dark,furLight,dark];
+  const t=new T.Group();t.position.set(0,1.13,-1.08);root.add(t);
+  for(let i=0;i<stripeColors.length;i++){
+   const cur=add('sphere',stripeColors[i],[.25-i*.012,.22,.24],
+     [Math.sin(i*.31)*.22,.04+i*.10,-i*.285],t);
+   cur.rotation.y=Math.sin(i*.31)*.14;
+  }
+  motions.tail=t;
+ }else if(family==='fish'){
   body([.65,.57,1.15+(v%3)*.13]);head([.5,.47,.48],[0,1.10,.70]);
   eyes(.31,1.27,1.11,.115);fins();
   add('sphere',light,[.34,.035,.18],[0,.99,1.17]);
@@ -348,7 +417,9 @@ function create(three,id,k,col,scene){
  if(id%5===0&&family!=='fish'&&family!=='arachnid')add('sphere',light,[.16,.12,.20],[0,1.02,.83]);
  if(id%7===3&&family==='quad')add('cone',accent,[.19,.53,.14],[0,2.14,.61]);
  if(id%8===7){horns(2,true);add('sphere',light,[.23,.23,.23],[0,2.50,.25]);}
- g.scale.setScalar(k);g.userData.motion=motions;g.userData.speciesId=id;
+ const sizeMultiplier=id===3?.72:id===4?1.85:1;
+ g.scale.setScalar(k*sizeMultiplier);g.userData.motion=motions;g.userData.speciesId=id;
+ g.userData.mobSizeMultiplier=sizeMultiplier;
  scene.add(g);return g;
 }
 function animate(g,t,phase){
