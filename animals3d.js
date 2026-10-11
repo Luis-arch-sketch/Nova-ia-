@@ -448,10 +448,36 @@ function create(three,id,k,col,scene){
  if(id%8===7){horns(2,true);add('sphere',light,[.23,.23,.23],[0,2.50,.25]);}
  const sizeMultiplier=id===3?.72:id===4?1.85:1;
  g.scale.setScalar(k*sizeMultiplier);g.userData.motion=motions;g.userData.speciesId=id;
+ // Importar a malha animada original do Quaternius (Cube World Kit, CC0).
+ // Enquanto interpreta o glTF, a malha local funciona como fallback.
+ if(id===4 && T.GLTFLoader && typeof RACCOON_SOURCE_JSON==="string"){
+  try{
+   new T.GLTFLoader().parse(RACCOON_SOURCE_JSON,"",function(asset){
+    if(!asset.scene||!asset.scene.children.length)return;
+    asset.scene.traverse(function(node){if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+    g.add(asset.scene);root.visible=false;
+    g.userData.modelVersion="Quaternius CubeWorld Raccoon CC0";
+    if(asset.animations&&asset.animations.length&&T.AnimationMixer){
+     const mixer=new T.AnimationMixer(asset.scene);
+     const selected=asset.animations.find(function(x){return x.name==="Idle";})||asset.animations[0];
+     mixer.clipAction(selected).play();
+     g.userData.mixer=mixer;
+     g.userData.mixerLastTime=null;
+    }
+   },function(error){console.warn("Guaxinim Quaternius: fallback local",error)});
+  }catch(error){console.warn("Guaxinim Quaternius: fallback local",error);}
+ }
+
  g.userData.mobSizeMultiplier=sizeMultiplier;
  scene.add(g);return g;
 }
 function animate(g,t,phase){
+ if(g?.userData?.mixer){
+  const last=g.userData.mixerLastTime;
+  g.userData.mixerLastTime=t;
+  g.userData.mixer.update(Math.min(.08,Math.max(0,last===null?0:t-last)));
+  return;
+ }
  const a=g?.userData?.motion;if(!a)return;
  const n=t*2.2+(phase||0);
  if(a.tail)a.tail.rotation.y=Math.sin(n)*.35;
