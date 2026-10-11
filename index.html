@@ -371,12 +371,14 @@ const partBorderCollision=(player,previousZ)=>{
 };
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
 const findEgg=()=>{let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
-const take=e=>{eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
+const take=e=>{
+ if(e.s===LIMITED_ID&&MP.connected)mpSend({type:'limited-take',x:e.mesh.position.x,z:e.mesh.position.z});
+ eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
  // A PARTE 4 é protegida exclusivamente pelo guaxinim, em todos os oito ninhos.
  if(e.b===3&&raccoonGuard){if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=CFG.wake}}
  else{const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}}
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
-const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID)persistLimitedWorld();beep(200,.15)};
+const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID){persistLimitedWorld();if(MP.connected)mpSend({type:'limited-drop',x:e.mesh.position.x,z:e.mesh.position.z})}beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
 const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
@@ -818,7 +820,7 @@ const makeLimitedEgg=(x,z)=>{
  const b=BI.length-1,e=newEgg(b,7);
  e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=3;e.w=1;e.st='caido';e.gr=1;e.nest=null;
  e.mesh=eggMesh(e);e.mesh.castShadow=false;e.base=e.mesh.scale.clone();
- e.mesh.position.set(Math.max(-92,Math.min(92,x)),.45+e.base.y,Math.max(-937,Math.min(-867,z)));
+ e.mesh.position.set(Math.max(-92,Math.min(92,x)),.45+e.base.y,Math.max(-937,Math.min(49,z)));
  eggs.push(e);return e;
 };
 const disposeLimitedAura=e=>{
@@ -998,7 +1000,16 @@ const mpApplyUsers=users=>{const alive=new Set();for(const u of users){if(u.id==
 const mpRemoteEvent=ev=>{MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st=ev.settings||{duration:60,interval:10,wave:1};abuseStart(ev.id,st)}else if(ev.action==='stop')abuseStop(true)}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){
  for(const p of ev.eggs||[])if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
  abuseAnnounce('🔥 O ADMIN invocou o LIMITED ∞ exclusivo nesta sala!',12);abuseFlash(0xff5918,16);
-}else if(ev.kind==='limited-clear'){clearRoomLimitedEggs()}}catch(e){console.warn('Evento remoto',e)}finally{MP.settingRemote=false}};
+}else if(ev.kind==='limited-clear'){clearRoomLimitedEggs()}
+ else if(ev.kind==='limited-take'){
+  const p=ev.egg;
+  if(p){
+   const ix=eggs.findIndex(e=>e.s===LIMITED_ID&&Math.hypot(e.mesh.position.x-p.x,e.mesh.position.z-p.z)<1.1);
+   if(ix>=0){const e=eggs[ix];if(e.aura)disposeLimitedAura(e);sc.remove(e.mesh);eggs.splice(ix,1)}
+  }
+ }else if(ev.kind==='limited-drop'){
+  if(ev.egg&&Number.isFinite(ev.egg.x)&&Number.isFinite(ev.egg.z))makeLimitedEgg(ev.egg.x,ev.egg.z);
+ }}catch(e){console.warn('Evento remoto',e)}finally{MP.settingRemote=false}};
 const mpJoin=()=>{const name=$('roomName').value.trim().slice(0,20),room=$('roomCode').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12);if(name.length<2||room.length<3){mpStatus('Escolha um nome (mínimo 2) e uma sala (mínimo 3).');return}if(/^admin$/i.test(name)){mpStatus('O nome ADMIN é exclusivo do dono. Escolha outro nome.');return}mpDisconnect();MP.name=name;MP.room=room;localStorage.setItem('rue3d_mp_name',name);localStorage.setItem('rue3d_mp_room',room);const ws=new WebSocket(mpEndpoint());MP.socket=ws;mpStatus('Conectando ao servidor…');ws.onopen=()=>mpSend({type:'join',room,name});ws.onmessage=e=>{let msg;try{msg=JSON.parse(e.data)}catch{return}if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;MP.self=msg.id;MP.room=msg.room;mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);mpApplyUsers(msg.players||[]);toast('🌍 Você entrou na sala '+MP.room)}else if(msg.type==='players')mpApplyUsers(msg.players||[]);else if(msg.type==='event')mpRemoteEvent(msg);else if(msg.type==='admin-ok'){MP.owner=true;ownerVerified=true;adminBadge.visible=true;mpStatus('👑 ADMIN autenticado no servidor da sala '+MP.room)}else if(msg.type==='error'){mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message)}else if(msg.type==='room-info')mpStatus('🌍 Sala '+MP.room+' • '+msg.count+' jogadores')} ;ws.onerror=()=>mpStatus('⚠ Servidor indisponível. Hospede o pacote com o servidor Node.js ou configure /ws.');ws.onclose=()=>{if(MP.socket===ws){mpClear();mpStatus('Desconectado. Toque em Entrar para reconectar.')}}};
 const mpDisconnect=()=>{if(MP.socket){try{MP.socket.close()}catch(e){}}MP.socket=null;mpClear()};
 const mpUpdate=dt=>{if(!MP.connected)return;const now=performance.now();if(now-MP.lastTx>90){MP.lastTx=now;mpSend({type:'move',x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y})}for(const [id,v] of MP.views){const u=MP.players.get(id);if(u){const p=new T.Vector3(u.x||0,u.y||0,u.z||0);v.group.position.lerp(p,Math.min(1,dt*12));v.group.rotation.y=u.yaw||0}}};
