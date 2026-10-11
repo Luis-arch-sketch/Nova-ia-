@@ -303,6 +303,35 @@ const ensureTM=pid=>{if(TMO&&TMO.pid===pid)return TMO; // idempotente: 1 esteira
  const lab=label('',640,64,10);lab.position.set(0,4.6,0);g.add(lab);sc.add(g);TMO={pid,g,lab};styleTM();return TMO};
 /* ===== Jogador ===== */
 const P={g:new T.Group(),x:0,y:0,z:8,vx:0,vy:0,vz:0,yaw:0,pitch:.45,dist:9,stun:0,train:false,ph:0};
+
+/* VITRINE VISÍVEL: Guaxinim original do Quaternius ao lado da entrada da base.
+   Esta cópia é uma exibição permanente, independente dos ovos e do inventário.
+   O modelo GLTF CC0 é carregado pela rotina do 4º mob em animals3d.js. */
+const raccoonDisplay=window.RoubeOvoVisuals
+  ?window.RoubeOvoVisuals.create(T,4,1.12,0x7d7b78,sc):creature(0x7d7b78,2);
+raccoonDisplay.position.set(9,0,-3.5);
+raccoonDisplay.rotation.y=Math.PI*.1;
+const raccoonLabel=label('🦝 GUAXINIM 3D • QUATERNIUS',512,88,6.4);
+raccoonLabel.position.set(9,4.3,-3.5);
+sc.add(raccoonLabel);
+const raccoonVisit=document.createElement('button');
+raccoonVisit.id='ovoGoRaccoon';
+raccoonVisit.type='button';
+raccoonVisit.textContent='🦝 VER GUAXINIM';
+raccoonVisit.setAttribute('aria-label','Ir até o guaxinim 3D na base');
+Object.assign(raccoonVisit.style,{
+ position:'fixed',left:'50%',bottom:'calc(16px + env(safe-area-inset-bottom,0px))',
+ transform:'translateX(-50%)',zIndex:'31',background:'#ffd25b',color:'#28231c',
+ border:'2px solid #fff',borderRadius:'18px',padding:'10px 13px',
+ font:'800 13px system-ui,sans-serif',boxShadow:'0 4px 15px #0006',whiteSpace:'nowrap'
+});
+document.body.appendChild(raccoonVisit);
+raccoonVisit.onclick=()=>{
+ P.x=7;P.y=0;P.z=5;P.vx=P.vy=P.vz=0;P.train=false;P.yaw=0;P.pitch=.34;
+ if(typeof toast==='function')toast('🦝 Guaxinim do Quaternius logo à frente!');
+};
+window.__ovoRaccoonDisplay=raccoonDisplay;
+
 const lim=(x,y,c,w,h)=>{const p=new T.Group();p.position.set(x,y,0);mk(GB,c,[w,h,w],p,[0,-h/2,0]);P.g.add(p);return p};
 mk(GB,0x3b82f6,[.9,1,.5],P.g,[0,1.5,0]);mk(GS,0xf1c27d,[.38,.38,.38],P.g,[0,2.25,0]);mk(GS,0x222222,[.4,.2,.4],P.g,[0,2.45,-.05]);
 const aL=lim(-.6,2,0xf1c27d,.28,.9),aR=lim(.6,2,0xf1c27d,.28,.9),lL=lim(-.25,1,0x2b2f4a,.34,1),lR=lim(.25,1,0x2b2f4a,.34,1);sc.add(P.g);
