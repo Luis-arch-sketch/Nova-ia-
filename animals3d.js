@@ -459,8 +459,16 @@ function create(three,id,k,col,scene){
     g.userData.modelVersion="Quaternius CubeWorld Raccoon CC0";
     if(asset.animations&&asset.animations.length&&T.AnimationMixer){
      const mixer=new T.AnimationMixer(asset.scene);
-     const selected=asset.animations.find(function(x){return x.name==="Idle";})||asset.animations[0];
-     mixer.clipAction(selected).play();
+     const clips=asset.animations;
+     const clipByName=name=>clips.find(x=>x.name.toLowerCase()===name.toLowerCase())||clips[0];
+     const actions={
+      idle:mixer.clipAction(clipByName("Idle")),
+      walk:mixer.clipAction(clipByName("Walk")),
+      run:mixer.clipAction(clipByName("Run"))
+     };
+     actions.idle.play();
+     g.userData.actions=actions;
+     g.userData.activeClip="idle";
      g.userData.mixer=mixer;
      g.userData.mixerLastTime=null;
     }
@@ -473,9 +481,16 @@ function create(three,id,k,col,scene){
 }
 function animate(g,t,phase){
  if(g?.userData?.mixer){
-  const last=g.userData.mixerLastTime;
-  g.userData.mixerLastTime=t;
-  g.userData.mixer.update(Math.min(.08,Math.max(0,last===null?0:t-last)));
+  const data=g.userData,desired=data.mobAction||"idle";
+  if(data.actions&&data.activeClip!==desired){
+   const current=data.actions[data.activeClip];
+   const next=data.actions[desired]||data.actions.idle;
+   if(current!==next){if(current)current.fadeOut(.16);next.reset().fadeIn(.16).play()}
+   data.activeClip=desired;
+  }
+  const last=data.mixerLastTime;
+  data.mixerLastTime=t;
+  data.mixer.update(Math.min(.08,Math.max(0,last===null?0:t-last)));
   return;
  }
  const a=g?.userData?.motion;if(!a)return;
