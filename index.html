@@ -107,6 +107,7 @@ button:disabled{opacity:.5}
 #roomPanel button{margin:6px 5px 4px 0}#roomStatus{font-size:13px;color:#cfe3ff;white-space:pre-line}#roomPlayerList{font-size:13px;color:#ffe7ff}
 </style></head><body>
 <canvas id=c></canvas><div id=hud></div>
+<button id="ovoGoRaccoon" type="button" aria-label="Ir até o guaxinim 3D na base" style="position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:31;background:#ffd25b;color:#28231c;border:2px solid #fff;border-radius:18px;padding:10px 13px;font:800 13px system-ui,sans-serif;box-shadow:0 4px 15px #0006;white-space:nowrap">🦝 VER GUAXINIM</button>
 <div id=top><button id=bam>⚙ Admin</button><button id=bRank>🏆 Placar</button><button id=roomButton>🌍 Salas</button><button id=bm>Loja</button><button id=bf>Tela cheia</button></div>
 <div id=js></div><div id=jk></div><button class=b id=bj>Pular</button><button class=b id=ba>Ação</button><button id=recoverBtn type=button title="Recuperar movimento sem apagar o progresso">🛠 Destravar</button>
 <div id="roomPanel"><button id="roomClose" style="float:right">✕</button><h2>🌍 Multiplayer por salas</h2><p>Entre na mesma sala que seus amigos para vê-los no mapa. Somente o ADMIN pode transmitir eventos.</p><label>Nome de jogador (2–20 caracteres)</label><input id="roomName" maxlength="20" placeholder="Seu nome" autocomplete="off"><label>Código da sala (3–12 caracteres)</label><input id="roomCode" maxlength="12" placeholder="EX.: OVOS123" autocomplete="off"><button id="roomJoin">🚪 Entrar / criar sala</button><button id="roomLeave">Sair da sala</button><div id="roomStatus" aria-live="polite">Desconectado</div><h3>👥 Jogadores</h3><div id="roomPlayerList">—</div><small>Salas sincronizam jogadores e eventos. Ovos, pets e dinheiro ainda são individuais. O ADMIN online exige autenticação do servidor.</small><hr style="border:0;border-top:1px solid #87a9d766;margin:17px 0 12px"><h3 style="color:#ffb6ee">💾 Meu progresso</h3><p style="font-size:13px;color:#d6e6ff">O jogo salva neste navegador. Para trocar de endereço ou aparelho, exporte um backup e restaure no novo jogo.</p><div id="saveState" aria-live="polite" style="font-size:13px;padding:8px;background:#243a5a;border-radius:9px;color:#eaf5ff">Verificando salvamento…</div><button id="saveNowBtn" type="button">💾 Salvar agora</button><button id="saveBackupBtn" type="button">📦 Baixar backup</button><button id="restoreBackupBtn" type="button">📥 Restaurar backup</button><input id="restoreBackupFile" type="file" accept=".json,application/json" style="display:none"><p style="font-size:12px;color:#bcd6ff">Para recuperar um progresso do endereço antigo, abra o jogo antigo no mesmo navegador, entre em <strong>Admin → Dados → Exportar backup</strong>, depois use “Restaurar backup” aqui. Guarde o arquivo com cuidado.</p></div><div id=pn></div><div id=ms></div><div id=an></div><div id="abBanner" aria-live="polite"><strong id="abTitle"></strong><span id="abClock"></span></div><div id="abMessage" aria-live="assertive"><span class="broadcastBadge">👑 MENSAGEM DO ADMIN</span><div class="broadcastText" id="abMessageText"></div><div class="broadcastProgress"><span id="abMessageBar"></span></div></div><div id="rankOverlay"><div id="rankCard" role="dialog" aria-modal="true" aria-label="Placar de jogadores"><div class="rankHeader"><strong>🏆 MELHORES JOGADORES</strong><button id="rankClose" type="button">✕ Fechar</button></div><p>Ranking local de jogadores registrados • Administrador oculto</p><div id="rankList"></div><small>Este jogo é local. Para um placar online entre dispositivos, será necessário um servidor.</small></div></div><div id="adWrap" role="dialog" aria-modal="true" aria-label="Painel de administrador"><div id="adPanel" class="locked"><div id="adTop"><div><h2>⚙ Painel Admin</h2><small>Roube um Ovo 3D • Acesso com chave</small></div><button id="adClose" aria-label="Fechar painel">✕ Fechar</button></div><div id="adAuth"><form id="adLogin" autocomplete="off"><div class="adLockIcon" aria-hidden="true">🔐</div><h3>Área do Administrador</h3><p>Digite sua chave especial para liberar os comandos do jogo.</p><label for="adKey">Chave de acesso</label><input id="adKey" name="adminKey" type="password" placeholder="Sua chave especial" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required><button id="adEnter" type="submit">🔓 Desbloquear painel</button><div id="adAuthError" role="status" aria-live="polite"></div></form></div><div id="adTabs"></div><div id="adContent"></div></div></div>
@@ -314,22 +315,15 @@ raccoonDisplay.rotation.y=Math.PI*.1;
 const raccoonLabel=label('🦝 GUAXINIM 3D • QUATERNIUS',512,88,6.4);
 raccoonLabel.position.set(9,4.3,-3.5);
 sc.add(raccoonLabel);
-const raccoonVisit=document.createElement('button');
-raccoonVisit.id='ovoGoRaccoon';
-raccoonVisit.type='button';
-raccoonVisit.textContent='🦝 VER GUAXINIM';
-raccoonVisit.setAttribute('aria-label','Ir até o guaxinim 3D na base');
-Object.assign(raccoonVisit.style,{
- position:'fixed',left:'50%',bottom:'calc(16px + env(safe-area-inset-bottom,0px))',
- transform:'translateX(-50%)',zIndex:'31',background:'#ffd25b',color:'#28231c',
- border:'2px solid #fff',borderRadius:'18px',padding:'10px 13px',
- font:'800 13px system-ui,sans-serif',boxShadow:'0 4px 15px #0006',whiteSpace:'nowrap'
-});
-document.body.appendChild(raccoonVisit);
+const raccoonVisit=document.getElementById('ovoGoRaccoon');
 raccoonVisit.onclick=()=>{
  P.x=7;P.y=0;P.z=5;P.vx=P.vy=P.vz=0;P.train=false;P.yaw=0;P.pitch=.34;
  if(typeof toast==='function')toast('🦝 Guaxinim do Quaternius logo à frente!');
 };
+// Abrindo o endereço com ?guaxinim=1, a câmera vai direto ao modelo.
+if(new URLSearchParams(location.search).has('guaxinim')){
+ P.x=7;P.y=0;P.z=5;P.vx=P.vy=P.vz=0;P.train=false;P.yaw=0;P.pitch=.34;
+}
 window.__ovoRaccoonDisplay=raccoonDisplay;
 
 const lim=(x,y,c,w,h)=>{const p=new T.Group();p.position.set(x,y,0);mk(GB,c,[w,h,w],p,[0,-h/2,0]);P.g.add(p);return p};
