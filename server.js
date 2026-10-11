@@ -62,13 +62,13 @@ const applyGraphicUpgrade=html=>{
  }
  if(html.split('<script>\n').length!==2)throw new Error('Script principal não encontrado');
  // Embutir os modelos para evitar falhas de carregamento de arquivos separados no Android.
+ const loaderSource=fs.readFileSync(path.join(__dirname,'assets','vendor','GLTFLoader-r128.js'),'utf8');
  const animalsSource=fs.readFileSync(path.join(__dirname,'animals3d.js'),'utf8');
  const raccoonSource=fs.readFileSync(path.join(__dirname,'assets','models','Raccoon_Quaternius_CubeWorld.gltf'),'utf8');
  html=html.replace('</style>','@media(max-width:450px){#hud{top:calc(42px + env(safe-area-inset-top,0px));gap:2px;max-width:63vw}}\n</style>');
  // O glTF contém as próprias texturas e animações: nenhum download no Android.
- html=html.replace('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>',
-   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>');
- return html.replace('<script>\n','<script>\nconst RACCOON_SOURCE_JSON='+JSON.stringify(raccoonSource)+';\n'+animalsSource+'\n</script>\n<script>\n');
+ // GLTFLoader roda dentro do jogo; dependência remota extra removida.
+ return html.replace('<script>\n','<script>\n'+loaderSource+'\nconst RACCOON_SOURCE_JSON='+JSON.stringify(raccoonSource)+';\n'+animalsSource+'\n</script>\n<script>\n');
 };
 const gameHtml=installServerBrowser(applyGraphicUpgrade(applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))));
 const httpServer=http.createServer((req,res)=>{
