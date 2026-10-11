@@ -30,7 +30,14 @@ const listPublicRooms=requested=>{
 };
 const broadcast=(room,obj,except=null)=>{for(const c of peers(room))if(c!==except)send(c,obj)};
 const broadcastPresence=room=>broadcast(room,{type:'players',players:[...peers(room)].map(publicUser)});
-const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);p?.delete(ws);ws.room=null;ws.admin=false;if(p?.size===0){rooms.delete(r);roomLimitedEggs.delete(r);}else broadcastPresence(r)};
+const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);
+ if(ws.heldLimited){
+  const eggs=roomLimitedEggs.get(r)||[];
+  eggs.push(ws.heldLimited);roomLimitedEggs.set(r,eggs);
+  broadcast(r,{type:'event',kind:'limited-drop',egg:ws.heldLimited},ws);
+  ws.heldLimited=null;
+ }
+ p?.delete(ws);ws.room=null;ws.admin=false;if(p?.size===0){rooms.delete(r);roomLimitedEggs.delete(r);}else broadcastPresence(r)};
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):0};
 const sameHex=(a,b)=>{try{const x=Buffer.from(a,'hex'),y=Buffer.from(b,'hex');return x.length===32&&y.length===32&&crypto.timingSafeEqual(x,y)}catch{return false}};
 const error=(ws,message)=>send(ws,{type:'error',message});
@@ -101,7 +108,7 @@ const httpServer=http.createServer((req,res)=>{
  res.writeHead(404).end('Not found');
 });
 const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:4096});
-wss.on('connection',ws=>{ws.id=crypto.randomUUID().slice(0,8);ws.room=null;ws.admin=false;ws.name='';ws.x=0;ws.y=0;ws.z=8;ws.yaw=0;ws.lastMove=0;ws.failedAdminCount=0;
+wss.on('connection',ws=>{ws.id=crypto.randomUUID().slice(0,8);ws.room=null;ws.admin=false;ws.heldLimited=null;ws.name='';ws.x=0;ws.y=0;ws.z=8;ws.yaw=0;ws.lastMove=0;ws.failedAdminCount=0;
 ws.on('message',raw=>{let m;try{m=JSON.parse(String(raw));if(!m||typeof m!=='object')return}catch{return}
 if(m.type==='join'||m.type==='quick-join'||m.type==='create-server'){
 const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?openPublicRoom():String(m.room||'').toUpperCase();
@@ -112,6 +119,22 @@ ws.room=room;ws.name=name;ws.admin=false;ws.x=0;ws.y=0;ws.z=8;
 if(!rooms.has(room)){rooms.set(room,new Set());roomLimitedEggs.set(room,[])}rooms.get(room).add(ws);
 send(ws,{type:'joined',id:ws.id,room,players:[...peers(room)].map(publicUser),limitedEggs:roomLimitedEggs.get(room)||[]});broadcastPresence(room);return}
 if(!ws.room)return;
+if(m.type==='limited-take'){
+ // Respeita o ovo da sala e exige proximidade real do jogador.
+ if(ws.heldLimited||!Number.isFinite(m.x)||!Number.isFinite(m.z))return;
+ const eggs=roomLimitedEggs.get(ws.room)||[];
+ const idx=eggs.findIndex(p=>Math.hypot(p.x-m.x,p.z-m.z)<1.1);
+ if(idx<0||Math.hypot(ws.x-m.x,ws.z-m.z)>11)return;
+ const [egg]=eggs.splice(idx,1);
+ ws.heldLimited=egg;
+ broadcast(ws.room,{type:'event',kind:'limited-take',egg},ws);return;
+}
+if(m.type==='limited-drop'){
+ if(!ws.heldLimited)return;
+ const egg={x:bound(m.x,-92,92),z:bound(m.z,-937,49)};
+ roomLimitedEggs.get(ws.room)?.push(egg);ws.heldLimited=null;
+ broadcast(ws.room,{type:'event',kind:'limited-drop',egg},ws);return;
+}
 if(m.type==='move'){const now=Date.now();if(now-ws.lastMove<45)return;ws.lastMove=now;
 ws.x=bound(m.x,-99,99);ws.y=bound(m.y,-1,50);ws.z=bound(m.z,-945,50);ws.yaw=bound(m.yaw,-100,100);
 broadcast(ws.room,{type:'players',players:[...peers(ws.room)].map(publicUser)},ws);return}
