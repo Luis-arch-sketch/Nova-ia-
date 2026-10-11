@@ -133,7 +133,7 @@ const BI=[
 ['Floresta',0x6cc24a,0x2e8b3a,0,'Chicken','Chicken,Dog,Bird,Burrowing Owl,Guaxinim,Fox,Bear,Brr Brr Patapim'],
 ['Lago',0x3d9bd8,0x2fae8c,900,'Swan','Frog,Duckling,Catfish,Turtle,Trulimero Trulicina,Swan,Axolotl,Leviathan'],
 ['Deserto',0xe5c46b,0x5a9a3c,1e4,'Scorpion','Jerboa,Fennec,Camel,Tob Tobi Tob Tob,Snake,Sand Spider,Scorpion,Royal Sphinx'],
-['Selva',0x2f8f3d,0x1d6b2a,4e4,'Tiger','Chimpanzee,Toucan,Crocodile,Gorilla,Orangutini Ananassini,Spider,Tiger,King Snake'],
+['Selva',0x2f8f3d,0x1d6b2a,4e4,'Guaxinim','Chimpanzee,Toucan,Crocodile,Gorilla,Orangutini Ananassini,Spider,Tiger,King Snake'],
 ['Neve',0xeaf6ff,0xcfe8f5,1.7e5,'Yeti','Penguin,Walrus,Polar Bear,Sabertooth Tiger,Mammoth,King Mammoth,Yeti,Ice Dragon'],
 ['Vulcão',0x5a2a22,0x2a1a1a,7e5,'Cerberus','Lava Gecko,Lava Frog,Flaming Bull,Lava Iguana,Chillin Chilli,Cerberus,Phoenix,Lava Dragon'],
 ['Oceano Abissal',0x1d4f91,0x2a9d8f,2.5e6,'Beluga','Parrotfish,Swordfish,Shark,Orca,Whale Shark,Beluga Whale,Kraken,El Maja'],
@@ -216,7 +216,12 @@ const creature=(col,k)=>{const g=new T.Group(),m=new T.MeshLambertMaterial({colo
 /* ===== Mundo: chão quadriculado, caminhos, muros, montanhas, nuvens, árvores ===== */
 const OB=[]; // obstáculos circulares {x,z,r}
 plane(204,1010,0x5fbf4a,0,0,-450,tex(204/8,1010/8));
-{const t=tex(204/8,70/8);BI.forEach((b,i)=>plane(204,70,b.g,0,.02,-65-70*i,t))}
+// Treze partes com pisos e bordas próprios; a estrada central mantém a passagem livre.
+BI.forEach((b,i)=>{
+ const z=-65-70*i;
+ plane(200,66,b.t,0,.018,z,tex(200/8,66/8));
+ plane(190,58,b.g,0,.025,z,tex(190/8,58/8));
+})
 plane(14,1010,0xd9c8a0,0,.04,-450,tex(1,1010/8));
 {const wl=(w,d,x,z)=>mk(GB,0x8b6b4a,[w,7,d],sc,[x,3.5,z]);wl(2,1010,-102,-450);wl(2,1010,102,-450);wl(206,2,0,56);wl(206,2,0,-956)}
 {const m4=new T.Matrix4(),I=new T.Quaternion(),v=new T.Vector3(),s=new T.Vector3();
@@ -232,26 +237,34 @@ plane(14,1010,0xd9c8a0,0,.04,-450,tex(1,1010/8));
  cn.instanceColor.needsUpdate=true;tk.frustumCulled=cn.frustumCulled=false;sc.add(tk,cn)}
 /* ===== Portões físicos por Speed ===== */
 const gz=i=>-30-70*i;
+// Cada parte tem um limite físico com passagem central de 22 unidades.
+const PART_BORDERS=BI.map((b,i)=>{
+ const z=gz(i),c=new T.MeshLambertMaterial({color:b.t,emissive:b.t,emissiveIntensity:.09});
+ for(const sx of [-1,1]){
+  mk(GB,c,[89,2.7,1.1],sc,[sx*55.5,1.35,z]);
+  mk(GB,0xf2e6be,[1.6,3.5,1.6],sc,[sx*10.5,1.75,z]);
+ }
+ return z;
+});
+// Portões de todas as 13 partes, um por região.
 const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xff3344,transparent:true,opacity:.28}),[204,10,.4],sc,[0,5,z]);sc.remove(bar);
  mk(GB,0x6b4a2a,[1.2,12,1.2],sc,[-10,6,z]);mk(GB,0x6b4a2a,[1.2,12,1.2],sc,[10,6,z]);mk(GB,0x6b4a2a,[22,1.2,1.2],sc,[0,11.5,z]);
  const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);return{z,bar,l,b,req:b.req}});
 let zlim=-938;
-const upGates=()=>{GT.forEach(g=>g.l.set(g.b.n+(g.req?': recomendado Speed '+fm(g.req):': recomendado qualquer Speed')));zlim=-938}; // todas as áreas liberadas: o número da placa é só recomendação
+const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=-938}; // todas as áreas liberadas: o número da placa é só recomendação
 /* ===== Ninhos, ovos, guardiões ===== */
 const NS=[],eggs=[];
 BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
 
-/* GUARDIÃO DA PARTE 4 DA FLORESTA: guaxinim original do Quaternius.
-   Fica parado defendendo o ninho da parte 4 e só persegue
-   quem rouba o ovo Guaxinim (espécie id 4). */
+/* GUARDIÃO DA PARTE 4 DO MAPA (a Selva): guaxinim Quaternius.
+   Guarda a região inteira e persegue qualquer ladrão de ovos da parte 4. */
 let raccoonGuard=null;
 if(window.RoubeOvoVisuals?.create){
- const protectedNest=NS.find(n=>n.b===0&&n.j===4);
- if(protectedNest){
-  const home=new T.Vector3(protectedNest.x+1.5,0,protectedNest.z+1.5);
+ const home=new T.Vector3(0,0,-65-70*3);
+ {
   const m=window.RoubeOvoVisuals.create(T,4,0.83,0x89847c,sc);
   m.position.copy(home);
-  const l=label('🦝 GUAXINIM GUARDIÃO',480,72,4.7);
+  const l=label('🦝 GUAXINIM • PARTE 4',480,72,5.3);
   l.position.set(home.x,3.8,home.z);
   sc.add(l);
   raccoonGuard={m,home,l,st:'guard',t:0};
@@ -304,6 +317,8 @@ const limitedAuraUp=(e,dt)=>{const a=e.aura;if(!a)return;const u=a.userData;e.me
 };
 const gs=i=>i?walk(BI[i].req)*CFG.gm:CFG.g0;
 const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08);m.position.copy(home);return{b:i,m,home,st:'sleep',t:0,l:(()=>{const l=label('',256,64,6);sc.add(l);return l})()}});
+// O guardião genérico da 4ª área sai do mapa: só o guaxinim protege a parte 4.
+if(GD[3]){sc.remove(GD[3].m);sc.remove(GD[3].l);}
 /* ===== Base: cerca, depósito, incubadoras, esteira única e privada ===== */
 {const f=(x,z,w,d)=>mk(GB,0xc89b5a,[w,1.6,d],sc,[x,.8,z]);f(-20,10,.6,40);f(20,10,.6,40);f(0,30,40,.6);f(-12.5,-10,15,.6);f(12.5,-10,15,.6);
  for(let k=-20;k<=20;k+=2){OB.push({x:k,z:30,r:1});if(Math.abs(k)>=6)OB.push({x:k,z:-10,r:1})}
@@ -344,11 +359,21 @@ const adminBadge=(()=>{
 })();
 let carry=null;
 const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(dx,dz),m=b.r+r;if(d<m&&d>1e-4){o.x=b.x+dx/d*m;o.z=b.z+dz/d*m}}};
+// Colisão nas divisórias: cada parte só pode ser atravessada pelo portão central.
+const partBorderCollision=(player,previousZ)=>{
+ if(Math.abs(player.x)<10)return;
+ for(const z of PART_BORDERS){
+  if((previousZ-z)*(player.z-z)<=0){
+   player.z=previousZ>=z?z+1.25:z-1.25;
+   player.vz=0;break;
+  }
+ }
+};
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
 const findEgg=()=>{let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
 const take=e=>{eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
- // O ovo Guaxinim é defendido pelo próprio guaxinim, não pelo guardião genérico.
- if(e.s===4&&raccoonGuard){if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=CFG.wake}}
+ // A PARTE 4 é protegida exclusivamente pelo guaxinim, em todos os oito ninhos.
+ if(e.b===3&&raccoonGuard){if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=CFG.wake}}
  else{const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}}
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID)persistLimitedWorld();beep(200,.15)};
@@ -406,7 +431,7 @@ $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e
 const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
- $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+(ownerVerified&&A.personalFast?' ⚡ Corrida 10×':'')+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+Object.keys(S.idx).length+'/'+SPC.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
+ $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+(ownerVerified&&A.personalFast?' ⚡ Corrida 10×':'')+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+Object.keys(S.idx).length+'/'+SPC.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
  $('ba').textContent=carry?'Largar':P.train?'Parar':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
 const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m'+Math.floor(s%60)+'s':Math.ceil(s)+'s';
 /* ===== Trail ===== */
@@ -416,7 +441,7 @@ let TT=0,nextReset=Date.now()/1e3+CFG.reset,nite=0,sec=0,hq=0,sv=0,tpI=0,tpT=0,l
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
- // Guardião da parte 4: parado no ninho, alerta ao roubo, persegue, acerta e retorna.
+ // Guaxinim da parte 4: parado na área, alerta ao roubo, persegue e retorna.
  if(raccoonGuard){
   const g=raccoonGuard,p=g.m.position,dist=Math.hypot(P.x-g.home.x,P.z-g.home.z);
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
@@ -461,7 +486,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(P.stun>0){P.stun-=dt;sp=0}
  const s_=Math.sin(P.yaw),c_=Math.cos(P.yaw);let tx=(-s_*iy+c_*ix)*sp,tz=(-c_*iy-s_*ix)*sp;
  if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}
- const k=Math.min(1,dt*10);P.vx+=(tx-P.vx)*k;P.vz+=(tz-P.vz)*k;P.x+=P.vx*dt;P.z+=P.vz*dt;
+ const k=Math.min(1,dt*10);P.vx+=(tx-P.vx)*k;P.vz+=(tz-P.vz)*k;const oldPartZ=P.z;P.x+=P.vx*dt;P.z+=P.vz*dt;partBorderCollision(P,oldPartZ);
  P.vy-=30*abuseGravity()*dt;P.y+=P.vy*dt;if(P.y<0){P.y=0;P.vy=0}
  if(!Number.isFinite(P.x)||!Number.isFinite(P.z)||!Number.isFinite(P.y)||!Number.isFinite(P.vx)||!Number.isFinite(P.vz)){
   P.x=0;P.z=8;P.y=0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
@@ -477,7 +502,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  cam.position.lerp(NV,Math.min(1,dt*12));cam.lookAt(CT);sun.position.set(P.x+30,55,P.z+25);sun.target.position.set(P.x,0,P.z);
  stripe.offset.y-=P.train?dt*1.2:0;
  /* guardiões */
- GD.forEach(g=>{if((A.freeze&&!abuseIs('fury'))||abuseIs('freeze')){g.st='sleep';g.t=0;g.m.position.copy(g.home)}const p=g.m.position,i=g.b;
+ GD.forEach(g=>{if(g.b===3)return; if((A.freeze&&!abuseIs('fury'))||abuseIs('freeze')){g.st='sleep';g.t=0;g.m.position.copy(g.home)}const p=g.m.position,i=g.b;
   if(g.st==='wake'){g.t-=dt;if(g.t<=0){g.st='chase';beep(90,.4,'sawtooth',.06)}}
   if(g.st==='chase'){if((!carry&&!abuseIs('fury'))||Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash)g.st='ret';else{aim(g,P.x,P.z,gs(i),dt);if(Math.hypot(P.x-p.x,P.z-p.z)<3.2){if(abuseIs('fury')&&!carry)abuseGuardianHit(g);else hit(g)}}}
   else if(g.st==='ret'){aim(g,g.home.x,g.home.z,gs(i)*.7,dt);if(Math.hypot(p.x-g.home.x,p.z-g.home.z)<1)g.st='sleep'}
