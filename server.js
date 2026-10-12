@@ -52,7 +52,7 @@ const applyOwnerTreadmill=html=>{
 };
 // Script pequeno servido junto ao jogo, preservando a esteira 100Qav/s e saves.
 const installServerBrowser=html=>{
- const rules=[["const mpJoin=()=>{","const mpJoin=(mode='join')=>{"],["if(name.length<2||room.length<3)","if(name.length<2||(mode==='join'&&room.length<3))"],["ws.onopen=()=>mpSend({type:'join',room,name});","ws.onopen=()=>mpSend({type:mode,room,name});"],["$('roomJoin').onclick=mpJoin;","$('roomJoin').onclick=()=>mpJoin('join');"],["if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;","if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);$('roomCode').value=msg.room;try{localStorage.setItem('rue3d_mp_room',msg.room)}catch(e){}MP.connected=true;"]];
+ const rules=[["const mpJoin=()=>{","const mpJoin=(mode='join')=>{"],["if(name.length<2||room.length<3)","if(name.length<2||(mode==='join'&&room.length<3))"],["ws.onopen=()=>mpSend({type:'join',room,name});","ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name})};"],["$('roomJoin').onclick=mpJoin;","$('roomJoin').onclick=()=>mpJoin('join');"],["if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;","if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);$('roomCode').value=msg.room;try{localStorage.setItem('rue3d_mp_room',msg.room)}catch(e){}MP.connected=true;"]];
  for(const [from,to] of rules){
   if(html.split(from).length!==2)throw new Error('Trecho multiplayer inesperado: '+from.slice(0,65));
   html=html.replace(from,to);
@@ -121,10 +121,11 @@ send(ws,{type:'joined',id:ws.id,room,players:[...peers(room)].map(publicUser),li
 if(!ws.room)return;
 if(m.type==='limited-take'){
  // Respeita o ovo da sala e exige proximidade real do jogador.
- if(ws.heldLimited||!Number.isFinite(m.x)||!Number.isFinite(m.z))return;
  const eggs=roomLimitedEggs.get(ws.room)||[];
+ const resync=()=>send(ws,{type:'limited-sync',eggs});
+ if(ws.heldLimited||!Number.isFinite(m.x)||!Number.isFinite(m.z)){resync();return}
  const idx=eggs.findIndex(p=>Math.hypot(p.x-m.x,p.z-m.z)<1.1);
- if(idx<0||Math.hypot(ws.x-m.x,ws.z-m.z)>11)return;
+ if(idx<0||Math.hypot(ws.x-m.x,ws.z-m.z)>11){resync();return}
  const [egg]=eggs.splice(idx,1);
  ws.heldLimited=egg;
  broadcast(ws.room,{type:'event',kind:'limited-take',egg},ws);return;
@@ -161,6 +162,8 @@ if(m.type==='admin-limited'){
 }
 if(m.type==='admin-limited-clear'){
  roomLimitedEggs.set(ws.room,[]);
+ // Retirar também os ovos carregados para impedir reaparecimento após limpar.
+ for(const player of peers(ws.room))player.heldLimited=null;
  broadcast(ws.room,{type:'event',kind:'limited-clear'},ws);return;
 }
 });ws.on('close',()=>leave(ws));ws.on('error',()=>leave(ws))});
