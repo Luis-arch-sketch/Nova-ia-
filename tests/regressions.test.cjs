@@ -148,12 +148,12 @@ test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed rec
  assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
  assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
  assert(!html.includes('const guardianPushBack='));
- assert(html.includes("if((!carry&&!rush&&!abuseIs('fury'))||Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash)g.st='ret'"));
- assert(html.includes("if((!carry&&!rush)||dist>95||frozen)g.st='ret'"));
+ assert(html.includes("if(!carry&&!abuseIs('fury')){g.st='ret';g.rush=false}"));
+ assert(html.includes("if(!carry||frozen){g.st='ret';g.rush=false}"));
  assert(html.includes("if(rush&&g.st!=='chase'){g.st='chase';g.t=0}"));
  assert(html.includes("if(len<3.5)hit(g)"));
- assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});"));
- assert(html.includes("if(raccoonGuard&&(raccoonGuard.st==='chase'||raccoonGuard.st==='wake'))raccoonGuard.st='ret'"));
+ assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
+ assert(html.includes("if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}"));
  assert(html.includes("const findEgg=()=>{"));
 });
 
@@ -165,7 +165,29 @@ test('vídeo: Selva com trail 2.5x usa Speed efetiva acima de 40K',()=>{
  assert(20100*2.5>40000);
  assert(html.includes("P.stun=.6;"));
  assert(html.includes("P.x=Math.max(-99,Math.min(99,P.x+dx/d*5));"));
- assert(html.includes("const move=Math.min(len,36*dt)"));
+ assert(html.includes("else aim(g,g.home.x,g.home.z,36,dt)"));
  assert(html.includes("g.l.set(carry&&g.st==='chase'"));
  assert(html.includes("toast('O guardião recuperou o ovo. Você está de mãos livres!')"));
+});
+
+test('bichos seguem o ovo roubado ATÉ O DEPÓSITO na base, sem corte -14 ou 95 metros',()=>{
+ assert(html.includes('const guardPath=(p,x,z)=>{'));
+ assert(html.includes('if(z>-10&&p.z<-6)'));
+ assert(html.includes('if(Math.abs(p.x)>3)return [0,p.z]'));
+ assert(html.includes('return [0,-4]'));
+ assert(html.includes('if(z<-10&&p.z>-14)'));
+ assert(html.includes('return [0,-16]'));
+ assert(!html.includes("p.z=Math.min(p.z,-14)"));
+ assert(!html.includes('dist>95||frozen'));
+ assert(!html.includes('Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash'));
+ assert(html.includes("if(!carry||frozen){g.st='ret';g.rush=false}"));
+ assert(html.includes("const speed=g.rush?guardianRushSpeed(3)"));
+ assert(html.includes("aim(g,P.x,P.z,speed,dt)"));
+ assert(html.includes("else aim(g,g.home.x,g.home.z,36,dt)"));
+ assert(html.includes("if(rush)g.rush=true"));
+ assert(html.includes("g.rush?guardianRushSpeed(i):gs(i)"));
+ assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
+ assert(html.includes("if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}"));
+ assert(html.includes("if(carry&&near(0,-4,3.6))"));
+ assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
 });
