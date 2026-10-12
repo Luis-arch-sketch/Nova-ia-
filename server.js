@@ -105,14 +105,14 @@ const httpServer=http.createServer((req,res)=>{
  }
  if(u.pathname.startsWith('/voices/fruits/')){
   const filename=u.pathname.slice('/voices/fruits/'.length);
-  if(!new Set(['saudacao.mp3','opcoes.mp3','pera.mp3','maca.mp3','precos.mp3']).has(filename)){
+  if(!new Set(['saudacao.mp3','opcoes.mp3','pera.mp3','maca.mp3','precos.mp3','sprite.ogg']).has(filename)){
    res.writeHead(404).end('Áudio inexistente');return;
   }
   const assetPath=path.join(__dirname,'voices','fruits',filename);
   if(!fs.existsSync(assetPath)){res.writeHead(404).end('Áudio aguardando envio');return}
   const stream=fs.createReadStream(assetPath);
   stream.on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()});
-  res.writeHead(200,{'Content-Type':'audio/mpeg','Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});
+  res.writeHead(200,{'Content-Type':filename.endsWith('.ogg')?'audio/ogg':'audio/mpeg','Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});
   stream.pipe(res);return;
  }
  if(u.pathname==='/api/servers'){
