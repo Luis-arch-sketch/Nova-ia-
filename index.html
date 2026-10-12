@@ -131,8 +131,8 @@ const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,i
 const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED'],RS=[0,1,2,3,4,7,8,9]; // RS: raridade de cada posição de espécie no bioma
 
 const BI=[
-['Floresta',0x6cc24a,0x2e8b3a,0,'Chicken','Chicken,Dog,Bird,Burrowing Owl,Guaxinim,Fox,Bear,Brr Brr Patapim'],
-['Lago',0x3d9bd8,0x2fae8c,900,'Swan','Frog,Duckling,Catfish,Turtle,Trulimero Trulicina,Swan,Axolotl,Leviathan'],
+['Floresta',0x6cc24a,0x2e8b3a,0,'Bear',',Dog,Bird,Burrowing Owl,Guaxinim,Fox,Bear,Brr Brr Patapim'],
+['Lago',0x3d9bd8,0x2fae8c,900,'Swan','Frog,,Catfish,Turtle,Trulimero Trulicina,Swan,Axolotl,Leviathan'],
 ['Deserto',0xe5c46b,0x5a9a3c,1e4,'Scorpion','Jerboa,Fennec,Camel,Tob Tobi Tob Tob,Snake,Sand Spider,Scorpion,Royal Sphinx'],
 ['Selva',0x2f8f3d,0x1d6b2a,4e4,'Guaxinim','Chimpanzee,Toucan,Crocodile,Gorilla,Orangutini Ananassini,Spider,Tiger,King Snake'],
 ['Neve',0xeaf6ff,0xcfe8f5,1.7e5,'Yeti','Penguin,Walrus,Polar Bear,Sabertooth Tiger,Mammoth,King Mammoth,Yeti,Ice Dragon'],
@@ -157,6 +157,9 @@ const LIMITED_RATE_TEXT='1000000000000000000000000000000000000000000000000000000
 const LIMITED_RATE=Number(LIMITED_RATE_TEXT);
 const LIMITED_ID=SPC.length;
 SPC.push({id:LIMITED_ID,n:'LIMITED ∞ • Dragão de Fogo',b:0,r:10,inc:LIMITED_RATE});
+// O pintinho e o pato ficam fora do jogo; manter IDs antigos preserva os saves.
+const REMOVED_BIRDS=new Set([0,9]);
+const ACTIVE_SPECIES=SPC.filter(p=>!REMOVED_BIRDS.has(p.id));
 /* ===== Estado e save (local) ===== */
 const KEY='rue3d_v1';
 let S={pid:'p'+Math.random().toString(36).slice(2,9),sp:0,$:0,tm:0,bl:0,tr:-1,own:[],pets:[],inc:[null,null,null,null],idx:{},t:Date.now(),id:1};
@@ -180,7 +183,7 @@ const incomeView=()=>fm(tot);
 const eff=()=>S.sp*(S.tr>=0?TR[S.tr][1]:1),walk=s=>Math.min(70,8+3.2*Math.log10(1+s));
 const pinc=p=>p.s===LIMITED_ID?LIMITED_RATE:SPC[p.s].inc*SZ[p.z][2]*(1+p.m.reduce((a,k)=>a+MUT[k][1]-1,0));
 let AP=[],tot=0,dirty=true;
-const recalc=()=>{AP=[...S.pets].sort((a,b)=>pinc(b)-pinc(a)).slice(0,CAP[S.bl]);tot=AP.reduce((a,p)=>a+pinc(p),0);dirty=true};
+const recalc=()=>{AP=S.pets.filter(p=>!REMOVED_BIRDS.has(p.s)).sort((a,b)=>pinc(b)-pinc(a)).slice(0,CAP[S.bl]);tot=AP.reduce((a,p)=>a+pinc(p),0);dirty=true};
 let sd=7;const rn=()=>(sd=sd*16807%2147483647)/2147483647;
 const pick=a=>{let r=Math.random()*a.reduce((x,y)=>x+y[3],0);for(let i=0;i<a.length;i++){r-=a[i][3];if(r<0)return i}return 0};
 let AC;const beep=(f,d=.12,ty='square',v=.04)=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(t+d)}catch(e){}};
@@ -274,7 +277,7 @@ if(window.RoubeOvoVisuals?.create){
 
 const newEgg=(b,j)=>{const z=pick(SZ);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
 const eggMesh=e=>{const limited=e.s===LIMITED_ID,c=limited?new T.Color(0xff410c):new T.Color().setHSL((e.s*37%360)/360,.65,.62),m=new T.Mesh(GS,new T.MeshLambertMaterial({color:c,emissive:limited?0xff7e17:c.clone().multiplyScalar(e.j>=5?.45:0),emissiveIntensity:limited?.75:1}));m.castShadow=true;m.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited?3.8:1));sc.add(m);return m};
-const regrow=first=>{const nw=[],sp=n=>{const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw)};
+const regrow=first=>{const nw=[],sp=n=>{if(REMOVED_BIRDS.has(n.b*8+n.j))return null;const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw)};
 const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.3,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return new T.CanvasTexture(c)})();
 const AUR={3:[0xaf67ff,.78],4:[0xffc93d,.92],5:[0xff4acc,1.05],6:[0x6ff9ff,1.18],7:[0x2f7bff,1.3],8:[0x2fe3ff,1.45],9:[0x9fd0ff,1.65]}; // auras: Epic, Legendary, Mythic, Cosmic, Secret, Eternal e Divine
 const GBM=new T.CylinderGeometry(.35,1,26,16,1,true),GRG=new T.TorusGeometry(1.4,.05,6,36),AV=new T.Vector3();
@@ -401,9 +404,9 @@ const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p
  if(tab===0){const n=TM[S.tm],x=TM[S.tm+1];h+='<p>Sua esteira (única e só sua): <b>'+n[0]+' x'+n[1]+'</b>. O multiplicador aumenta o ganho de treino por segundo, não a velocidade de corrida.</p>'+(x?'<div class=r><span>'+x[0]+' x'+x[1]+' por $'+fm(x[2])+'</span>'+bt('tm','Melhorar',S.$<x[2])+'</div>':'<p>Nível máximo.</p>')}
  if(tab===1){const c=BC[S.bl+1];h+='<p>Base nível '+S.bl+': '+AP.length+' de '+CAP[S.bl]+' pets ativos, '+(S.pets.length-AP.length)+' guardados (ficam ativos os de maior renda).</p>'+(c!=null?'<div class=r><span>Nível '+(S.bl+1)+': '+CAP[S.bl+1]+' pets por $'+fm(c)+'</span>'+bt('up','Melhorar',S.$<c)+'</div>':'<p>Nível máximo.</p>')}
  if(tab===2)h+='<p>Equipada: '+(S.tr<0?'nenhuma':TR[S.tr][0]+' x'+TR[S.tr][1])+'. Só uma por vez; multiplica sua Speed efetiva.</p>'+TR.map((t,i)=>{const o=S.own.includes(i);return'<div class=r><span>'+t[0]+' x'+t[1]+(o?'':' por $'+fm(t[2]))+'</span>'+(o?(S.tr===i?bt('un','Tirar'):bt('e'+i,'Equipar')):bt('b'+i,'Comprar',S.$<t[2]))+'</div>'}).join('');
- if(tab===3){const by={};S.pets.forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
+ if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
   Object.keys(by).forEach(s=>{const l=by[s],c=SPC[s].inc*100;h+='<div class=r><span>'+SPC[s].n+' x'+l.length+', melhor $'+fm(Math.max(...l.map(pinc)))+'/s</span>'+(l.length>=3?bt('f'+s,'Fundir 3 por $'+fm(c),S.$<c):'')+'</div>'})}
- if(tab===4){h+='<p>Descobertos: '+Object.keys(S.idx).length+'/'+SPC.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>S.idx[i*8+j]?n:'???').join(', ')+'</p>')}
+ if(tab===4){h+='<p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>')}
  p.innerHTML=h;p.style.display='block';p.scrollTop=st};
 $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
  if(a[0]==='T')tab=+a[1];else if(a==='x')open=false;
@@ -434,7 +437,7 @@ $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e
 const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
- $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+(ownerVerified&&A.personalFast?' ⚡ Corrida 10×':'')+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+Object.keys(S.idx).length+'/'+SPC.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
+ $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+(ownerVerified&&A.personalFast?' ⚡ Corrida 10×':'')+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
  $('ba').textContent=carry?'Largar':P.train?'Parar':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
 const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m'+Math.floor(s%60)+'s':Math.ceil(s)+'s';
 /* ===== Trail ===== */
@@ -728,15 +731,15 @@ const adminUI=(resetScroll=false)=>{
  }
  if(adminTab===1){
  h='<h3>🥚 Spawn real de ovos</h3><p>O ovo aparece fisicamente no mundo e pode ser coletado, incubado e chocado normalmente.</p><div class="adGrid">';
- h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',adOpts(BI[adNum('eggBiome',0,BI.length-1,0)|0].sp,(n,j)=>`${RAR[RS[j]]} • ${n}`))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}</div>`);
+ h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',BI[adNum('eggBiome',0,BI.length-1,0)|0].sp.map((n,j)=>n?[j,`${RAR[RS[j]]} • ${n}`]:null).filter(Boolean))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}</div>`);
  h+=adCard('Raridades especiais',`<div class="adStat">${adEggsCount()} ovos no mundo</div><p>Spawn de 1 ovo no bioma escolhido, com o tamanho selecionado.</p><div class="adControls">${adBtn('spawnSecret','🔵 Secret')}${adBtn('spawnEternal','💠 Eternal')}${adBtn('spawnDivine','🌸 Divine')}${adBtn('spawnLimited','🔥 LIMITED ∞')}${adBtn('regen','Renovar ninhos','secondary')}${adBtn('clearEggs','Limpar ovos soltos','danger')}</div>`);
  h+=adCard('Incubadoras',`<div class="adStat">${S.inc.filter(Boolean).length}/4 ocupadas</div><p>Conclua imediatamente os ovos incubando; os pets irão para a coleção.</p><div class="adControls">${adBtn('hatchAll','Chocar todos')}${adBtn('hatchNext','Chocar primeiro','secondary')}</div>`);
  h+='</div>';
  }
  if(adminTab===2){
  h='<h3>🐾 Gerador de pets</h3><p>Adiciona pets verdadeiros à coleção, calcula a renda e atualiza os pets exibidos na base.</p><div class="adGrid">';
- h+=adCard('Criar pets',`${adSelect('petSpecies','Espécie do pet',SPC.filter(p=>p.id!==LIMITED_ID).map((p)=>[p.id,`${BI[p.b].n} • ${p.n} (${RAR[RS[p.r]]})`]))}${adSelect('petSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('petMutation','Mutação',[[-1,'Sem mutação'],...MUT.map((m,i)=>[i,`${m[0]} x${m[1]}`]),['all','Todas as mutações']])}${adField('petCount','Quantidade (1–30)','number','min="1" max="30" step="1"')}<div class="adControls">${adBtn('givePet','Criar pets')}${adBtn('giveSecretPet','Pet Secret aleatório','secondary')}${adBtn('giveDivinePet','Pet Divine aleatório','secondary')}</div>`);
- h+=adCard('Coleção / Index',`<div class="adStat">${S.pets.length} pets</div><p>Renda atual: $${incomeView()}/s • Index ${Object.keys(S.idx).length}/${SPC.length}</p><div class="adControls">${adBtn('indexAll','Completar Index')}${adBtn('deleteLastPet','Excluir último pet','danger')}${adBtn('deleteAllPets','Apagar todos os pets','danger')}</div>`);
+ h+=adCard('Criar pets',`${adSelect('petSpecies','Espécie do pet',SPC.filter(p=>p.id!==LIMITED_ID&&!REMOVED_BIRDS.has(p.id)).map((p)=>[p.id,`${BI[p.b].n} • ${p.n} (${RAR[RS[p.r]]})`]))}${adSelect('petSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('petMutation','Mutação',[[-1,'Sem mutação'],...MUT.map((m,i)=>[i,`${m[0]} x${m[1]}`]),['all','Todas as mutações']])}${adField('petCount','Quantidade (1–30)','number','min="1" max="30" step="1"')}<div class="adControls">${adBtn('givePet','Criar pets')}${adBtn('giveSecretPet','Pet Secret aleatório','secondary')}${adBtn('giveDivinePet','Pet Divine aleatório','secondary')}</div>`);
+ h+=adCard('Coleção / Index',`<div class="adStat">${S.pets.length} pets</div><p>Renda atual: $${incomeView()}/s • Index ${ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length}/${ACTIVE_SPECIES.length}</p><div class="adControls">${adBtn('indexAll','Completar Index')}${adBtn('deleteLastPet','Excluir último pet','danger')}${adBtn('deleteAllPets','Apagar todos os pets','danger')}</div>`);
  h+='</div>';
  }
  if(adminTab===3){
@@ -803,7 +806,7 @@ const adFinish=msg=>{save();saveAdmin();recalc();upGates();upHud();adminUI();adS
 const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
  if(eggs.filter(e=>e.s!==LIMITED_ID).length>=200)return null;
  b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));z=Math.max(0,Math.min(3,Math.floor(z)));
- const e=newEgg(b,j),n=NS[b*8+j];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
+ if(REMOVED_BIRDS.has(b*8+j))return null;const e=newEgg(b,j),n=NS[b*8+j];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
  if(where==='nest'&&!n.e){n.e=e;e.nest=n;e.mesh.position.set(n.x,.45+e.base.y,n.z)}
  else {let x,zp;if(where==='player'){x=P.x+(Math.random()-.5)*5;zp=P.z+(Math.random()-.5)*5}else{x=n.x+2.5+(Math.random()-.5)*4;zp=n.z+(Math.random()-.5)*6}e.mesh.position.set(Math.max(-97,Math.min(97,x)),.45+e.base.y,Math.max(-936,Math.min(49,zp)));e.st='caido'}
  eggs.push(e);if(AUR[e.r])mkAura(e);if(fx){if(e.r>=7)rareFx([e]);else playSnd(e.r)}return e;
@@ -881,7 +884,7 @@ const manageLimitedAuras=dt=>{
  }
 };
 const adminClearEggs=()=>{for(const e of eggs){sc.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null);persistLimitedWorld();if(MP.connected&&MP.owner)mpSend({type:'admin-limited-clear'})};
-const adminGivePet=(s,z,m=[])=>{s=Math.max(0,Math.min(SPC.length-1,s));z=Math.max(0,Math.min(3,z));const p={id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m:[...m]};S.pets.push(p);S.idx[s]=1;return p};
+const adminGivePet=(s,z,m=[])=>{s=Math.max(0,Math.min(SPC.length-1,s));z=Math.max(0,Math.min(3,z));if(REMOVED_BIRDS.has(s))return null;const p={id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m:[...m]};S.pets.push(p);S.idx[s]=1;return p};
 const adminTele=b=>{P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.y=0;P.x=0;P.z=b<0?8:-65-70*Math.min(BI.length-1,b);return b<0?'base':BI[b].n};
 const adValidNumber=(key,min=0,max=1e30)=>{const v=Number(AS[key]);if(!Number.isFinite(v)||v<min||v>max)throw Error(`Valor inválido para ${key}.`);return v};
 const adminRestore=obj=>{
@@ -946,7 +949,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'hatchNext':{const i=S.inc.findIndex(Boolean);if(i>=0)hatch(i);msg=i<0?'Incubadoras vazias':'Ovo chocado';break}
  case 'givePet':{const s=adNum('petSpecies',0,SPC.length-1,0)|0,z=adNum('petSize',0,3,3)|0,c=adNum('petCount',1,30,1)|0,m=AS.petMutation==='all'?MUT.map((_,i)=>i):(+AS.petMutation>=0?[+AS.petMutation]:[]);for(let i=0;i<c;i++)adminGivePet(s,z,m);msg=c+' pets '+SPC[s].n+' adicionados';break}
  case 'giveSecretPet':case 'giveDivinePet':{const j=act==='giveSecretPet'?5:7,b=Math.floor(Math.random()*BI.length);adminGivePet(b*8+j,3);msg='Pet '+RAR[RS[j]]+': '+BI[b].sp[j];break}
- case 'indexAll':SPC.forEach(p=>S.idx[p.id]=1);msg='Index completado: '+SPC.length+' espécies';break;
+ case 'indexAll':ACTIVE_SPECIES.forEach(p=>S.idx[p.id]=1);msg='Index completado: '+ACTIVE_SPECIES.length+' espécies';break;
  case 'deleteLastPet':if(!S.pets.length){msg='Coleção vazia';break}S.pets.pop();msg='Último pet removido';break;
  case 'deleteAllPets':if(!confirm('Apagar TODOS os pets? Esta ação altera seu progresso.'))return;S.pets=[];msg='Coleção de pets esvaziada';break;
  case 'teleport':{const bi=adNum('teleport',-1,BI.length-1,-1)|0;msg='Teleportado para '+adminTele(bi);break}

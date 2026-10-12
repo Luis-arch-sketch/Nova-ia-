@@ -3,8 +3,8 @@
 (function(){
 'use strict';
 const SPECIES=[
- ['chicken','dog','bird','owl','raccoon','fox','bear','golem'],
- ['frog','duck','fish','turtle','otter','swan','axolotl','dragon'],
+ [null,'dog','bird','owl','raccoon','fox','bear','golem'],
+ ['frog',null,'fish','turtle','otter','swan','axolotl','dragon'],
  ['mouse','fox','camel','bird','snake','spider','scorpion','sphinx'],
  ['ape','toucan','croc','gorilla','fruit','spider','tiger','snake'],
  ['penguin','walrus','bear','tiger','mammoth','mammoth','yeti','dragon'],
@@ -76,7 +76,7 @@ function create(three,id,k,col,scene){
  init(three);
  const bi=id>=0&&id<104?Math.floor(id/8):id===104?5:(id-105)%13;
  const slot=id>=0&&id<104?id%8:id===104?7:6;
- const kind=id===104?'dragon':SPECIES[bi]?.[slot]||'dragon';
+ const kind=id===104?'dragon':SPECIES[bi]?.[slot];if(!kind)return null;
  const family=GENRE[kind]||'quad';
  const v=(id*17+11)%23,accent=biomePalettes[bi][1],dark=biomePalettes[bi][2];
  const g=new T.Group(),root=new T.Group();g.add(root);
