@@ -161,6 +161,20 @@ SPC.push({id:LIMITED_ID,n:'LIMITED ∞ • Dragão de Fogo',b:0,r:10,inc:LIMITED
 const REMOVED_BIRDS=new Set([0,9]);
 const ACTIVE_SPECIES=SPC.filter(p=>!REMOVED_BIRDS.has(p.id));
 /* ===== Estado e save (local) ===== */
+/* Reset pedido pelo ADMIN: uma única vez, só neste navegador e sem afetar as salas.
+   A identificação de dono fica intacta; progresso e poderes salvos voltam ao padrão. */
+const ADMIN_DEVICE_KEY='rue3d_admin_badge_verified_v1';
+const OWNER_RESET_KEY='rue3d_owner_fresh_start_2026_10_11_v1';
+const resetOwnerProgressOnce=()=>{
+ try{
+  if(localStorage.getItem(ADMIN_DEVICE_KEY)!=='yes'||localStorage.getItem(OWNER_RESET_KEY)==='done')return false;
+  for(const key of ['rue3d_v1','rue3d_admin_v2','rue3d_limited_world_v1','rue3d_mp_name','rue3d_mp_room'])
+   localStorage.removeItem(key);
+  localStorage.setItem(OWNER_RESET_KEY,'done');
+  return true;
+ }catch(e){console.warn('Falha ao zerar progresso local do ADMIN:',e);return false}
+};
+const OWNER_RESET_AT_BOOT=resetOwnerProgressOnce();
 const KEY='rue3d_v1';
 let S={pid:'p'+Math.random().toString(36).slice(2,9),sp:0,$:0,tm:0,bl:0,tr:-1,own:[],pets:[],inc:[null,null,null,null],idx:{},t:Date.now(),id:1};
 try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d)S=Object.assign(S,d)}catch(e){}
@@ -336,8 +350,8 @@ if(GD[3]){sc.remove(GD[3].m);sc.remove(GD[3].l);}
 const IV=[-6,-2,2,6].map(x=>{mk(GY,0x6d7b8d,[1.4,.5,1.4],sc,[x,.25,1.5]);const e=new T.Mesh(GS,new T.MeshLambertMaterial({color:0xffffff}));e.castShadow=true;e.visible=false;e.position.set(x,1.4,1.5);sc.add(e);const l=label('vazio',256,64,3.6);l.position.set(x,3.3,1.5);sc.add(l);return{e,l}});
 const stripe=(()=>{const c=document.createElement('canvas');c.width=8;c.height=64;const g=c.getContext('2d');g.fillStyle='#2a2a33';g.fillRect(0,0,8,64);g.fillStyle='#6a6a85';g.fillRect(0,0,8,8);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(1,6);return t})();
 let TMO=null,fmat,scr;
-const styleTM=()=>{if(!TMO)return;const c=TM[S.tm][3];fmat.color.setHex(c);scr.emissive.setHex(c);TMO.g.scale.x=1+S.tm*.04;TMO.lab.set('Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])};
-const ensureTM=pid=>{if(ownerVerified)return null;if(TMO&&TMO.pid===pid)return TMO; // donos ADMIN ficam sem esteira
+const styleTM=()=>{const c=TM[S.tm][3];fmat.color.setHex(c);scr.emissive.setHex(c);TMO.g.scale.x=1+S.tm*.04;TMO.lab.set('Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])};
+const ensureTM=pid=>{if(TMO&&TMO.pid===pid)return TMO; // idempotente: 1 esteira por dono
  if(TMO)sc.remove(TMO.g);const g=new T.Group();g.position.set(-14,0,4);fmat=new T.MeshLambertMaterial();scr=new T.MeshLambertMaterial({color:0x111111});
  mk(GB,fmat,[2.6,.5,6],g,[0,.3,0]);mk(GB,new T.MeshLambertMaterial({map:stripe}),[2,.14,5.6],g,[0,.62,0]);
  mk(GB,fmat,[.2,1.3,6],g,[-1.4,.9,0]);mk(GB,fmat,[.2,1.3,6],g,[1.4,.9,0]);mk(GB,fmat,[.3,2.2,.3],g,[0,1.4,-2.8]);mk(GB,scr,[1.5,.9,.2],g,[0,2.6,-2.9]);
@@ -348,7 +362,6 @@ const lim=(x,y,c,w,h)=>{const p=new T.Group();p.position.set(x,y,0);mk(GB,c,[w,h
 mk(GB,0x3b82f6,[.9,1,.5],P.g,[0,1.5,0]);mk(GS,0xf1c27d,[.38,.38,.38],P.g,[0,2.25,0]);mk(GS,0x222222,[.4,.2,.4],P.g,[0,2.45,-.05]);
 const aL=lim(-.6,2,0xf1c27d,.28,.9),aR=lim(.6,2,0xf1c27d,.28,.9),lL=lim(-.25,1,0x2b2f4a,.34,1),lR=lim(.25,1,0x2b2f4a,.34,1);sc.add(P.g);
 /* Coroa ADMIN rosa, flutuando acima da cabeça. Visível só neste aparelho depois da chave válida. */
-const ADMIN_DEVICE_KEY='rue3d_admin_badge_verified_v1';
 let ownerVerified=false;
 try{ownerVerified=localStorage.getItem(ADMIN_DEVICE_KEY)==='yes'}catch(e){}
 const adminBadge=(()=>{
@@ -365,13 +378,6 @@ const adminBadge=(()=>{
  sprite.scale.set(3.6,1.125,1);sprite.position.set(0,3.35,0);sprite.visible=ownerVerified;
  P.g.add(sprite);return sprite;
 })();
-// A esteira foi RETIRADA da conta ADMIN: modelo, treino, loja e nível salvo.
-const removeOwnerTreadmill=()=>{
- if(!ownerVerified)return;
- P.train=false;S.tm=0;
- if(TMO){sc.remove(TMO.g);TMO=null;}
- if(tab===0)tab=1;
-};
 let carry=null;
 const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(dx,dz),m=b.r+r;if(d<m&&d>1e-4){o.x=b.x+dx/d*m;o.z=b.z+dz/d*m}}};
 // Colisão nas divisórias: cada parte só pode ser atravessada pelo portão central.
@@ -395,7 +401,7 @@ const take=e=>{
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID){persistLimitedWorld();if(MP.connected)mpSend({type:'limited-drop',x:e.mesh.position.x,z:e.mesh.position.z})}beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
-const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const e=findEgg();if(e){take(e);return}if(!ownerVerified&&near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
+const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
 const dep=k=>{const e=carry;carry=null;P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
@@ -408,11 +414,11 @@ const PM={};
 const syncPets=()=>{dirty=false;const ids=new Set(AP.map(p=>p.id));for(const id in PM)if(!ids.has(+id)){sc.remove(PM[id].m);if(PM[id].fire?.aura)sc.remove(PM[id].fire.aura);delete PM[id]}
  AP.forEach((p,k)=>{let o=PM[p.id];if(!o){const c=new T.Color().setHSL((p.s*37%360)/360,.55,.6);if(p.m.length)c.lerp(new T.Color(MUT[p.m[0]][3]),.6);const m=creature(c,p.s===LIMITED_ID?3.6:.8*SZ[p.z][1]);m.rb=p.m.includes(2);o=PM[p.id]={m};if(p.s===LIMITED_ID){o.fire={mesh:m,st:'pet',gr:1};mkLimitedAura(o.fire,true)}}o.k=k;o.x=((k%6)-2.5)*6;o.z=14+Math.floor(k/6)*6})};
 /* ===== Loja / menus ===== */
-let open=false,tab=ownerVerified?1:0;
+let open=false,tab=0;
 const TB=['Esteira','Base','Trails','Pets','Index'],bt=(a,t,d)=>'<button data-a="'+a+'"'+(d?' disabled':'')+'>'+t+'</button>';
 const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p.scrollTop;
- let h='<div style="display:flex;gap:4px;flex-wrap:wrap">'+TB.map((t,i)=>ownerVerified&&i===0?'':bt('T'+i,t,i===tab)).join('')+bt('x','Fechar')+'</div><p>Dinheiro: <b>$'+moneyView()+'</b> &nbsp; Renda: <b>$'+incomeView()+'/s</b></p>';
- if(tab===0&&!ownerVerified){const n=TM[S.tm],x=TM[S.tm+1];h+='<p>Sua esteira normal: <b>'+n[0]+' x'+n[1]+'</b>. Melhore-a com dinheiro, como qualquer jogador. O ADMIN Abuse continua disponível quando você quiser.</p>'+(x?'<div class=r><span>'+x[0]+' x'+x[1]+' por $'+fm(x[2])+'</span>'+bt('tm','Melhorar',S.$<x[2])+'</div>':'<p>Nível máximo.</p>')}
+ let h='<div style="display:flex;gap:4px;flex-wrap:wrap">'+TB.map((t,i)=>bt('T'+i,t,i===tab)).join('')+bt('x','Fechar')+'</div><p>Dinheiro: <b>$'+moneyView()+'</b> &nbsp; Renda: <b>$'+incomeView()+'/s</b></p>';
+ if(tab===0){const n=TM[S.tm],x=TM[S.tm+1];h+='<p>Sua esteira (única e só sua): <b>'+n[0]+' x'+n[1]+'</b>. O multiplicador aumenta o ganho de treino por segundo, não a velocidade de corrida.</p>'+(x?'<div class=r><span>'+x[0]+' x'+x[1]+' por $'+fm(x[2])+'</span>'+bt('tm','Melhorar',S.$<x[2])+'</div>':'<p>Nível máximo.</p>')}
  if(tab===1){const c=BC[S.bl+1];h+='<p>Base nível '+S.bl+': '+AP.length+' de '+CAP[S.bl]+' pets ativos, '+(S.pets.length-AP.length)+' guardados (ficam ativos os de maior renda).</p>'+(c!=null?'<div class=r><span>Nível '+(S.bl+1)+': '+CAP[S.bl+1]+' pets por $'+fm(c)+'</span>'+bt('up','Melhorar',S.$<c)+'</div>':'<p>Nível máximo.</p>')}
  if(tab===2)h+='<p>Equipada: '+(S.tr<0?'nenhuma':TR[S.tr][0]+' x'+TR[S.tr][1])+'. Só uma por vez; multiplica sua Speed efetiva.</p>'+TR.map((t,i)=>{const o=S.own.includes(i);return'<div class=r><span>'+t[0]+' x'+t[1]+(o?'':' por $'+fm(t[2]))+'</span>'+(o?(S.tr===i?bt('un','Tirar'):bt('e'+i,'Equipar')):bt('b'+i,'Comprar',S.$<t[2]))+'</div>'}).join('');
  if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
@@ -420,8 +426,8 @@ const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p
  if(tab===4){h+='<p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>')}
  p.innerHTML=h;p.style.display='block';p.scrollTop=st};
 $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
- if(a[0]==='T'){if(ownerVerified&&a==='T0')return;tab=+a[1]}else if(a==='x')open=false;
- else if(a==='tm'&&!ownerVerified){const x=TM[S.tm+1];if(x&&S.$>=x[2]){S.$-=x[2];S.tm++;styleTM();beep(660,.2)}}
+ if(a[0]==='T')tab=+a[1];else if(a==='x')open=false;
+ else if(a==='tm'){const x=TM[S.tm+1];if(x&&S.$>=x[2]){S.$-=x[2];S.tm++;styleTM();beep(660,.2)}}
  else if(a==='up'){const c=BC[S.bl+1];if(c!=null&&S.$>=c){S.$-=c;S.bl++;recalc();beep(700,.2)}}
  else if(a==='un')S.tr=-1;
  else if(a[0]==='b'){const i=+a.slice(1);if(S.$>=TR[i][2]&&!S.own.includes(i)){S.$-=TR[i][2];S.own.push(i);S.tr=i;beep(760,.2)}}
@@ -449,7 +455,7 @@ const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0)
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
  $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
- $('ba').textContent=carry?'Largar':P.train?'Parar':findEgg()?'Pegar ovo':!ownerVerified&&near(-14,4,4)?'Treinar':'Ação'};
+ $('ba').textContent=carry?'Largar':P.train?'Parar':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
 const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m'+Math.floor(s%60)+'s':Math.ceil(s)+'s';
 /* ===== Trail ===== */
 const TP=[];for(let k=0;k<28;k++){const m=new T.Mesh(GS,new T.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false}));m.visible=false;m.life=0;sc.add(m);TP.push(m)}
@@ -457,7 +463,7 @@ const TP=[];for(let k=0;k<28;k++){const m=new T.Mesh(GS,new T.MeshBasicMaterial(
 let TT=0,nextReset=Date.now()/1e3+CFG.reset,nite=0,sec=0,hq=0,sv=0,tpI=0,tpT=0,lt=performance.now(),fa=0,fn=0;
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
-const step=dt=>{TT+=dt;abuseUpdate(dt);if(ownerVerified&&P.train)P.train=false;
+const step=dt=>{TT+=dt;abuseUpdate(dt);
  // Guaxinim da parte 4: parado na área, alerta ao roubo, persegue e retorna.
  if(raccoonGuard){
   const g=raccoonGuard,p=g.m.position,dist=Math.hypot(P.x-g.home.x,P.z-g.home.z);
@@ -502,7 +508,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);if(ownerVerified&&P.train)P.train=false;
  let sp=Number.isFinite(rawSp)?Math.max(.1,Math.min(rawSp,1400)):walk(0);
  if(P.stun>0){P.stun-=dt;sp=0}
  const s_=Math.sin(P.yaw),c_=Math.cos(P.yaw);let tx=(-s_*iy+c_*ix)*sp,tz=(-c_*iy-s_*ix)*sp;
- if(P.train&&!ownerVerified){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}
+ if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}
  const k=Math.min(1,dt*10);P.vx+=(tx-P.vx)*k;P.vz+=(tz-P.vz)*k;const oldPartZ=P.z;P.x+=P.vx*dt;P.z+=P.vz*dt;partBorderCollision(P,oldPartZ);
  P.vy-=30*abuseGravity()*dt;P.y+=P.vy*dt;if(P.y<0){P.y=0;P.vy=0}
  if(!Number.isFinite(P.x)||!Number.isFinite(P.z)||!Number.isFinite(P.y)||!Number.isFinite(P.vx)||!Number.isFinite(P.vz)){
@@ -611,7 +617,10 @@ const adminLogin=async e=>{
    const suppliedKey=$('adKey').value;const matched=await adminPasswordValid(suppliedKey);
    if(generation!==adminLockGeneration||!adminVisible)return;
    if(matched){
-      adminUnlocked=true;if(MP.connected)mpSend({type:'admin-auth',password:suppliedKey});$('adPanel').classList.remove('locked');$('adKey').value='';adminTab=0;ownerVerified=true;adminBadge.visible=true;removeOwnerTreadmill();ui();save();try{localStorage.setItem(ADMIN_DEVICE_KEY,'yes')}catch(e){}
+      try{localStorage.setItem(ADMIN_DEVICE_KEY,'yes')}catch(e){}
+       // Se o dono entrou por outro dispositivo, zere agora e recarregue do início.
+       if(resetOwnerProgressOnce()){location.reload();return;}
+       adminUnlocked=true;if(MP.connected)mpSend({type:'admin-auth',password:suppliedKey});$('adPanel').classList.remove('locked');$('adKey').value='';adminTab=0;ownerVerified=true;adminBadge.visible=true;
       adminMessage='🔓 Acesso autorizado. Painel desbloqueado.';adminUI(true);toast('🔓 Acesso de administrador autorizado!');
    }else{$('adAuthError').textContent='Chave incorreta. Tente novamente.';$('adKey').value='';$('adKey').focus();}
  }catch(err){if(generation===adminLockGeneration&&adminVisible)$('adAuthError').textContent=err.message||'Falha ao verificar a chave.';}
@@ -733,11 +742,10 @@ const adminUI=(resetScroll=false)=>{
  tabs.innerHTML=adminTabs.map((t,i)=>`<button type="button" data-tab="${i}" class="${adminTab===i?'active':''}">${t}</button>`).join('');
  let h='';
  if(adminTab===0){
- h='<h3>📊 Gestão do jogador</h3><p>🎮 Sua esteira foi removida de verdade: sem objeto no mapa, sem botão de treino e sem ganho automático de Speed. Seus poderes ADMIN e Admin Abuse permanecem disponíveis quando quiser.</p>';
- h+='<div class="adGrid">'+adCard('🎮 Jogador normal',`<p>Volte ao movimento e às regras normais sem apagar seus pets, dinheiro, Speed ou progresso. Seu acesso ao Admin Abuse permanece liberado.</p><div class="adControls">${adBtn('playNormal','👤 Jogar normalmente','secondary')}</div>`);
-  h+=adCard('💰 Dinheiro atual',`<div class="adStat">$${moneyView()}</div>${adField('cash','Valor a definir / adicionar')}<div id="adCashPreview" class="adHint">O valor digitado é independente do saldo total; seus pets continuam gerando dinheiro.</div><div class="adControls">${adBtn('moneySet','Definir')}${adBtn('moneyAdd','Adicionar')}${adBtn('moneyMillion','+ 1 milhão','secondary')}${adBtn('moneyBillion','+ 1 bilhão','secondary')}${adBtn('moneyZero','Zerar','danger')}</div>`);
+ h='<h3>📊 Gestão do jogador</h3><p>Valores abaixo mudam imediatamente o jogo e ficam salvos neste navegador.</p>';
+ h+='<div class="adGrid">'+adCard('💰 Dinheiro atual',`<div class="adStat">$${moneyView()}</div>${adField('cash','Valor a definir / adicionar')}<div id="adCashPreview" class="adHint">O valor digitado é independente do saldo total; seus pets continuam gerando dinheiro.</div><div class="adControls">${adBtn('moneySet','Definir')}${adBtn('moneyAdd','Adicionar')}${adBtn('moneyMillion','+ 1 milhão','secondary')}${adBtn('moneyBillion','+ 1 bilhão','secondary')}${adBtn('moneyZero','Zerar','danger')}</div>`);
  h+=adCard('⚡ Speed atual',`<div class="adStat">${fm(S.sp)}</div>${adField('speed','Valor a definir / adicionar')}<div class="adControls">${adBtn('speedSet','Definir')}${adBtn('speedAdd','Adicionar')}${adBtn('speedBoost','+ 100 mil','secondary')}${adBtn('speedZero','Zerar','danger')}</div><div class="adControls">${adBtn('speedNormal','🏃 Velocidade normal','on')}</div><p class="adHint">Bônus pessoal de velocidade 10× removido. Este botão restaura o movimento padrão mantendo a Speed acumulada.</p>`);
- h+=adCard('🏰 Melhorias',`${adSelect('baseLevel','Nível da base',adOpts(CAP,(_,i)=>`Nível ${i} • ${CAP[i]} pets`))}${adBtn('baseSet','Aplicar base')}${ownerVerified?'':adSelect('treadLevel','Nível da esteira',adOpts(TM,(t,i)=>`${t[0]} x${t[1]}`))+adBtn('treadSet','Aplicar esteira')}`);
+ h+=adCard('🏰 Melhorias',`${adSelect('baseLevel','Nível da base',adOpts(CAP,(_,i)=>`Nível ${i} • ${CAP[i]} pets`))}${adBtn('baseSet','Aplicar base')}${adSelect('treadLevel','Nível da esteira',adOpts(TM,(t,i)=>`${t[0]} x${t[1]}`))}${adBtn('treadSet','Aplicar esteira')}`);
  h+=adCard('🌈 Trail',`${adSelect('trailLevel','Trail para desbloquear e equipar',adOpts(TR,(t)=>`${t[0]} x${t[1]}`))}<div class="adControls">${adBtn('trailSet','Desbloquear + equipar')}${adBtn('trailOff','Retirar','secondary')}${adBtn('trailAll','Desbloquear todas','secondary')}</div>`);
  h+='</div>';
  }
@@ -759,13 +767,13 @@ const adminUI=(resetScroll=false)=>{
  h+=adCard('📍 Teletransporte',`${adSelect('teleport','Destino',[[-1,'Minha base'],...BI.map((b,i)=>[i,b.n])])}<div class="adControls">${adBtn('teleport','Teleportar')}${adBtn('goEgg','Ir até o ovo mais próximo','secondary')}</div>`);
  h+=adCard('🛡️ Poderes de admin',`<div class="adControls">${adBtn('god',A.god?'Invencível: LIGADO':'Invencível: desligado',A.god?'on':'secondary')}${adBtn('freeze',A.freeze?'Guardiões parados: LIGADO':'Parar guardiões',A.freeze?'on':'secondary')}${adBtn('weightless',A.weightless?'Sem peso: LIGADO':'Remover peso dos ovos',A.weightless?'on':'secondary')}${adBtn('autoHatch',A.autoHatch?'Chocar auto: LIGADO':'Chocar automaticamente',A.autoHatch?'on':'secondary')}</div>`);
  h+=adCard('🌗 Ambiente',`<div class="adControls">${adBtn('day','☀️ Dia',!A.night?'on':'secondary')}${adBtn('night','🌙 Noite',A.night?'on':'secondary')}${adBtn('wakeAll','Acordar guardiões','secondary')}${adBtn('sleepAll','Dormir guardiões','secondary')}</div>`);
- h+=adCard('🕹️ Jogador',`<div class="adControls">${adBtn('jumpNow','Pular')}${ownerVerified?'':adBtn('trainToggle',P.train?'Parar treino':'Iniciar treino','secondary')}${adBtn('goBase','Voltar à base','secondary')}${adBtn('dropEgg',carry?'Soltar ovo carregado':'Nenhum ovo carregado','secondary')}</div>`);
+ h+=adCard('🕹️ Jogador',`<div class="adControls">${adBtn('jumpNow','Pular')}${adBtn('trainToggle',P.train?'Parar treino':'Iniciar treino','secondary')}${adBtn('goBase','Voltar à base','secondary')}${adBtn('dropEgg',carry?'Soltar ovo carregado':'Nenhum ovo carregado','secondary')}</div>`);
  h+='</div>';
  }
  if(adminTab===4){
  h='<h3>⚙️ Configurações de verdade</h3><p>As chances são sorteadas a cada renovação de ninhos para cada raridade especial. Cada uma tem sua própria chance.</p><div class="adGrid">';
  h+=adCard('🎲 Probabilidades (%)',`${adField('chanceSecret','Secret (%)','number','min="0" max="100" step="0.1"')}${adField('chanceEternal','Eternal (%)','number','min="0" max="100" step="0.1"')}${adField('chanceDivine','Divine (%)','number','min="0" max="100" step="0.1"')}${adBtn('saveChances','Aplicar chances')}`);
- h+=adCard('⏳ Tempos e treino',`${adField('resetSeconds','Segundos entre renovações (mínimo 10)','number','min="10" max="86400"')}${ownerVerified?'':adField('trainMult','Multiplicador do ganho de Speed em treino','number','min="0.1" max="1000" step="0.1"')}${adBtn('saveTimers','Aplicar tempos')}`);
+ h+=adCard('⏳ Tempos e treino',`${adField('resetSeconds','Segundos entre renovações (mínimo 10)','number','min="10" max="86400"')}${adField('trainMult','Multiplicador do ganho de Speed em treino','number','min="0.1" max="1000" step="0.1"')}${adBtn('saveTimers','Aplicar tempos')}`);
  h+=adCard('🏃 Movimentos',`${adField('moveMult','Multiplicador de movimento (0.2–20)','number','min="0.2" max="20" step="0.1"')}${adField('jumpMult','Multiplicador do salto (0.5–8)','number','min="0.5" max="8" step="0.1"')}${adBtn('saveMoves','Aplicar movimentos')}`);
  h+=adCard('🔁 Spawn automático de Secret',`${adField('autoSeconds','Intervalo em segundos (mínimo 5)','number','min="5" max="3600"')}${adBtn('autoSecret',A.autoSecret?'Auto Secret: LIGADO':'Auto Secret: desligado',A.autoSecret?'on':'secondary')}<p class="adHint">Gera ovos Secret automaticamente; o limite de segurança evita excesso de objetos 3D.</p>`);
  h+='</div>';
@@ -916,7 +924,7 @@ const adminRestore=obj=>{
  AS.chanceSecret=String(CFG.rare[7]*100);AS.chanceEternal=String(CFG.rare[8]*100);AS.chanceDivine=String(CFG.rare[9]*100);
  AS.resetSeconds=String(CFG.reset);AS.trainMult=String(CFG.train);AS.moveMult=String(A.moveMult);AS.jumpMult=String(A.jumpMult);AS.autoSeconds=String(A.autoSecretEvery);
  for(const id in PM){sc.remove(PM[id].m);if(PM[id].fire?.aura)sc.remove(PM[id].fire.aura);delete PM[id]}
- removeOwnerTreadmill();styleTM();AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));recalc();saveAdmin();save();return S.pets.length;
+ styleTM();AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));recalc();saveAdmin();save();return S.pets.length;
 };
 const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='Alteração aplicada!';try{if(act.startsWith('rankDel:')){const key=decodeURIComponent(act.slice(8));LEAD=LEAD.filter(p=>p.name!==key);rankSave();rankShow();adFinish('Jogador removido do placar');return;}if(act.startsWith('ab_')){abuseStart(act.slice(3));mpBroadcastAction(null,'start');adFinish('🔥 Evento iniciado: '+ABUSE.active.label);return;}
  switch(act){
@@ -947,11 +955,10 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'speedSet':S.sp=adValidNumber('speed');msg='Speed definida: '+fm(S.sp);break;
  case 'speedAdd':S.sp+=adValidNumber('speed');if(!Number.isFinite(S.sp))throw Error('Valor alto demais.');msg='Speed adicionada.';break;
  case 'speedBoost':S.sp+=1e5;msg='+ 100 mil Speed';break;
- case 'playNormal':{removeOwnerTreadmill();A.god=false;A.freeze=false;A.weightless=false;A.autoHatch=false;A.autoSecret=false;A.night=false;A.moveMult=1;A.personalFast=false;A.jumpMult=1;CFG.train=5;AS.moveMult='1';AS.jumpMult='1';AS.trainMult='5';P.train=false;P.stun=0;msg='🎮 Jogador normal! O ADMIN e Admin Abuse continuam disponíveis.';break;}
-  case 'speedNormal':A.personalFast=false;A.moveMult=1;AS.moveMult='1';msg='Movimento normal ativado';break;
+ case 'speedNormal':A.personalFast=false;A.moveMult=1;AS.moveMult='1';msg='Movimento normal ativado';break;
  case 'speedZero':if(!confirm('Zerar sua Speed?'))return;S.sp=0;msg='Speed zerada.';break;
  case 'baseSet':S.bl=adNum('baseLevel',0,CAP.length-1,0)|0;msg='Base no nível '+S.bl;break;
- case 'treadSet':if(ownerVerified){removeOwnerTreadmill();msg='Sua esteira foi retirada. Melhore sua Speed pelo painel ADMIN.';break;}S.tm=adNum('treadLevel',0,TM.length-1,0)|0;styleTM();msg='Esteira: '+TM[S.tm][0];break;
+ case 'treadSet':S.tm=adNum('treadLevel',0,TM.length-1,0)|0;styleTM();msg='Esteira: '+TM[S.tm][0];break;
  case 'trailSet':{const i=adNum('trailLevel',0,TR.length-1,0)|0;if(!S.own.includes(i))S.own.push(i);S.tr=i;msg='Trail '+TR[i][0]+' equipado';break}
  case 'trailOff':S.tr=-1;msg='Trail retirada';break;
  case 'trailAll':S.own=TR.map((_,i)=>i);msg='Todas as trails desbloqueadas';break;
@@ -977,11 +984,11 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'wakeAll':GD.forEach(g=>{g.st='chase';g.t=0});A.freeze=false;msg='Guardiões acordados';break;
  case 'sleepAll':GD.forEach(g=>{g.st='sleep';g.t=0;g.m.position.copy(g.home)});msg='Guardiões voltaram para casa';break;
  case 'jumpNow':jump();msg='Salto executado';break;
- case 'trainToggle':if(ownerVerified){removeOwnerTreadmill();msg='Sua esteira foi removida. Use o painel ADMIN para melhorar quando quiser.';break;}P.train=!P.train;P.vx=P.vz=0;if(P.train){P.x=-14;P.z=4.2}msg=P.train?'Treino iniciado':'Treino parado';break;
+ case 'trainToggle':P.train=!P.train;P.vx=P.vz=0;if(P.train){P.x=-14;P.z=4.2}msg=P.train?'Treino iniciado':'Treino parado';break;
  case 'goBase':msg='Teleportado para '+adminTele(-1);break;
  case 'dropEgg':if(carry){drop();msg='Ovo solto'}else msg='Nenhum ovo carregado';break;
  case 'saveChances':CFG.rare[7]=adValidNumber('chanceSecret',0,100)/100;CFG.rare[8]=adValidNumber('chanceEternal',0,100)/100;CFG.rare[9]=adValidNumber('chanceDivine',0,100)/100;msg='Chances salvas: Secret '+AS.chanceSecret+'%';break;
- case 'saveTimers':CFG.reset=adValidNumber('resetSeconds',10,86400);if(!ownerVerified)CFG.train=adValidNumber('trainMult',.1,1000);nextReset=Date.now()/1e3+CFG.reset;msg='Configurações de mundo atualizadas';break;
+ case 'saveTimers':CFG.reset=adValidNumber('resetSeconds',10,86400);CFG.train=adValidNumber('trainMult',.1,1000);nextReset=Date.now()/1e3+CFG.reset;msg='Tempo de spawn e treino atualizados';break;
  case 'saveMoves':A.moveMult=adValidNumber('moveMult',.2,20);A.personalFast=false;A.jumpMult=adValidNumber('jumpMult',.5,8);msg='Movimento e salto personalizados aplicados';break;
  case 'autoSecret':A.autoSecretEvery=adValidNumber('autoSeconds',5,3600);A.autoSecret=!A.autoSecret;adminAutoTime=0;msg='Auto Secret '+(A.autoSecret?'ligado':'desligado');break;
  case 'saveNow':msg='Progresso e painel admin salvos';break;
@@ -1074,7 +1081,7 @@ $('adContent').addEventListener('click',e=>{const b=e.target.closest('[data-admi
 /* ===== Início ===== */
 recalc();
 {const o=Math.min((Date.now()-S.t)/1e3,CFG.offCap)*tot*CFG.off;if(o>=1){S.$+=o;setTimeout(()=>toast('Renda offline: +$'+fm(o)),600)}}
-if(ownerVerified)removeOwnerTreadmill();else ensureTM(S.pid);regrow(true);
+ensureTM(S.pid);regrow(true);
 try{
  // Migra os LIMITED antigos para histórico sem reutilizá-los em servidores novos.
  const old=Array.isArray(S.limitedWorld)?S.limitedWorld.filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)):[];
@@ -1083,6 +1090,6 @@ try{
  localStorage.removeItem(WORLD_LIMITED_KEY);save();
 }catch(err){console.warn('Falha ao isolar LIMITEDs antigos:',err)}
 upGates();upHud();cam.position.set(0,6,17);
-toast('Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
+toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
 requestAnimationFrame(loop);
 </script></body></html>
