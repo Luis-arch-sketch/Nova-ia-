@@ -446,6 +446,65 @@ function create(three,id,k,col,scene){
  if(id%5===0&&family!=='fish'&&family!=='arachnid')add('sphere',light,[.16,.12,.20],[0,1.02,.83]);
  if(id%7===3&&family==='quad')add('cone',accent,[.19,.53,.14],[0,2.14,.61]);
  if(id%8===7){horns(2,true);add('sphere',light,[.23,.23,.23],[0,2.50,.25]);}
+
+ // ESCULTURAS POR ESPÉCIE: 103 silhuetas 3D, cada ID recebe partes geométricas
+ // adicionais próprias (focinho, crista, chifres, pinças, asas, carapaça...).
+ // Cores e escala são apenas complementares: diferenças vêm de geometria real.
+ const uniqueDesigns=[null,"ENYQ","VCFW","OFWV","MREY","EBTN","EYQK","BKSC","PUDS",null,"JGWQ","KPDY","CGFQ","LVFW","GCQF","SHJQ","ELPY","ENBT","HLQY","ZOFK","SJYT","APSD","PSYK","CWKO","LHYQ","VCFW","JSDT","LYQK","ZLCK","APSV","STJY","SJKC","BVFW","TGQJ","QEYB","TJYK","ZCXF","CYXJ","FXWC","HXWS","VSYD","PUXF","HXYK","VJSQ","ZCFX","YJXC","CXWF","HXWS","VGFD","SJQD","JSQG","BQFS","DGQJ","OQBF","PCJO","HJST","BVFC","VWQS","KSYD","HKQY","LSYT","JLYT","SJFQ","JQST","ALSD","GSQO","OCYQ","OHQC","KJYS","OXWH","MWHS","HOFW","LVFW","GDSY","MRET","OIFW","FGQD","ALHQ","HSYT","ZMOF","APSY","PKAQ","IKSH","ILYQ","HQKY","JSQG","YCKQ","HWSX","XCFQ","OWFV","EHOW","HWSZ","YJSQ","OWFC","OWCK","XWSH","GSQC","APKY","VCFW","AOSY","MOBY","GSYT","SCFK","COQF","HXWCO"];
+ const uniqueForm=uniqueDesigns[id];
+ if(uniqueForm){
+  const chalk=0xf4e4c4,night=0x292a35,ice=0xb7edff,fire=0xffa04b;
+  const sculpt=(type,color,size,pos)=>add(type,color,size,pos);
+  const sphere=(color,size,pos)=>sculpt('sphere',color,size,pos);
+  const cone=(color,size,pos,angle=0,tilt=0)=>{const o=sculpt('cone',color,size,pos);o.rotation.z=angle;o.rotation.x=tilt;return o};
+  const rod=(color,size,pos,angle=0)=>{const o=sculpt('cylinder',color,size,pos);o.rotation.z=angle;return o};
+  const plate=(color,size,pos)=>sculpt('box',color,size,pos);
+  const sides=fn=>{fn(-1);fn(1)};
+  const dorsal=(color=accent)=>{for(let i=0;i<6;i++)cone(color,[.15,.44+(i%2)*.20,.12],[0,1.69,-.89+i*.37])};
+  const featherFan=()=>{for(let i=-2;i<=2;i++){const o=sphere(accent,[.20,.54,.15],[i*.29,1.22,-1.25-Math.abs(i)*.10]);o.rotation.z=-i*.15}};
+  const crown=()=>{rod(chalk,[.48,.14,.44],[0,2.53,.55]);for(let i=-2;i<=2;i++)cone(chalk,[.13,.42+(i%2)*.16,.12],[i*.23,2.84,.53],i*.12)};
+  const fins2=()=>{sides(x=>sphere(accent,[.58,.12,.28],[x*.94,.91,-.10]));cone(dark,[.37,.72,.15],[0,1.86,-.05],0,-.30)};
+  const wings2=()=>{sides(x=>{const m=sphere(accent,[.75,.14,.45],[x*1.32,1.56,-.35]);m.rotation.z=x*.34;for(let i=0;i<3;i++)cone(chalk,[.15,.61,.12],[x*(1.29+i*.25),1.43,-.58-i*.18],x*.79)})};
+  const teeth2=()=>{for(let i=-2;i<=2;i++)cone(chalk,[.075,.28,.07],[i*.18,1.14,1.44],0,Math.PI)};
+  const antlers2=()=>{sides(x=>{rod(chalk,[.11,.84,.12],[x*.43,2.45,.56],x*.22);for(let i=0;i<3;i++)cone(chalk,[.10,.38+i*.07,.08],[x*(.55+i*.13),2.68+i*.17,.60-i*.13],x*.51)})};
+  for(const part of uniqueForm){
+   switch(part){
+    case 'E':sides(x=>{const m=sphere(base,[.25,.46,.20],[x*.44,2.04,.59]);m.rotation.z=x*.31});break;
+    case 'N':sphere(chalk,[.41,.24,.51],[0,1.47,1.22]);sphere(night,[.16,.12,.14],[0,1.46,1.68]);break;
+    case 'Y':sides(x=>{for(let j=0;j<3;j++)cone(chalk,[.07,.27,.07],[x*.57+(j-1)*.12,.23,1.03],0,Math.PI/2)});break;
+    case 'Q':sides(x=>sphere(base,[.42,.40,.54],[x*.66,1.18,.19]));break;
+    case 'V':cone(chalk,[.25,.62,.24],[0,1.58,1.34],0,Math.PI/2);break;
+    case 'C':crown();break;
+    case 'F':featherFan();break;
+    case 'W':wings2();break;
+    case 'O':{const a=sculpt('torus',chalk,[1.2,1.2,.52],[0,1.40,0]);a.rotation.x=Math.PI/2.25;break}
+    case 'M':sides(x=>sphere(night,[.30,.23,.11],[x*.25,1.70,1.18]));break;
+    case 'R':for(let i=0;i<5;i++)sphere(i%2?night:chalk,[.25,.15,.17],[i*.07,1.06,-1.25-i*.23]);break;
+    case 'B':for(let i=0;i<5;i++)plate(0x8b694c,[.20,.41,.15],[(i%2?-.48:.48),.91+(i%3)*.14,-.70+i*.30]);break;
+    case 'K':for(let i=0;i<5;i++)plate(i%2?dark:chalk,[.56,.11,.27],[0,1.54,-.76+i*.36]);break;
+    case 'S':dorsal();break;
+    case 'P':sides(x=>{sphere(base,[.32,.25,.32],[x*1.10,1.15,1.01]);cone(chalk,[.21,.54,.18],[x*1.42,1.35,1.29],x*.66,Math.PI/3)});break;
+    case 'U':sides(x=>{sphere(chalk,[.32,.36,.14],[x*.27,1.76,1.20]);sphere(night,[.11,.14,.08],[x*.27,1.80,1.32])});break;
+    case 'D':for(let i=0;i<6;i++)sphere(i%2?chalk:accent,[.16,.07,.18],[((i%3)-1)*.30,1.47,-.68+Math.floor(i/3)*.60]);break;
+    case 'G':sides(x=>{for(let i=0;i<3;i++)plate(night,[.06,.31,.06],[x*.68,1.12,.63-i*.23])});break;
+    case 'J':sphere(night,[.48,.12,.53],[0,1.14,1.40]);teeth2();break;
+    case 'L':rod(base,[.24,1.12,.24],[0,1.84,.65]);sphere(base,[.36,.34,.37],[0,2.44,.80]);break;
+    case 'T':sides(x=>cone(chalk,[.16,.92,.16],[x*.34,1.27,1.39],0,Math.PI/2));break;
+    case 'H':sides(x=>cone(chalk,[.23,.98,.22],[x*.46,2.35,.62],x*.30));break;
+    case 'X':for(let i=0;i<6;i++)cone(i%2?fire:chalk,[.15,.61+(i%3)*.14,.14],[(i%3-1)*.25,1.95+Math.floor(i/3)*.20,-.68+i*.17]);break;
+    case 'A':antlers2();break;
+    case 'I':dorsal(ice);break;
+    case 'Z':for(let i=-3;i<=3;i++)cone(i%2?chalk:base,[.16,1.02,.17],[i*.19,1.17,-1.36-Math.abs(i)*.08],i*.14,-1.18);break;
+    default:throw Error('Traço 3D desconhecido: '+part+' / '+id);
+   }
+  }
+  // Perfil corporal exclusivo para todos, sem alterar os tamanhos aprovados
+  // da coruja e do guaxinim guardião (o último também usa um glTF próprio).
+  if(id!==3&&id!==4)root.scale.multiply(new T.Vector3(
+   .89+((id+1)*17%11)*.023,.89+((id+1)*19%13)*.019,.88+((id+1)*23%11)*.026));
+  g.userData.uniqueSculpture={id,anatomy:uniqueForm,signature:'3d-sculpt-'+id+'-'+uniqueForm};
+ }
+
  const sizeMultiplier=id===3?.72:id===4?1.85:1;
  g.scale.setScalar(k*sizeMultiplier);g.userData.motion=motions;g.userData.speciesId=id;
  // Importar a malha animada original do Quaternius (Cube World Kit, CC0).
