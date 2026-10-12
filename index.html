@@ -289,10 +289,13 @@ BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,
 /* GUARDIÃO DA PARTE 4 DO MAPA (a Selva): guaxinim Quaternius.
    Guarda a região inteira e persegue qualquer ladrão de ovos da parte 4. */
 let raccoonGuard=null;
-if(window.RoubeOvoVisuals?.create){
+{
+ // Se o modelo detalhado falhar em algum Android, o guardião continua ativo.
+ // Mantemos a área 4 SEMPRE protegida por um único guaxinim.
  const home=new T.Vector3(0,0,-65-70*3);
  {
-  const m=window.RoubeOvoVisuals.create(T,4,0.83,0x89847c,sc);
+  const m=window.RoubeOvoVisuals?.create?.(T,4,0.83,0x89847c,sc)
+   ||creature(new T.Color(0x89847c),2.4);
   m.position.copy(home);
   const l=label('🦝 GUAXINIM • PARTE 4',480,72,5.3);
   l.position.set(home.x,3.8,home.z);
@@ -345,9 +348,15 @@ const limitedAuraUp=(e,dt)=>{const a=e.aura;if(!a)return;const u=a.userData;e.me
  u.sparks.forEach((m,i)=>{const v=(t*.27+i/u.sparks.length)%1,ang=i*6.283/u.sparks.length-t*.5,rad=3+v*5;m.position.set(Math.cos(ang)*rad,2+v*12,Math.sin(ang)*rad);m.scale.setScalar(.2+(1-v)*.5);m.material.opacity=Math.max(.05,(1-v)*.95)});
  u.light.intensity=(LIMITED_LOW_FX?.3:.6)+.12*Math.sin(t*4);u.label3.position.y=14+Math.sin(t*2)*.5;
 };
-// Guardiões apenas perseguem quem JÁ ROUBOU um ovo. Jogador de mãos vazias pode passear.
-// Conta a Speed EFETIVA do trail: 20.1K × 2.5 supera a recomendação de 40K da Selva.
+// Apenas o guardião DA ÁREA DO OVO ROUBADO pode perseguir.
+// No limite entre duas partes, protege o ladrão da perseguição dupla.
+const guardAreaAtZ=z=>z>-30?-1:Math.min(BI.length-1,Math.max(0,Math.floor((-30-z)/70)));
+const guardAreaOfEgg=e=>e?.s===LIMITED_ID
+ ?guardAreaAtZ(e.mesh.position.z)
+ :Number.isInteger(e?.b)&&e.b>=0&&e.b<BI.length?e.b:guardAreaAtZ(e.mesh.position.z);
+const stolenGuardArea=()=>carry?.guardArea??-1;
 const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god
+ &&stolenGuardArea()===i
  &&Number.isFinite(eff())&&eff()<=BI[i].req&&P.stun<=0
  &&Math.abs(P.z-home.z)<47&&Math.hypot(P.x-home.x,P.z-home.z)<63;
 const guardianRushSpeed=i=>Math.max(95,walk(BI[i].req)*3.5,
@@ -424,11 +433,16 @@ const findEgg=()=>{
 const take=e=>{
  if(EGG_NIGHT.phase!=='day'){toast('🔒 Aguarde renovar os ovos e liberar as áreas!');return false;}
  if(!e||!eggs.includes(e)||e.gr<1)return false;
+ e.guardArea=guardAreaOfEgg(e); // fixar origem ANTES de remover do ninho
  if(e.s===LIMITED_ID&&MP.connected)mpSend({type:'limited-take',x:e.mesh.position.x,z:e.mesh.position.z});
  eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
- // A PARTE 4 é protegida exclusivamente pelo guaxinim, em todos os oito ninhos.
- if(e.b===3&&raccoonGuard){if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=CFG.wake}}
- else{const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}}
+ // Guardião da PARTE DE TRÁS (origem do ovo), nunca os dois lados da divisa.
+ if(e.guardArea===3&&raccoonGuard){
+  if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=Math.min(CFG.wake,.45);}
+ }else if(e.guardArea>=0&&e.guardArea!==3){
+  const g=GD[e.guardArea];
+  if(g&&g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=Math.min(CFG.wake,.45)}
+ }
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;
  // O roubo terminou: interromper imediatamente qualquer perseguição normal.
@@ -605,10 +619,16 @@ const aim=(g,x,z,s,dt)=>{
 const step=dt=>{TT+=dt;abuseUpdate(dt);
  // Guaxinim da parte 4: só persegue depois do roubo; nunca ataca quem está de mãos vazias.
  if(raccoonGuard){
-  const g=raccoonGuard,p=g.m.position,dist=Math.hypot(P.x-g.home.x,P.z-g.home.z);
+  const g=raccoonGuard,p=g.m.position;
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
-  if(frozen&&g.st!=='guard'){g.st='ret';g.t=0}
-  const rush=!frozen&&guardianShouldRush(3,g.home);
+  const ownsEgg=!!carry&&stolenGuardArea()===3;
+  if(!ownsEgg||frozen){
+   if(g.st==='chase'||g.st==='wake')g.st='ret';
+   g.rush=false;
+  }
+  const rush=!frozen&&ownsEgg&&guardianShouldRush(3,g.home);
+  // Não ficar inativo se o ladrão atravessar a divisa antes do fim do alerta.
+  if(ownsEgg&&!frozen&&g.st==='guard'){g.st='wake';g.t=Math.min(CFG.wake,.45)}
   if(rush)g.rush=true;
   if(rush&&g.st!=='chase'){g.st='chase';g.t=0}
   if(g.st==='wake'){
@@ -616,10 +636,10 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
    if(g.t<=0){g.st='chase';beep(160,.2,'sawtooth',.045)}
   }
   if(g.st==='chase'){
-   if(!carry||frozen){g.st='ret';g.rush=false}
+   if(!ownsEgg||frozen){g.st='ret';g.rush=false}
    else{
     // Da PARTE 4 até a BASE: o guaxinim segue o ladrão sem abandonar após 95m.
-    const speed=g.rush?guardianRushSpeed(3):Math.max(12,gs(0)*1.7)*abuseMoveMult();
+    const speed=g.rush?guardianRushSpeed(3):Math.max(38,gs(3)*1.7)*abuseMoveMult();
     aim(g,P.x,P.z,speed,dt);
     if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);
    }
@@ -668,11 +688,19 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  GD.forEach(g=>{if(g.b===3)return;
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
   if(frozen){g.st='sleep';g.t=0;g.rush=false;g.m.position.copy(g.home)}
-  const p=g.m.position,i=g.b,rush=!frozen&&guardianShouldRush(i,g.home);
+  const p=g.m.position,i=g.b;
+  const ownsEgg=!!carry&&stolenGuardArea()===i;
+  // No limite de duas áreas, o guardião DA FRENTE fica no posto.
+  if(!ownsEgg&&!abuseIs('fury')){
+   if(g.st==='chase'||g.st==='wake')g.st='ret';
+   g.rush=false;
+  }
+  const rush=!frozen&&ownsEgg&&guardianShouldRush(i,g.home);
+  if(ownsEgg&&!frozen&&g.st==='sleep'){g.st='wake';g.t=Math.min(CFG.wake,.45)}
   if(rush)g.rush=true;
   if(rush&&g.st!=='chase'){g.st='chase';g.t=0}
   if(g.st==='wake'){g.t-=dt;if(g.t<=0){g.st='chase';beep(90,.4,'sawtooth',.06)}}
-  if(g.st==='chase'){if(!carry&&!abuseIs('fury')){g.st='ret';g.rush=false}
+  if(g.st==='chase'){if(!ownsEgg&&!abuseIs('fury')){g.st='ret';g.rush=false}
    else{aim(g,P.x,P.z,g.rush?guardianRushSpeed(i):gs(i),dt);
     if(Math.hypot(P.x-p.x,P.z-p.z)<3.6){
      if(abuseIs('fury')&&!carry)abuseGuardianHit(g);
