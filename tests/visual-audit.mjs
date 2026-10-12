@@ -424,8 +424,8 @@ try{
     P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;
     take(egg);
     const stole=carry===egg,noArtificialRush=!guardianShouldRush(3,g.home);
-    const normalSpeed=Math.max(12,gs(0)*1.7)*abuseMoveMult();
-    const playerSpeed=walk(eff())*A.moveMult*abuseMoveMult()/(1+CFG.w*egg.w);
+    const normalSpeed=guardianChaseSpeed(3);
+    const playerSpeed=carryingRunSpeed();
     // Guarda legítimo acerta e recupera o ovo. Ele deve recuar, não acampar no corpo.
     g.m.position.set(P.x-1,0,P.z);
     hit(g);
@@ -521,7 +521,7 @@ try{
   assert(guardTest.raccoonDoesNotRush&&guardTest.raccoonRemainsGuard,'Guaxinim parte 4 aguarda um roubo');
   assert(guardTest.canPick&&guardTest.stoleEgg,'Ovo pode ser roubado por aproximação');
   assert(guardTest.lowSpeedChase&&guardTest.guardChased&&guardTest.guardMoved,'Guarda corre após o roubo');
-  assert(guardTest.chaseSpeed>guardTest.walkingSpeed*3,'Guarda muito mais rápido para ladrões lentos');
+  assert(guardTest.chaseSpeed>guardTest.walkingSpeed*1.4,'Guarda mais rápido que um ladrão abaixo da Speed recomendada');
   assert(guardTest.noChaseAfterDrop,'Guardiões voltam ao posto após soltar ovo');
   console.log(mode.toUpperCase()+' BUG MÃOS LIVRES CORRIGIDO '+JSON.stringify(guardTest));
 
@@ -598,6 +598,87 @@ try{
   assert(reachBase.stopsAfterDrop&&reachBase.handsFree,'Mãos livres encerram as perseguições');
   assert(reachBase.raccoonReturned,'Guaxinim regressa à parte 4 depois da perseguição');
   console.log(mode.toUpperCase()+' GUARDIÕES PERSEGUEM ATÉ A BASE '+JSON.stringify(reachBase));
+
+  // CENÁRIO REPRODUZIDO: o jogador está com 200 mil de Speed (Selva recomenda 40K).
+  // O guaxinim precisa perseguir imediatamente ao roubo, mas é MAIS LENTO
+  // que o jogador enquanto a Speed efetiva está acima do recomendado.
+  const fairRaccoon=await page.evaluate(()=>{
+   const orig={sp:S.sp,tr:S.tr,carry,train:P.train,stun:P.stun,god:A.god,
+    freeze:A.freeze,weightless:A.weightless,moveMult:A.moveMult,
+    phase:EGG_NIGHT.phase,x:P.x,z:P.z,vx:P.vx,vz:P.vz,reset:nextReset};
+   const rg=raccoonGuard,front=GD[2],other=GD[4],groups=[rg,front,other];
+   const before=groups.map(g=>({g,st:g.st,t:g.t,rush:g.rush,pos:g.m.position.clone()}));
+   const touched=[];
+   try{
+    EGG_NIGHT.phase='day';nextReset=Date.now()/1000+3600;
+    A.god=false;A.freeze=false;A.weightless=false;A.moveMult=1;
+    S.sp=200000;S.tr=-1;P.train=false;P.stun=0;P.vx=P.vz=0;
+    const e=eggs.find(x=>x.nest?.b===3&&x.j===0);
+    if(!e)return {error:'Ovo comum da Selva ausente'};
+    const gr=e.gr,scale=e.mesh.scale.clone(),pos=e.mesh.position.clone(),nest=e.nest,w=e.w;
+    touched.push({e,gr,scale,pos,nest,w});
+    e.gr=1;e.mesh.scale.copy(e.base);
+    P.x=e.mesh.position.x;P.z=e.mesh.position.z;
+    rg.st='guard';rg.rush=false;rg.m.position.copy(rg.home);
+    front.st='sleep';front.m.position.copy(front.home);
+    other.st='sleep';other.m.position.copy(other.home);
+    const taken=take(e)===undefined&&carry===e;
+    const instantChase=rg.st==='chase'&&stolenGuardArea()===3;
+    const speedOfThief=carryingRunSpeed();
+    const speedOfRaccoon=guardianChaseSpeed(3);
+    const fairNormal=speedOfRaccoon<speedOfThief;
+    const rec=BI[3].req;
+    // Peso diferente de ovo jamais concede vantagem automática ao guaxinim.
+    const weighted=[2,12,40,80].map(weight=>{
+     e.w=weight;
+     return {weight,player:carryingRunSpeed(),mob:guardianChaseSpeed(3)};
+    });
+    e.w=w;
+    // No meio da divisa da Selva, o mob da frente tenta atacar indevidamente;
+    // a lógica precisa desativá-lo e continuar com o guaxinim de trás.
+    P.x=0;P.z=gz(3);P.vx=P.vz=0;
+    front.st='chase';front.rush=true;
+    other.st='chase';other.rush=true;
+    const raccoonStart=rg.m.position.clone();
+    step(.05);
+    const onlyBack=rg.st==='chase'&&front.st!=='chase'&&other.st!=='chase';
+    const raccoonMoved=rg.m.position.distanceTo(raccoonStart)>.2;
+    const atBoundary=P.z===gz(3);
+    // Ficar realmente abaixo da Speed recomendada faz o bicho ganhar a corrida.
+    S.sp=1000;
+    const lowSpeed=guardianChaseSpeed(3)>carryingRunSpeed();
+    S.sp=200000;
+    if(carry)drop();
+    const endsWithDrop=rg.st==='ret'&&front.st!=='chase'&&other.st!=='chase';
+    return {taken,instantChase,rec,speedOfThief,speedOfRaccoon,fairNormal,weighted,
+     atBoundary,onlyBack,raccoonMoved,lowSpeed,endsWithDrop};
+   }finally{
+    if(carry&&carry!==orig.carry)drop();
+    for(const t of touched){
+     const {e,nest,gr,scale,pos,w}=t;
+     e.w=w;
+     if(e.mesh.parent!==sc){e.mesh.parent?.remove(e.mesh);sc.add(e.mesh)}
+     e.gr=gr;e.mesh.scale.copy(scale);e.mesh.position.copy(pos);
+     e.nest=nest;nest.e=e;if(!eggs.includes(e))eggs.push(e);
+    }
+    S.sp=orig.sp;S.tr=orig.tr;carry=orig.carry;P.train=orig.train;P.stun=orig.stun;
+    A.god=orig.god;A.freeze=orig.freeze;A.weightless=orig.weightless;A.moveMult=orig.moveMult;
+    EGG_NIGHT.phase=orig.phase;nextReset=orig.reset;
+    P.x=orig.x;P.z=orig.z;P.vx=orig.vx;P.vz=orig.vz;
+    for(const {g,st,t,rush,pos} of before){g.st=st;g.t=t;g.rush=rush;g.m.position.copy(pos)}
+    upHud();
+   }
+  });
+  assert(!fairRaccoon.error,'A Selva contém ovos comuns');
+  assert(fairRaccoon.taken&&fairRaccoon.instantChase,'Roubo chama o guaxinim imediatamente');
+  assert.equal(fairRaccoon.rec,40000,'Recomendação da Selva é de 40K');
+  assert(fairRaccoon.fairNormal,'200 mil de Speed ultrapassa a corrida do guaxinim');
+  assert(fairRaccoon.weighted.every(x=>x.player>x.mob),'Mesmo com ovo pesado o mob permanece mais lento');
+  assert(fairRaccoon.atBoundary&&fairRaccoon.onlyBack,'No meio da divisa só o guaxinim de trás persegue');
+  assert(fairRaccoon.raccoonMoved,'Guaxinim sai do posto e realmente se move atrás do ladrão');
+  assert(fairRaccoon.lowSpeed,'Abaixo da recomendação o guaxinim ainda é perigoso');
+  assert(fairRaccoon.endsWithDrop,'Mãos livres encerram a perseguição');
+  console.log(mode.toUpperCase()+' GUAXINIM 200K E DIVISA SEM MOB DUPLO '+JSON.stringify(fairRaccoon));
 
   // Fronteira exata entre PARTE 2 e PARTE 3: só o mob de trás (parte 3)
   // protege o ovo roubado da parte 3. Repetir para guaxinim da PARTE 4.
