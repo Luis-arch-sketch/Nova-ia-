@@ -557,7 +557,7 @@ try{
     const farDistance=Math.hypot(P.x-raccoon.home.x,P.z-raccoon.home.z);
     step(.05);
     const followsFromFar=raccoon.st==='chase'
-      &&raccoon.m.position.z>raccoon.home.z+1;
+      &&raccoon.m.position.z>raccoon.home.z+.2;
     const sprintHeld=raccoon.rush===true;
     // Caminho físico completo até a base, respeitando a abertura da cerca.
     for(let i=0;i<85;i++)aim(raccoon,4,-4,95,.05);
@@ -613,10 +613,19 @@ try{
     EGG_NIGHT.phase='day';nextReset=Date.now()/1000+3600;
     A.god=false;A.freeze=false;A.weightless=false;A.moveMult=1;
     S.sp=200000;S.tr=-1;P.train=false;P.stun=0;P.vx=P.vz=0;
-    const e=eggs.find(x=>x.nest?.b===3&&x.j===0);
-    if(!e)return {error:'Ovo comum da Selva ausente'};
+    // O cenário anterior pode ter usado o primeiro ovo da Selva.
+    // Reconstruir um único ovo TEMPORÁRIO só no teste, sem mudar o jogo.
+    const targetNest=NS.find(n=>n.b===3&&n.j===0);
+    if(!targetNest)return {error:'Ninho da Selva ausente'};
+    const created=!targetNest.e;
+    const e=targetNest.e||newEgg(3,0);
+    if(created){
+     e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;
+     e.nest=targetNest;targetNest.e=e;eggs.push(e);
+     e.mesh.position.set(targetNest.x,.45+e.base.y,targetNest.z);
+    }
     const gr=e.gr,scale=e.mesh.scale.clone(),pos=e.mesh.position.clone(),nest=e.nest,w=e.w;
-    touched.push({e,gr,scale,pos,nest,w});
+    touched.push({e,gr,scale,pos,nest,w,created});
     e.gr=1;e.mesh.scale.copy(e.base);
     P.x=e.mesh.position.x;P.z=e.mesh.position.z;
     rg.st='guard';rg.rush=false;rg.m.position.copy(rg.home);
@@ -655,7 +664,12 @@ try{
    }finally{
     if(carry&&carry!==orig.carry)drop();
     for(const t of touched){
-     const {e,nest,gr,scale,pos,w}=t;
+     const {e,nest,gr,scale,pos,w,created}=t;
+     if(created){
+      e.mesh.parent?.remove(e.mesh);
+      const index=eggs.indexOf(e);if(index>=0)eggs.splice(index,1);
+      nest.e=null;continue;
+     }
      e.w=w;
      if(e.mesh.parent!==sc){e.mesh.parent?.remove(e.mesh);sc.add(e.mesh)}
      e.gr=gr;e.mesh.scale.copy(scale);e.mesh.position.copy(pos);
