@@ -131,7 +131,7 @@ const fm=value=>{
  return sign+Number(scaled.toFixed(decimals))+(U[i]||'e'+3*i);
 };
 /* ===== CONFIG: todos os números do jogo ficam aqui (editáveis) ===== */
-const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{7:.10,8:.04,9:.005}}; // rare: chance por reset de nascer 1 ovo dessa raridade, em um bioma aleatório (editável)
+const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}}; // chance POR RENOVAÇÃO por raridade; entrada inicial só Common/Uncommon
 const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED'],RS=[0,1,2,3,4,7,8,9]; // RS: raridade de cada posição de espécie no bioma
 
 const BI=[
