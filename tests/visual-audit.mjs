@@ -42,7 +42,7 @@ try{
    const ctx=c.getContext('webgl2')||c.getContext('webgl')||c.getContext('experimental-webgl');
    const keys=['bam','bRank','roomButton','bm','bf','bj','ba','recoverBtn'];
    const controls=keys.map(id=>({id,exists:!!document.getElementById(id)}));
-   const species=window.RoubeOvoVisuals?.species?.flat()?.length;
+   const species=(window.RoubeOvoVisuals?.species?.flat()?.filter(Boolean).length||0)+1; // 102 comuns + LIMITED ∞
    const visuals=window.RoubeOvoVisuals;
    return {
     controls,species,visualsReady:!!visuals,
@@ -58,8 +58,18 @@ try{
   await page.screenshot({path:'test-results/'+mode+'.png'});
   console.log(mode.toUpperCase()+' STATE '+JSON.stringify(state));
   assert.equal(state.visualsReady,true,'Visuals must be initialized');
-  assert.equal(state.species,104,'13 biome species sets of 8 creatures');
+  assert.equal(state.species,103,'103 espécies ativas, com pato e pintinho retirados');
   assert.equal(state.biomeCount,13);
+   const retired=await page.evaluate(()=>({
+    emptySlots:[0,9].every(id=>window.RoubeOvoVisuals.species.flat()[id]===null),
+    hasNoRemovedEggs:eggs.every(e=>e.s!==0&&e.s!==9),
+    forestOrder:BI[0].sp.filter(Boolean).slice(0,4),
+    activeIndexSize:ACTIVE_SPECIES.length,
+    blockedSpawns:adminSpawnEgg(0,0,0)===null&&adminSpawnEgg(1,1,0)===null
+   }));
+   assert(retired.emptySlots&&retired.hasNoRemovedEggs&&retired.blockedSpawns,'Pato e pintinho devem ficar fora dos ninhos e do spawn');
+   assert.equal(retired.activeIndexSize,103);
+   assert.deepEqual(retired.forestOrder,['Dog','Bird','Burrowing Owl','Guaxinim'],'Coruja terceira e guaxinim quarto');
   assert(state.controls.every(e=>e.exists),'Every old button remains');
   assert(state.canvasSize[0]>100&&state.canvasSize[1]>100,'Canvas area');
   assert(state.sceneElements>50,'Scene detail');
@@ -80,7 +90,7 @@ try{
     assert(endPos.z<startPos.z-.30,'Android joystick must move player forward');
   }
   const pageVisuals=await page.evaluate(()=>{
-   const sample=[0,1,2,3,4,5,6,7,10,15,20,26,33,42,52,61,77,83,95,103,104];
+   const sample=[1,2,3,4,5,6,7,8,10,15,20,26,33,42,52,61,77,83,95,103,104];
    const codes=[];
    for(const id of sample){
     const m=window.RoubeOvoVisuals.create(THREE,id,.7,new THREE.Color(0xffffff),sc);
@@ -101,7 +111,7 @@ try{
       const lamp=new THREE.DirectionalLight(0xffe7c4,1.35);lamp.position.set(7,16,13);showcase.add(lamp);
       const floor=new THREE.Mesh(new THREE.PlaneGeometry(45,34),new THREE.MeshLambertMaterial({color:0x6f9e87}));
       floor.rotation.x=-Math.PI/2;floor.position.y=-.06;showcase.add(floor);
-      const ids=[0,1,3,4,5,8,15,20,33,42,52,61,77,83,95,103];
+      const ids=[1,2,3,4,5,6,15,20,33,42,52,61,77,83,95,103];
       for(let i=0;i<ids.length;i++){
         const species=ids[i];
         const color=new THREE.Color().setHSL((species*37%360)/360,.59,.59);
