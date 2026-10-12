@@ -284,38 +284,43 @@ try{
 
   console.log(mode.toUpperCase()+' ENTRADA SEM EXCESSO DE OVOS RAROS '+JSON.stringify(initialEggs));
 
-  // DIA: passagens livres nas 13 áreas e em todos os lados da antiga cerca da base.
-  const freeDay=await page.evaluate(()=>{
+  // DIA: as 13 áreas abertas; a BASE conserva sua própria cerca e portão.
+  const fenceDay=await page.evaluate(()=>{
    const oldPhase=EGG_NIGHT.phase;
    try{
     EGG_NIGHT.phase='day';
-    const cases=[
-     {name:'área centro',oldX:0,oldZ:-28,x:0,z:-32},
-     {name:'área lateral',oldX:75,oldZ:-28,x:75,z:-32},
-     {name:'base frente',oldX:0,oldZ:-14,x:0,z:-6},
-     {name:'base esquerda',oldX:-22,oldZ:8,x:-18,z:8},
-     {name:'base direita',oldX:22,oldZ:8,x:18,z:8},
-     {name:'base fundos',oldX:0,oldZ:26,x:0,z:34}
+    const crossings=[
+     {name:'divisão centro',oldX:0,oldZ:-28,x:0,z:-32},
+     {name:'divisão lateral',oldX:75,oldZ:-28,x:75,z:-32},
+     {name:'divisão parte 4',oldX:40,oldZ:-238,x:40,z:-242}
     ];
-    const crossed=cases.map(({name,oldX,oldZ,x,z})=>{
-     const entity={x,z,vx:3,vz:4};
-     partBorderCollision(entity,oldZ,oldX);
-     return {name,free:entity.x===x&&entity.z===z};
+    const openAreas=crossings.map(({name,oldX,oldZ,x,z})=>{
+     const p={x,z,vx:4,vz:5};
+     partBorderCollision(p,oldZ,oldX);
+     return {name,free:p.x===x&&p.z===z};
     });
-    const fenceLeft=sc.children.filter(o=>o.isMesh&&o.material?.color?.getHex?.()===0xc89b5a
-      &&Math.abs(o.position.z+10)<.01).length;
-    return {crossed,fenceLeft,whiteAreaWalls:GT.filter(g=>g.bar.visible).length,
-     baseWalls:NIGHT_BASE_WALLS.filter(w=>w.visible).length,
-     baseTimer:NIGHT_BASE_TIMER.visible,areaWallWidth:GT[0].bar.scale.x};
+    const meshes=sc.children.filter(o=>o.isMesh&&o.material?.color?.getHex?.()===0xc89b5a);
+    const front={x:-12.4,z:-10};
+    const left={x:-19.1,z:8};
+    const center={x:0,z:-10};
+    push(front,.5);push(left,.5);push(center,.5);
+    const fencePosts=OB.filter(o=>Math.abs(o.z+10)<.01&&Math.abs(o.x)>=6).length;
+    return {openAreas,fenceMeshCount:meshes.length,fencePosts,
+      frontStopped:front.x!==-12.4||front.z!==-10,
+      leftStopped:left.x!==-19.1||left.z!==8,
+      centralEntranceOpen:center.x===0&&center.z===-10,
+      whiteAreas:GT.filter(g=>g.bar.visible||g.timer.visible).length};
    }finally{EGG_NIGHT.phase=oldPhase}
   });
-  assert(freeDay.crossed.every(x=>x.free),'Dia com passagem totalmente livre: '+JSON.stringify(freeDay));
-  assert.equal(freeDay.fenceLeft,0,'Cerca de madeira da base sumiu');
-  assert.equal(freeDay.whiteAreaWalls,0,'Todas as áreas sem parede de dia');
-  assert.equal(freeDay.baseWalls,0,'Antiga cerca totalmente aberta de dia');
-  assert(!freeDay.baseTimer,'Cronômetro da base escondido de dia');
-  assert.equal(freeDay.areaWallWidth,204,'As paredes brancas noturnas cobrem toda a largura das divisões');
-  console.log(mode.toUpperCase()+' DIA LIVRE SEM CERCAS '+JSON.stringify(freeDay));
+  assert(fenceDay.openAreas.every(x=>x.free),'As 13 divisões permanecem abertas durante o dia');
+  assert.equal(fenceDay.fenceMeshCount,5,'As cinco partes da cerca original da base estão visíveis');
+  assert(fenceDay.fencePosts>0&&fenceDay.frontStopped&&fenceDay.leftStopped,
+    'A cerca da base possui colisão nas laterais e na frente');
+  assert(fenceDay.centralEntranceOpen,'Portão central permite entrar e sair da base');
+  assert.equal(fenceDay.whiteAreas,0,'Sem paredes brancas nas áreas durante o dia');
+  assert.equal(typeof NIGHT_BASE_WALLS,'undefined','Jamais existe parede branca na base');
+  assert.equal(typeof NIGHT_BASE_TIMER,'undefined','Jamais existe cronômetro na cerca da base');
+  console.log(mode.toUpperCase()+' CERCA DA BASE RESTAURADA '+JSON.stringify(fenceDay));
 
   // Night renewal integration: 13 gates, 9+3 countdowns, physical collision,
   // growth multiplier, protected LIMITED, eggs pickable again after sunrise.
@@ -328,8 +333,7 @@ try{
    const removed=oldEggs.every(e=>!eggs.includes(e));
    const limitedKept=eggs.includes(limited);
    const nightWallCount=GT.filter(g=>g.bar.visible&&g.timer.visible).length;
-   const baseNightWalls=NIGHT_BASE_WALLS.filter(w=>w.visible).length;
-   const baseNightTimer=NIGHT_BASE_TIMER.visible;
+   const baseFenceDuringNight=sc.children.filter(o=>o.isMesh&&o.material?.color?.getHex?.()===0xc89b5a).length;
    const firstClock=$('eggNightTime').textContent;
    const egg=newEggs.find(e=>e.gr===0);
    const initialGrowth=egg?.gr;
@@ -345,23 +349,25 @@ try{
    const areaSide={x:75,z:gateZ-2,vz:-2};
    partBorderCollision(areaSide,gateZ+2,75);
    const areaSideBlocked=areaSide.z>gateZ;
-   const baseFront={x:0,z:-7,vx:0,vz:3};
-   partBorderCollision(baseFront,-13,0);
-   const baseFrontBlocked=baseFront.z===-13;
-   const baseSide={x:18,z:8,vx:4,vz:0};
-   partBorderCollision(baseSide,8,22);
-   const baseSideBlocked=baseSide.x===22;
+   const baseFront={x:12.4,z:-10};
+   push(baseFront,.5);
+   const baseFrontBlocked=baseFront.x!==12.4||baseFront.z!==-10;
+   const baseSide={x:19.1,z:8};
+   push(baseSide,.5);
+   const baseSideBlocked=baseSide.x!==19.1||baseSide.z!==8;
+   const baseEntrance={x:0,z:-10};
+   push(baseEntrance,.5);
+   const baseEntranceOpen=baseEntrance.x===0&&baseEntrance.z===-10;
    updateEggNight(t0+9001);
    const sunrisePhase=EGG_NIGHT.phase;
    const secondClock=$('eggNightTime').textContent;
    const sunriseWallCount=GT.filter(g=>g.bar.visible&&g.timer.visible).length;
-   const sunriseBaseWalls=NIGHT_BASE_WALLS.filter(w=>w.visible).length;
-   const sunriseBaseTimer=NIGHT_BASE_TIMER.visible;
+   const sunriseFenceCount=sc.children.filter(o=>o.isMesh&&o.material?.color?.getHex?.()===0xc89b5a).length;
    const noEggDuringUnlock=findEgg()===null;
    updateEggNight(t0+12001);
    const dayPhase=EGG_NIGHT.phase;
    const openWalls=GT.filter(g=>g.bar.visible||g.timer.visible).length;
-   const openedBase=NIGHT_BASE_WALLS.every(w=>!w.visible)&&!NIGHT_BASE_TIMER.visible;
+   const originalBaseStillThere=sc.children.filter(o=>o.isMesh&&o.material?.color?.getHex?.()===0xc89b5a).length===5;
    const p2={x:0,z:gateZ-2,vz:-2};
    partBorderCollision(p2,gateZ+2);
    const gatesAreOpen=p2.z===gateZ-2;
@@ -372,20 +378,20 @@ try{
    sc.remove(limited.mesh);
    P.x=0;P.z=8;P.vx=P.vz=0;upHud();
    return {started,previousEggs:oldEggs.length,newEggs:newEggs.length,removed,limitedKept,
-    nightWallCount,baseNightWalls,baseNightTimer,firstClock,initialGrowth,growth,
-    noEggAtNight,takeProtected,wallPhysicallyBlocks,areaSideBlocked,baseFrontBlocked,baseSideBlocked,
-    sunrisePhase,secondClock,sunriseWallCount,sunriseBaseWalls,sunriseBaseTimer,
-    noEggDuringUnlock,dayPhase,openWalls,openedBase,gatesAreOpen,pickableInDay};
+    nightWallCount,baseFenceDuringNight,firstClock,initialGrowth,growth,
+    noEggAtNight,takeProtected,wallPhysicallyBlocks,areaSideBlocked,baseFrontBlocked,baseSideBlocked,baseEntranceOpen,
+    sunrisePhase,secondClock,sunriseWallCount,sunriseFenceCount,
+    noEggDuringUnlock,dayPhase,openWalls,originalBaseStillThere,gatesAreOpen,pickableInDay};
   });
   assert(nightTest.started,'Night renewal starts');
   assert(nightTest.previousEggs>=20&&nightTest.newEggs>=20,'Normal eggs present without rare flood');
   assert(nightTest.removed,'Old nest eggs replaced');
   assert(nightTest.limitedKept,'Existing LIMITED remains untouched');
   assert.equal(nightTest.nightWallCount,13,'13 white walls closed');
-  assert.equal(nightTest.baseNightWalls,4,'Base recebe 4 paredes no lugar da antiga cerca');
-  assert(nightTest.baseNightTimer,'Cronômetro branco no centro da parede frontal da base');
-  assert(nightTest.areaSideBlocked&&nightTest.baseFrontBlocked&&nightTest.baseSideBlocked,
-    'Paredes temporárias são físicas por toda a largura, inclusive ao redor da base');
+  assert.equal(nightTest.baseFenceDuringNight,5,'A cerca original permanece na base durante os 9 segundos de noite');
+  assert(nightTest.areaSideBlocked,'Parede branca da área bloqueia toda sua largura durante a noite');
+  assert(nightTest.baseFrontBlocked&&nightTest.baseSideBlocked&&nightTest.baseEntranceOpen,
+    'Na base continua a cerca original, com entrada central livre, sem parede branca');
   assert.equal(nightTest.firstClock,'9s','First 9 second countdown');
   assert(Math.abs(nightTest.growth-nightTest.initialGrowth-.12)<.001,'30× egg growth during night');
   assert(nightTest.noEggAtNight&&nightTest.takeProtected,'Egg collection blocked at night');
@@ -393,12 +399,11 @@ try{
   assert.equal(nightTest.sunrisePhase,'unlock');
   assert.equal(nightTest.secondClock,'3s','Second 3 second countdown');
   assert.equal(nightTest.sunriseWallCount,13,'Walls remain for 3 extra seconds');
-  assert.equal(nightTest.sunriseBaseWalls,4,'A cerca branca da base permanece durante 3 segundos');
-  assert(nightTest.sunriseBaseTimer,'O segundo cronômetro também aparece na parede da base');
+  assert.equal(nightTest.sunriseFenceCount,5,'Durante o segundo cronômetro a base mantém só a cerca original');
   assert(nightTest.noEggDuringUnlock,'Eggs still protected until unlocking');
   assert.equal(nightTest.dayPhase,'day');
   assert.equal(nightTest.openWalls,0,'All white walls vanish');
-  assert(nightTest.openedBase,'Ao amanhecer a base fica sem qualquer parede');
+  assert(nightTest.originalBaseStillThere,'Ao amanhecer a cerca original da base continua no lugar');
   assert(nightTest.gatesAreOpen&&nightTest.pickableInDay,'Normal access to eggs and areas restored');
   console.log(mode.toUpperCase()+' NOITE DOS OVOS 9+3S '+JSON.stringify(nightTest));
 
