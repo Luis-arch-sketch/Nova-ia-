@@ -46,37 +46,10 @@ test('salas, guardião, esteira e Admin Abuse preservados',()=>{
  assert(server.includes('installServerBrowser'));assert(!server.includes('TREADMILL_RATE'));
 });
 
-test('esteira normal para ADMIN, poderes sempre opcionais',()=>{
+test('reset único do dono mantém ADMIN',()=>{
+ assert(html.includes('resetOwnerProgressOnce'));
+ assert(html.includes('ADMIN_DEVICE_KEY'));
+ assert(!html.includes('removeOwnerTreadmill'));
+ assert(html.includes('ensureTM(S.pid);regrow(true);'));
  assert(!server.includes('applyOwnerTreadmill'));
- assert(!server.includes('TREADMILL_RATE_TEXT'));
- assert(!server.includes('ownerVerified?TREADMILL_RATE'));
- assert(server.includes("const gameHtml=installServerBrowser(applyGraphicUpgrade(fs.readFileSync("));
- assert(html.includes('S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt'));
- assert(html.includes("TMO.lab.set('Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])"));
- assert(html.includes('Sua esteira normal:'));
- assert(html.includes("adBtn('playNormal','👤 Jogar normalmente'"));
- assert(html.includes("case 'playNormal':"));
- assert(html.includes('ADMIN e Admin Abuse continuam disponíveis'));
- assert(html.includes("adBtn('spawnLimitedBatch'"));
- assert(html.includes("case 'speedSet':"));
- assert(html.includes("case 'moneySet':"));
-});
-
-test('conta ADMIN fica realmente sem esteira nem treino automático',()=>{
- assert(html.includes('const removeOwnerTreadmill=()=>{'));
- assert(html.includes('if(TMO){sc.remove(TMO.g);TMO=null;}'));
- assert(html.includes('P.train=false;S.tm=0;'));
- assert(html.includes('if(ownerVerified)removeOwnerTreadmill();else ensureTM(S.pid);'));
- assert(html.includes('if(ownerVerified&&P.train)P.train=false;'));
- assert(html.includes('if(P.train&&!ownerVerified){tx=tz=0;'));
- assert(html.includes("if(!ownerVerified&&near(-14,4,4))"));
- assert(html.includes("ownerVerified&&i===0?'':bt('T'+i"));
- assert(html.includes("case 'trainToggle':if(ownerVerified)"));
- assert(html.includes("case 'treadSet':if(ownerVerified)"));
- assert(html.includes("case 'playNormal':{removeOwnerTreadmill();"));
- assert(html.includes("ownerVerified=true;adminBadge.visible=true;removeOwnerTreadmill();"));
- assert(html.includes('const adminLogin=async e=>'));
- assert(html.includes('const ABUSE_NAMES='));
- assert(html.includes("case 'speedSet':"));
- assert(html.includes("case 'moneySet':"));
 });
