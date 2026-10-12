@@ -346,6 +346,56 @@ try{
   assert(nightTest.gatesAreOpen&&nightTest.pickableInDay,'Normal access to eggs and areas restored');
   console.log(mode.toUpperCase()+' NOITE DOS OVOS 9+3S '+JSON.stringify(nightTest));
 
+  // Gravação do usuário: 20,1K Speed + trail Blue 2.5x = 50.25K
+  // maior que 40K recomendados na Selva. Corrida absurda não deve disparar.
+  const blueTrailScene=await page.evaluate(()=>{
+   const old={sp:S.sp,tr:S.tr,carry,train:P.train,stun:P.stun,god:A.god,
+     phase:EGG_NIGHT.phase,x:P.x,z:P.z,vx:P.vx,vz:P.vz};
+   const g=raccoonGuard,gOld={st:g.st,t:g.t,pos:g.m.position.clone()};
+   try{
+    EGG_NIGHT.phase='day';A.god=false;P.train=false;P.stun=0;
+    S.sp=20100;S.tr=2;P.x=g.home.x+11;P.z=g.home.z+1;
+    P.vx=P.vz=0;
+    const req=BI[3].req,effective=eff(),handsFreeSafe=!guardianShouldRush(3,g.home);
+    const egg=eggs.find(e=>e.nest?.b===3&&e.j===0);
+    if(!egg)return {error:'Ovo da Selva indisponível'};
+    egg.gr=1;egg.mesh.scale.copy(egg.base);
+    P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;
+    take(egg);
+    const stole=carry===egg,noArtificialRush=!guardianShouldRush(3,g.home);
+    const normalSpeed=Math.max(12,gs(0)*1.7)*abuseMoveMult();
+    const playerSpeed=walk(eff())*A.moveMult*abuseMoveMult()/(1+CFG.w*egg.w);
+    // Guarda legítimo acerta e recupera o ovo. Ele deve recuar, não acampar no corpo.
+    g.m.position.set(P.x-1,0,P.z);
+    hit(g);
+    const emptyAfterHit=carry===null,shortStun=P.stun===.6;
+    const distanceAfterHit=Math.hypot(P.x-g.m.position.x,P.z-g.m.position.z);
+    const returning=g.st==='ret',safeText=!(carry&&g.st==='chase');
+    step(.7);
+    const upright=P.stun<=0;
+    return {req,effective,handsFreeSafe,stole,noArtificialRush,normalSpeed,playerSpeed,
+      emptyAfterHit,shortStun,distanceAfterHit,returning,safeText,upright};
+   }finally{
+    if(carry&&carry!==old.carry)drop();
+    S.sp=old.sp;S.tr=old.tr;carry=old.carry;P.train=old.train;P.stun=old.stun;
+    A.god=old.god;EGG_NIGHT.phase=old.phase;
+    P.x=old.x;P.z=old.z;P.vx=old.vx;P.vz=old.vz;
+    g.st=gOld.st;g.t=gOld.t;g.m.position.copy(gOld.pos);
+    upHud();
+   }
+  });
+  assert(!blueTrailScene.error,'Ovos Common da Selva continuam');
+  assert.equal(blueTrailScene.req,40000,'Selva exige 40K recomendado');
+  assert.equal(blueTrailScene.effective,50250,'Trail Blue = 2.5x');
+  assert(blueTrailScene.handsFreeSafe,'Mãos livres na Selva: zero perseguição');
+  assert(blueTrailScene.stole,'Pode pegar ovo fisicamente');
+  assert(blueTrailScene.noArtificialRush,'50.25K efetivos impedem corrida exagerada');
+  assert(blueTrailScene.playerSpeed>blueTrailScene.normalSpeed,'Jogador com trail pode fugir do guaxinim');
+  assert(blueTrailScene.emptyAfterHit&&blueTrailScene.returning,'Ovo cai e guarda retorna ao posto');
+  assert(blueTrailScene.shortStun&&blueTrailScene.distanceAfterHit>=4,'Guarda afasta-se após atingir');
+  assert(blueTrailScene.safeText&&blueTrailScene.upright,'Recupera postura sem alerta permanente');
+  console.log(mode.toUpperCase()+' GUAXINIM SELVA TRAIL CORRIGIDO '+JSON.stringify(blueTrailScene));
+
   // Reprodução do vídeo: HUD Mãos livres, Speed ~3,84K e guardião do Deserto.
   // Caminhar sem ovo NÃO pode iniciar perseguição, mesmo com Speed inferior a 10K.
   const guardTest=await page.evaluate(()=>{
