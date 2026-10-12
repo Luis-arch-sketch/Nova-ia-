@@ -464,6 +464,80 @@ try{
   assert(guardTest.noChaseAfterDrop,'Guardiões voltam ao posto após soltar ovo');
   console.log(mode.toUpperCase()+' BUG MÃOS LIVRES CORRIGIDO '+JSON.stringify(guardTest));
 
+  // Teste físico completo: perseguição passa pelo portão em z=-10, alcança
+  // a base em z=-4 e regressa depois de soltar o ovo (inclui parte 4).
+  const reachBase=await page.evaluate(()=>{
+   const old={sp:S.sp,tr:S.tr,carry,god:A.god,freeze:A.freeze,train:P.train,
+    stun:P.stun,x:P.x,z:P.z,vx:P.vx,vz:P.vz,phase:EGG_NIGHT.phase,reset:nextReset};
+   const guard=GD[0],raccoon=raccoonGuard;
+   const snapshot=[guard,raccoon].map(g=>({g,st:g.st,t:g.t,rush:g.rush,
+    pos:g.m.position.clone()}));
+   try{
+    EGG_NIGHT.phase='day';nextReset=Date.now()/1000+3600;
+    A.god=true;A.freeze=false;P.train=false;P.stun=0;
+    S.sp=100000;P.x=4;P.z=-4;P.vx=P.vz=0;
+    // Primeiro testa a rota com colisão real da cerca: x=0, z=-10.
+    guard.m.position.set(0,0,-30);
+    for(let i=0;i<75;i++)aim(guard,4,-4,18,.05);
+    const guardEntered=guard.m.position.z>-9.5;
+    const guardAtDeposit=Math.hypot(guard.m.position.x-4,guard.m.position.z+4)<3;
+    const guardBaseZ=guard.m.position.z;
+    for(let i=0;i<100;i++)aim(guard,guard.home.x,guard.home.z,36,.05);
+    const guardReturned=guard.m.position.distanceTo(guard.home)<1.5;
+    // Roubo da parte 4: guaxinim inicia no fundo do mundo (-275),
+    // com o jogador na base a >95m de distância. Ele deve continuar a caça.
+    const egg=eggs.find(e=>e.nest?.b===3&&e.j===1);
+    if(!egg)return {error:'Ovo da PARTE 4 indisponível'};
+    egg.gr=1;egg.mesh.scale.copy(egg.base);
+    take(egg);
+    const holding=carry===egg;
+    raccoon.st='chase';raccoon.rush=true;
+    raccoon.m.position.copy(raccoon.home);
+    const farDistance=Math.hypot(P.x-raccoon.home.x,P.z-raccoon.home.z);
+    step(.05);
+    const followsFromFar=raccoon.st==='chase'
+      &&raccoon.m.position.z>raccoon.home.z+1;
+    const sprintHeld=raccoon.rush===true;
+    // Caminho físico completo até a base, respeitando a abertura da cerca.
+    for(let i=0;i<85;i++)aim(raccoon,4,-4,95,.05);
+    const reachedByRaccoon=raccoon.m.position.z>-9.5
+      &&Math.hypot(raccoon.m.position.x-4,raccoon.m.position.z+4)<3;
+    const raccoonAtBaseZ=raccoon.m.position.z;
+    // Após soltar, todos os guardiões param e voltam para as regiões.
+    guard.st='chase';guard.rush=true;
+    drop();
+    const stopsAfterDrop=raccoon.st==='ret'&&guard.st==='ret'
+      &&!raccoon.rush&&!guard.rush;
+    for(let i=0;i<180;i++)aim(raccoon,raccoon.home.x,raccoon.home.z,36,.05);
+    const raccoonReturned=raccoon.m.position.distanceTo(raccoon.home)<1.5;
+    const handsFree=carry===null;
+    return {guardEntered,guardAtDeposit,guardBaseZ,guardReturned,holding,
+      farDistance,followsFromFar,sprintHeld,reachedByRaccoon,raccoonAtBaseZ,
+      stopsAfterDrop,raccoonReturned,handsFree};
+   }finally{
+    if(carry&&carry!==old.carry)drop();
+    S.sp=old.sp;S.tr=old.tr;carry=old.carry;
+    A.god=old.god;A.freeze=old.freeze;P.train=old.train;P.stun=old.stun;
+    P.x=old.x;P.z=old.z;P.vx=old.vx;P.vz=old.vz;
+    EGG_NIGHT.phase=old.phase;nextReset=old.reset;
+    for(const v of snapshot){
+     v.g.st=v.st;v.g.t=v.t;v.g.rush=v.rush;v.g.m.position.copy(v.pos);
+    }
+    upHud();
+   }
+  });
+  assert(!reachBase.error,'A parte 4 mantém os ovos normais');
+  assert(reachBase.guardEntered&&reachBase.guardAtDeposit,'Guardião atravessa o portão e chega ao depósito');
+  assert(reachBase.guardBaseZ>-9.5,'Guardião passa da antiga parede invisível em z=-14');
+  assert(reachBase.guardReturned,'Guardião usa a mesma passagem para voltar ao ninho');
+  assert(reachBase.holding,'O roubo da parte 4 foi efetuado');
+  assert(reachBase.farDistance>200,'Ladrão já está longe do território do guaxinim');
+  assert(reachBase.followsFromFar&&reachBase.sprintHeld,'Guaxinim continua caça a mais de 95 metros');
+  assert(reachBase.reachedByRaccoon&&reachBase.raccoonAtBaseZ>-9.5,'Guaxinim entra na base pela cerca');
+  assert(reachBase.stopsAfterDrop&&reachBase.handsFree,'Mãos livres encerram as perseguições');
+  assert(reachBase.raccoonReturned,'Guaxinim regressa à parte 4 depois da perseguição');
+  console.log(mode.toUpperCase()+' GUARDIÕES PERSEGUEM ATÉ A BASE '+JSON.stringify(reachBase));
+
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
  }
