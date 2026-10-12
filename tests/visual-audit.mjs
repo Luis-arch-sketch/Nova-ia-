@@ -260,6 +260,68 @@ try{
     assert(unstuck.speed>=1234567,'Destravar preserva Speed');
     console.log('GAMEPLAY REGRESSION '+JSON.stringify({spawned,restored,unstuck}));
   }
+  // Night renewal integration: 13 gates, 9+3 countdowns, physical collision,
+  // growth multiplier, protected LIMITED, eggs pickable again after sunrise.
+  const nightTest=await page.evaluate(()=>{
+   const t0=Date.now();
+   const oldEggs=eggs.filter(e=>e.nest&&e.s!==LIMITED_ID);
+   const limited=makeLimitedEgg(85,-200);
+   const started=startEggNight(t0);
+   const newEggs=eggs.filter(e=>e.nest&&e.s!==LIMITED_ID);
+   const removed=oldEggs.every(e=>!eggs.includes(e));
+   const limitedKept=eggs.includes(limited);
+   const nightWallCount=GT.filter(g=>g.bar.visible&&g.timer.visible).length;
+   const firstClock=$('eggNightTime').textContent;
+   const egg=newEggs.find(e=>e.gr===0);
+   const initialGrowth=egg?.gr;
+   step(.01);
+   const growth=egg?.gr;
+   const noEggAtNight=findEgg()===null;
+   const oldCarry=carry;
+   if(egg)take(egg);
+   const takeProtected=carry===oldCarry&&eggs.includes(egg);
+   const gateZ=GT[0].z,p={x:0,z:gateZ-2,vz:-2};
+   partBorderCollision(p,gateZ+2);
+   const wallPhysicallyBlocks=p.z>gateZ;
+   updateEggNight(t0+9001);
+   const sunrisePhase=EGG_NIGHT.phase;
+   const secondClock=$('eggNightTime').textContent;
+   const sunriseWallCount=GT.filter(g=>g.bar.visible&&g.timer.visible).length;
+   const noEggDuringUnlock=findEgg()===null;
+   updateEggNight(t0+12001);
+   const dayPhase=EGG_NIGHT.phase;
+   const openWalls=GT.filter(g=>g.bar.visible||g.timer.visible).length;
+   const p2={x:0,z:gateZ-2,vz:-2};
+   partBorderCollision(p2,gateZ+2);
+   const gatesAreOpen=p2.z===gateZ-2;
+   if(egg){egg.gr=1;egg.mesh.scale.copy(egg.base);P.x=egg.mesh.position.x;P.z=egg.mesh.position.z}
+   const pickableInDay=!!egg&&findEgg()===egg;
+   const ix=eggs.indexOf(limited);
+   if(ix>=0)eggs.splice(ix,1);
+   sc.remove(limited.mesh);
+   P.x=0;P.z=8;P.vx=P.vz=0;upHud();
+   return {started,previousEggs:oldEggs.length,newEggs:newEggs.length,removed,limitedKept,
+    nightWallCount,firstClock,initialGrowth,growth,noEggAtNight,takeProtected,wallPhysicallyBlocks,
+    sunrisePhase,secondClock,sunriseWallCount,noEggDuringUnlock,dayPhase,openWalls,gatesAreOpen,pickableInDay};
+  });
+  assert(nightTest.started,'Night renewal starts');
+  assert(nightTest.previousEggs>50&&nightTest.newEggs>50,'Egg nests reset properly');
+  assert(nightTest.removed,'Old nest eggs replaced');
+  assert(nightTest.limitedKept,'Existing LIMITED remains untouched');
+  assert.equal(nightTest.nightWallCount,13,'13 white walls closed');
+  assert.equal(nightTest.firstClock,'9s','First 9 second countdown');
+  assert(Math.abs(nightTest.growth-nightTest.initialGrowth-.12)<.001,'30× egg growth during night');
+  assert(nightTest.noEggAtNight&&nightTest.takeProtected,'Egg collection blocked at night');
+  assert(nightTest.wallPhysicallyBlocks,'Walls prevent crossing passage');
+  assert.equal(nightTest.sunrisePhase,'unlock');
+  assert.equal(nightTest.secondClock,'3s','Second 3 second countdown');
+  assert.equal(nightTest.sunriseWallCount,13,'Walls remain for 3 extra seconds');
+  assert(nightTest.noEggDuringUnlock,'Eggs still protected until unlocking');
+  assert.equal(nightTest.dayPhase,'day');
+  assert.equal(nightTest.openWalls,0,'All white walls vanish');
+  assert(nightTest.gatesAreOpen&&nightTest.pickableInDay,'Normal access to eggs and areas restored');
+  console.log(mode.toUpperCase()+' NOITE DOS OVOS 9+3S '+JSON.stringify(nightTest));
+
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
  }
