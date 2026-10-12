@@ -83,3 +83,17 @@ test('trocar ovos dos ninhos preserva LIMITED e sorte de raros',()=>{
  assert(html.includes("EGG_NIGHT.phase==='night'&&Math.random()<.32"));
  assert(html.includes("}finally{for(const r of [7,8,9])CFG.rare[r]=chances[r]}"));
 });
+
+test('Secret nasce com 10% por renovação, inclusive durante a noite',()=>{
+ assert(html.includes('rare:{7:.10,8:.04,9:.005}'));
+ assert(html.includes('chances:{7:10,8:4,9:.5}'));
+ assert(html.includes("chanceSecret:'10'"));
+ assert(html.includes("const SECRET_CHANCE_MIGRATION_KEY='rue3d_secret_chance_10_v1'"));
+ assert(html.includes("CFG.rare[7]=.10"));
+ assert(html.includes("A.chances={...A.chances,7:10}"));
+ assert(html.includes("for(const r of [8,9])CFG.rare[r]=Math.min(1,chances[r]*1.4);"));
+ assert(html.includes("}finally{for(const r of [7,8,9])CFG.rare[r]=chances[r]}"));
+ assert(html.includes('if(Math.random()>=CFG.rare[r])continue'));
+ assert(html.includes("case 'saveChances':CFG.rare[7]=adValidNumber('chanceSecret',0,100)/100"));
+ assert(html.includes("try{CFG.rare[7]=1;CFG.rare[8]=.5;CFG.rare[9]=.25;regrow(false)}finally{"));
+});

@@ -131,7 +131,7 @@ const fm=value=>{
  return sign+Number(scaled.toFixed(decimals))+(U[i]||'e'+3*i);
 };
 /* ===== CONFIG: todos os números do jogo ficam aqui (editáveis) ===== */
-const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{7:.5,8:.04,9:.005}}; // rare: chance por reset de nascer 1 ovo dessa raridade, em um bioma aleatório (editável)
+const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{7:.10,8:.04,9:.005}}; // rare: chance por reset de nascer 1 ovo dessa raridade, em um bioma aleatório (editável)
 const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED'],RS=[0,1,2,3,4,7,8,9]; // RS: raridade de cada posição de espécie no bioma
 
 const BI=[
@@ -187,7 +187,7 @@ const save=()=>{S.t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S));s
 
 /* Estado persistente do painel (modo solo, armazenado neste navegador) */
 const ADMIN_KEY='rue3d_admin_v2';
-const A={god:false,freeze:false,weightless:false,night:false,moveMult:1,personalFast:false,jumpMult:1,autoHatch:false,autoSecret:false,autoSecretEvery:30,chances:{7:50,8:4,9:.5},reset:300,trainMult:5};
+const A={god:false,freeze:false,weightless:false,night:false,moveMult:1,personalFast:false,jumpMult:1,autoHatch:false,autoSecret:false,autoSecretEvery:30,chances:{7:10,8:4,9:.5},reset:300,trainMult:5};
 try{const d=JSON.parse(localStorage.getItem(ADMIN_KEY)||'null');if(d&&typeof d==='object'){for(const k of Object.keys(A))if(k in d)A[k]=d[k]}}catch(e){}
 // Desligar o antigo bônus 10× também no save deste navegador.
 const oldOwnerBoost=A.personalFast===true||Number(A.moveMult)===10;
@@ -195,6 +195,17 @@ A.personalFast=false;
 if(oldOwnerBoost){A.moveMult=1;try{localStorage.setItem(ADMIN_KEY,JSON.stringify(A))}catch(e){}}
 const safePct=(n,v)=>Number.isFinite(+n)?Math.max(0,Math.min(100,+n)):v;
 for(const r of [7,8,9])CFG.rare[r]=safePct(A.chances&&A.chances[r],CFG.rare[r]*100)/100;
+// Atualização de probabilidade: corrigir apenas uma vez o valor antigo de 50%
+// já salvo no Android, sem apagar conta, pets ou autenticação ADMIN.
+const SECRET_CHANCE_MIGRATION_KEY='rue3d_secret_chance_10_v1';
+try{
+ if(localStorage.getItem(SECRET_CHANCE_MIGRATION_KEY)!=='done'){
+  CFG.rare[7]=.10;
+  A.chances={...A.chances,7:10};
+  localStorage.setItem(ADMIN_KEY,JSON.stringify(A));
+  localStorage.setItem(SECRET_CHANCE_MIGRATION_KEY,'done');
+ }
+}catch(e){CFG.rare[7]=.10;A.chances={...A.chances,7:10}}
 CFG.reset=Number.isFinite(+A.reset)?Math.max(10,Math.min(86400,+A.reset)):300;
 CFG.train=Number.isFinite(+A.trainMult)?Math.max(.1,Math.min(1000,+A.trainMult)):5;
 const saveAdmin=()=>{A.reset=CFG.reset;A.trainMult=CFG.train;A.chances={7:CFG.rare[7]*100,8:CFG.rare[8]*100,9:CFG.rare[9]*100};try{localStorage.setItem(ADMIN_KEY,JSON.stringify(A))}catch(e){}};
@@ -498,8 +509,8 @@ const renewNestEggs=()=>{
  }
  const chances={7:CFG.rare[7],8:CFG.rare[8],9:CFG.rare[9]};
  try{
-  // Os raros podem vir melhores, porém continuam sendo sorte.
-  for(const r of [7,8,9])CFG.rare[r]=Math.min(1,chances[r]*1.4);
+  // Secret respeita a chance configurada (10%); outras raridades têm bônus noturno.
+  for(const r of [8,9])CFG.rare[r]=Math.min(1,chances[r]*1.4);
   abuseRegrow();
  }finally{for(const r of [7,8,9])CFG.rare[r]=chances[r]}
  EGG_NIGHT.renewed=removed;
@@ -793,7 +804,7 @@ const rankShow=()=>{const list=$('rankList');const order=[...LEAD].filter(x=>!x.
 };
 const rankToggle=flag=>{$('rankOverlay').style.display=flag?'flex':'none';if(flag){if(adminVisible)toggleAdmin(false);rankShow()}};
 const adminTabs=['Início','Ovos','Pets','Mundo','Config.','🔥 Abuse / Eventos','🏆 Placar','Dados'];
-const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'1',eggCount:'1',eggWhere:'nest',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'50',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
+const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'1',eggCount:'1',eggWhere:'nest',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'10',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
 AS.chanceSecret=String(CFG.rare[7]*100);AS.chanceEternal=String(CFG.rare[8]*100);AS.chanceDivine=String(CFG.rare[9]*100);
 AS.resetSeconds=String(CFG.reset);AS.trainMult=String(CFG.train);AS.moveMult=String(A.moveMult);AS.jumpMult=String(A.jumpMult);AS.autoSeconds=String(A.autoSecretEvery);AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));
 let adminMessage='Painel conectado ao jogo. Escolha uma ação.';
