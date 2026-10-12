@@ -9,6 +9,7 @@ on:
       - 'servers-ui.js'
       - 'tests/visual-audit.mjs'
       - 'tests/regressions.test.cjs'
+      - 'tests/multiplayer.test.cjs'
       - '.github/workflows/visual-audit.yml'
   workflow_dispatch:
 
@@ -30,6 +31,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Testes rápidos de regressão
         run: node --test tests/regressions.test.cjs
+      - name: Testar salas multiplayer e ovos LIMITED
+        run: node --test tests/multiplayer.test.cjs
       - name: Testar jogo real no Chromium
         run: node tests/visual-audit.mjs
       - name: Capturas Android e desktop
