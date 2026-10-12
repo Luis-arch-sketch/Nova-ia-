@@ -356,23 +356,15 @@ const gs=i=>i?walk(BI[i].req)*CFG.gm:CFG.g0;
 const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08);m.position.copy(home);return{b:i,m,home,st:'sleep',t:0,l:(()=>{const l=label('',256,64,6);sc.add(l);return l})()}});
 // O guardião genérico da 4ª área sai do mapa: só o guaxinim protege a parte 4.
 if(GD[3]){sc.remove(GD[3].m);sc.remove(GD[3].l);}
-/* ===== Base aberta de dia, sem cerca nem colisão ===== */
-{
+/* ===== Cerca original da BASE: permanente de dia e à noite ===== */
+{const f=(x,z,w,d)=>mk(GB,0xc89b5a,[w,1.6,d],sc,[x,.8,z]);
+ f(-20,10,.6,40);f(20,10,.6,40);f(0,30,40,.6);
+ f(-12.5,-10,15,.6);f(12.5,-10,15,.6); // Entrada central livre, como antes.
+ for(let k=-20;k<=20;k+=2){OB.push({x:k,z:30,r:1});if(Math.abs(k)>=6)OB.push({x:k,z:-10,r:1})}
+ for(let k=-10;k<=30;k+=2)OB.push({x:-20,z:k,r:1},{x:20,z:k,r:1});
  mk(GY,new T.MeshBasicMaterial({color:0xffe14a,transparent:true,opacity:.55}),[3.6,.05,3.6],sc,[0,.06,-4]).castShadow=false;
  const a=label('DEPÓSITO',256,64,5);a.position.set(0,3,-4);sc.add(a);
- const b=label('Sua base',256,64,6);b.position.set(0,6,-10);sc.add(b)
-}
-// As paredes brancas substituem a antiga cerca da base SOMENTE durante 9s + 3s.
-const NIGHT_BASE_MATERIAL=new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,depthWrite:true,side:T.DoubleSide});
-const NIGHT_BASE_WALLS=[
- mk(GB,NIGHT_BASE_MATERIAL,[40,10.5,.8],sc,[0,5.25,-10]),
- mk(GB,NIGHT_BASE_MATERIAL,[40,10.5,.8],sc,[0,5.25,30]),
- mk(GB,NIGHT_BASE_MATERIAL,[.8,10.5,40],sc,[-20,5.25,10]),
- mk(GB,NIGHT_BASE_MATERIAL,[.8,10.5,40],sc,[20,5.25,10])
-];
-NIGHT_BASE_WALLS.forEach(w=>w.visible=false);
-const NIGHT_BASE_TIMER=label('',512,128,13);
-NIGHT_BASE_TIMER.position.set(0,5.4,-9);NIGHT_BASE_TIMER.visible=false;sc.add(NIGHT_BASE_TIMER);
+ const b=label('Sua base',256,64,6);b.position.set(0,6,-10);sc.add(b)}
 const IV=[-6,-2,2,6].map(x=>{mk(GY,0x6d7b8d,[1.4,.5,1.4],sc,[x,.25,1.5]);const e=new T.Mesh(GS,new T.MeshLambertMaterial({color:0xffffff}));e.castShadow=true;e.visible=false;e.position.set(x,1.4,1.5);sc.add(e);const l=label('vazio',256,64,3.6);l.position.set(x,3.3,1.5);sc.add(l);return{e,l}});
 const stripe=(()=>{const c=document.createElement('canvas');c.width=8;c.height=64;const g=c.getContext('2d');g.fillStyle='#2a2a33';g.fillRect(0,0,8,64);g.fillStyle='#6a6a85';g.fillRect(0,0,8,8);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(1,6);return t})();
 let TMO=null,fmat,scr;
@@ -406,37 +398,15 @@ const adminBadge=(()=>{
 })();
 let carry=null;
 const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(dx,dz),m=b.r+r;if(d<m&&d>1e-4){o.x=b.x+dx/d*m;o.z=b.z+dz/d*m}}};
-// Colisão exclusiva dos DOIS cronômetros: de dia, nenhum muro nem cerca.
-// Checagem por percurso impede atravessar paredes com Speed muito alta.
-const nightBaseWallCrossed=(oldX,oldZ,newX,newZ)=>{
- const minX=-20.65,maxX=20.65,minZ=-10.65,maxZ=30.65;
- const inside=(x,z)=>x>minX&&x<maxX&&z>minZ&&z<maxZ;
- const wasInside=inside(oldX,oldZ),isInside=inside(newX,newZ);
- if(wasInside&&isInside)return false;
- if(wasInside!==isInside)return true;
- let enter=0,leave=1;
- for(const [from,delta,low,high] of [
-  [oldX,newX-oldX,minX,maxX],[oldZ,newZ-oldZ,minZ,maxZ]
- ]){
-  if(Math.abs(delta)<1e-9){if(from<low||from>high)return false;continue}
-  const a=(low-from)/delta,b=(high-from)/delta;
-  enter=Math.max(enter,Math.min(a,b));leave=Math.min(leave,Math.max(a,b));
-  if(enter>leave)return false;
- }
- return enter<=1&&leave>=0;
-};
+// Divisões das 13 áreas bloqueiam SOMENTE durante os dois cronômetros.
+// A cerca da base funciona separadamente por OB/push, todos os dias.
 const partBorderCollision=(player,previousZ,previousX=player.x)=>{
  if(EGG_NIGHT.phase==='day')return;
- // As 13 paredes brancas ocupam toda a antiga largura das cercas.
  for(const z of PART_BORDERS){
   if((previousZ-z)*(player.z-z)<=0){
    player.z=previousZ>=z?z+.75:z-.75;
    player.vz=0;break;
   }
- }
- // Durante 9s e depois 3s, o perímetro da antiga cerca da base fecha.
- if(nightBaseWallCrossed(previousX,previousZ,player.x,player.z)){
-  player.x=previousX;player.z=previousZ;player.vx=0;player.vz=0;
  }
 };
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
@@ -554,8 +524,7 @@ const refreshEggNightUI=(now=Date.now())=>{
  if(!locked){
   if(EGG_NIGHT.last!=='day'){
    GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false});
-   NIGHT_BASE_WALLS.forEach(w=>w.visible=false);
-   NIGHT_BASE_TIMER.visible=false;EGG_NIGHT.last='day';
+   EGG_NIGHT.last='day';
   }
   return;
  }
@@ -567,8 +536,7 @@ const refreshEggNightUI=(now=Date.now())=>{
  $('eggNightTime').textContent=remaining+'s';
  $('eggNightHelp').textContent=night?'Ovos protegidos • Crescimento 30×':'Áreas liberadas em 3 segundos';
  GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)});
- NIGHT_BASE_WALLS.forEach(w=>w.visible=true);
- NIGHT_BASE_TIMER.visible=true;NIGHT_BASE_TIMER.set(text);
+ // A base preserva exclusivamente sua cerca original, sem parede branca nem cronômetro.
 };
 const renewNestEggs=()=>{
  let removed=0;
@@ -612,8 +580,19 @@ const updateEggNight=(now=Date.now())=>{
 };
 
 const CT=new T.Vector3(),NV=new T.Vector3();
-// Sem cerca de dia: bichos perseguem diretamente até o depósito na base.
-const guardPath=(p,x,z)=>[x,z];
+// A cerca da base possui entrada central em x=0, z=-10.
+ // Guardiões passam pela abertura ao perseguir quem roubou ovos e depois retornam.
+const guardPath=(p,x,z)=>{
+ if(z>-10&&p.z<-6){
+  if(Math.abs(p.x)>3)return [0,p.z];
+  return [0,-4];
+ }
+ if(z<-10&&p.z>-14){
+  if(Math.abs(p.x)>3)return [0,p.z];
+  return [0,-16];
+ }
+ return [x,z];
+};
 const aim=(g,x,z,s,dt)=>{
  const p=g.m.position,[tx,tz]=guardPath(p,x,z);
  const dx=tx-p.x,dz=tz-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);
