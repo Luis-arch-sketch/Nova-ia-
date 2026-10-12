@@ -116,7 +116,7 @@ test('coleta é física e o bicho persegue rápido em vez de exibir Speed insufi
  assert(html.includes("if(d<distance&&d<range&&e.gr>=1){distance=d;best=e}"));
  assert(!html.includes('if(!eggSpeedEnough(e))'));
  assert(html.includes('const guardianShouldRush=(i,home)=>'));
- assert(html.includes('Number.isFinite(S.sp)&&S.sp<=BI[i].req'));
+ assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
  assert(html.includes('const guardianRushSpeed=i=>Math.max(95'));
  assert(html.includes('const guardianShouldRush=(i,home)=>EGG_NIGHT.phase===\'day\'&&!P.train&&!!carry&&!A.god'));
  assert(html.includes('const rush=!frozen&&guardianShouldRush(3,g.home)'));
@@ -146,7 +146,7 @@ test('raridades ordenadas por chance e valor: Legendary abaixo de Secret e LIMIT
 
 test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed recomendada',()=>{
  assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
- assert(html.includes('Number.isFinite(S.sp)&&S.sp<=BI[i].req'));
+ assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
  assert(!html.includes('const guardianPushBack='));
  assert(html.includes("if((!carry&&!rush&&!abuseIs('fury'))||Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash)g.st='ret'"));
  assert(html.includes("if((!carry&&!rush)||dist>95||frozen)g.st='ret'"));
@@ -155,4 +155,17 @@ test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed rec
  assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});"));
  assert(html.includes("if(raccoonGuard&&(raccoonGuard.st==='chase'||raccoonGuard.st==='wake'))raccoonGuard.st='ret'"));
  assert(html.includes("const findEgg=()=>{"));
+});
+
+test('vídeo: Selva com trail 2.5x usa Speed efetiva acima de 40K',()=>{
+ assert(html.includes("const eff=()=>S.sp*(S.tr>=0?TR[S.tr][1]:1)"));
+ assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
+ assert(html.includes("Number.isFinite(eff())&&eff()<=BI[i].req"));
+ assert(html.includes("['Blue',2.5,2e6,0x2196f3]"));
+ assert(20100*2.5>40000);
+ assert(html.includes("P.stun=.6;"));
+ assert(html.includes("P.x=Math.max(-99,Math.min(99,P.x+dx/d*5));"));
+ assert(html.includes("const move=Math.min(len,36*dt)"));
+ assert(html.includes("g.l.set(carry&&g.st==='chase'"));
+ assert(html.includes("toast('O guardião recuperou o ovo. Você está de mãos livres!')"));
 });
