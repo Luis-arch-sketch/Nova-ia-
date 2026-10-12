@@ -1317,12 +1317,13 @@ alert('✅ Progresso restaurado! '+count+' pets. O jogo será recarregado.');loc
 }catch(err){alert('⚠ Falha ao restaurar: '+(err?.message||String(err)))}});
 try{const current=localStorage.getItem(KEY),d=current?JSON.parse(current):null;
 $('saveState').textContent=d&&((d.pets?.length||0)>0||(d.$||0)>0||(d.sp||0)>0)?'✅ Progresso deste endereço encontrado.':'ℹ️ Este endereço começou com progresso novo. Se tinha outro progresso, use Restaurar backup.';}catch(e){$('saveState').textContent='⚠ Salvamento local indisponível. Baixe backups regularmente.';}
-// Cada entrada abre automaticamente uma sala NOVA. Para entrar com amigos, use o código da sala.
+// Link de convite entra diretamente na sala correta; link comum usa servidor público com vaga.
 try{
  $('roomName').value=localStorage.getItem('rue3d_mp_name')||('Jogador'+Math.floor(1000+Math.random()*9000));
- $('roomCode').value='';
+ const invited=(new URLSearchParams(location.search).get('sala')||'').trim().toUpperCase();
+ $('roomCode').value=/^[A-Z0-9-]{3,12}$/.test(invited)?invited:'';
 }catch(e){$('roomName').value='Jogador'+Math.floor(1000+Math.random()*9000)}
-setTimeout(()=>{if(!MP.connected&&!MP.socket)mpJoin('create-server')},300);
+setTimeout(()=>{if(!MP.connected&&!MP.socket)mpJoin($('roomCode').value?'join':'quick-join')},300);
 // Seus eventos são transmitidos pela rede somente após verificação do ADMIN no servidor.
 const mpBroadcastAction=(action,kind)=>{if(!MP.connected||!MP.owner||MP.settingRemote)return; if(kind==='start'&&ABUSE.active){const e=ABUSE.active;mpSend({type:'admin-event',action:'start',id:e.id,settings:{duration:e.duration,interval:e.interval,wave:e.wave}})}else if(kind==='stop')mpSend({type:'admin-event',action:'stop'});else if(kind==='announce')mpSend({type:'admin-announce',text:String(action).slice(0,160),seconds:10});};
 const recoverMovement=()=>{
