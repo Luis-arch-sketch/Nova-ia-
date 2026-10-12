@@ -75,9 +75,9 @@ const installFruitVendor=html=>{
   ["const v=walk(eff())*A.moveMult*abuseMoveMult()",
    "const v=walk(eff())*A.moveMult*abuseMoveMult()*fruitSpeedMult()"],
   ["const doAct=()=>{if(carry){drop();return}",
-   "const doAct=()=>{if(!carry&&near(11,19,6)){openFruitShop();return}if(carry){drop();return}"],
+   "const doAct=()=>{if(!carry&&near(6,-7,6)){openFruitShop();return}if(carry){drop();return}"],
   ["$('ba').textContent=carry?'Largar':P.train?",
-   "$('ba').textContent=carry?'Largar':near(11,19,6)?'🍎 Frutas':P.train?"]
+   "$('ba').textContent=carry?'Largar':near(6,-7,6)?'🍎 Frutas':P.train?"]
  ];
  for(const [from,to] of patches){
    if(html.split(from).length!==2)throw new Error('Trecho de frutas inesperado: '+from);
