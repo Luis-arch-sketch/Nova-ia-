@@ -406,9 +406,30 @@ const partBorderCollision=(player,previousZ)=>{
  }
 };
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
-const findEgg=()=>{if(EGG_NIGHT.phase!=='day')return null;let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
+// Para pegar um ovo, a Speed precisa ser MAIOR que a recomendação da área onde ele está.
+const eggAreaIndex=e=>{
+ if(e?.nest&&Number.isInteger(e.nest.b))return e.nest.b;
+ const z=e?.mesh?.position?.z;
+ return Number.isFinite(z)?(z>-30?-1:Math.max(0,Math.min(BI.length-1,Math.floor((-30-z)/70)))):(Number.isInteger(e?.b)?e.b:-1);
+};
+const eggSpeedRequired=e=>BI[eggAreaIndex(e)]?.req??0;
+const eggSpeedEnough=e=>Number.isFinite(S.sp)&&S.sp>eggSpeedRequired(e);
+const nearestEgg=(enoughOnly=false)=>{
+ if(EGG_NIGHT.phase!=='day')return null;
+ let closest=null,dist=Infinity;
+ for(const e of eggs){
+  const d=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;
+  if(d<dist&&d<range&&e.gr>=1&&(!enoughOnly||eggSpeedEnough(e))){dist=d;closest=e}
+ }
+ return closest;
+};
+const findEgg=()=>nearestEgg(true);
+const lockedEggNearby=()=>{const e=nearestEgg();return e&&!eggSpeedEnough(e)?e:null};
+const reportMissingSpeed=e=>toast('🔒 Precisa ter MAIS que '+fm(eggSpeedRequired(e))+' de Speed para pegar este ovo! Sua Speed: '+fm(S.sp)+'.');
 const take=e=>{
- if(EGG_NIGHT.phase!=='day'){toast('🔒 Aguarde renovar os ovos e liberar as áreas!');return;}
+ if(EGG_NIGHT.phase!=='day'){toast('🔒 Aguarde renovar os ovos e liberar as áreas!');return false;}
+ if(!e||!eggs.includes(e)||e.gr<1)return false;
+ if(!eggSpeedEnough(e)){reportMissingSpeed(e);return false;}
  if(e.s===LIMITED_ID&&MP.connected)mpSend({type:'limited-take',x:e.mesh.position.x,z:e.mesh.position.z});
  eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
  // A PARTE 4 é protegida exclusivamente pelo guaxinim, em todos os oito ninhos.
@@ -417,7 +438,7 @@ const take=e=>{
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID){persistLimitedWorld();if(MP.connected)mpSend({type:'limited-drop',x:e.mesh.position.x,z:e.mesh.position.z})}beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
-const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}if(EGG_NIGHT.phase!=='day'){toast('🌙 Ovos bloqueados até abrir os portões!');return;}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
+const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}if(EGG_NIGHT.phase!=='day'){toast('🌙 Ovos bloqueados até abrir os portões!');return;}const e=findEgg();if(e){take(e);return}const blocked=lockedEggNearby();if(blocked){reportMissingSpeed(blocked);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
 const dep=k=>{const e=carry;carry=null;P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
@@ -470,8 +491,8 @@ $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e
 const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
- $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>'+(EGG_NIGHT.phase==='day'?'Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0'):EGG_NIGHT.phase==='night'?'🌙 Noite dos ovos • Crescimento 30×':'☀️ Amanheceu • Portões abrindo')+'</div>';
- $('ba').textContent=carry?'Largar':P.train?'Parar':EGG_NIGHT.phase!=='day'?'🔒 Ovos':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
+ $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base • exige Speed > 0':'PARTE '+(b+1)+' • '+BI[b].n+' (exige Speed > '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>'+(EGG_NIGHT.phase==='day'?'Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0'):EGG_NIGHT.phase==='night'?'🌙 Noite dos ovos • Crescimento 30×':'☀️ Amanheceu • Portões abrindo')+'</div>';
+ $('ba').textContent=carry?'Largar':P.train?'Parar':EGG_NIGHT.phase!=='day'?'🔒 Ovos':findEgg()?'Pegar ovo':lockedEggNearby()?'🔒 Speed > '+fm(eggSpeedRequired(lockedEggNearby())):near(-14,4,4)?'Treinar':'Ação'};
 const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m'+Math.floor(s%60)+'s':Math.ceil(s)+'s';
 /* ===== Trail ===== */
 const TP=[];for(let k=0;k<28;k++){const m=new T.Mesh(GS,new T.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false}));m.visible=false;m.life=0;sc.add(m);TP.push(m)}
@@ -1118,7 +1139,7 @@ const mpRemoteEvent=ev=>{MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.a
  }}catch(e){console.warn('Evento remoto',e)}finally{MP.settingRemote=false}};
 const mpJoin=()=>{const name=$('roomName').value.trim().slice(0,20),room=$('roomCode').value.trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12);if(name.length<2||room.length<3){mpStatus('Escolha um nome (mínimo 2) e uma sala (mínimo 3).');return}if(/^admin$/i.test(name)){mpStatus('O nome ADMIN é exclusivo do dono. Escolha outro nome.');return}mpDisconnect();MP.name=name;MP.room=room;localStorage.setItem('rue3d_mp_name',name);localStorage.setItem('rue3d_mp_room',room);const ws=new WebSocket(mpEndpoint());MP.socket=ws;mpStatus('Conectando ao servidor…');ws.onopen=()=>mpSend({type:'join',room,name});ws.onmessage=e=>{if(MP.socket!==ws)return;let msg;try{msg=JSON.parse(e.data)}catch{return}if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;MP.self=msg.id;MP.room=msg.room;mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);mpApplyUsers(msg.players||[]);toast('🌍 Você entrou na sala '+MP.room)}else if(msg.type==='players')mpApplyUsers(msg.players||[]);else if(msg.type==='event')mpRemoteEvent(msg);else if(msg.type==='limited-sync'){syncRoomLimitedEggs(msg.eggs||[]);mpStatus('🥚 Ovos LIMITED sincronizados com esta sala.')}else if(msg.type==='admin-ok'){MP.owner=true;ownerVerified=true;adminBadge.visible=true;mpStatus('👑 ADMIN autenticado no servidor da sala '+MP.room)}else if(msg.type==='error'){mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message)}else if(msg.type==='room-info')mpStatus('🌍 Sala '+MP.room+' • '+msg.count+' jogadores')} ;ws.onerror=()=>{if(MP.socket===ws)mpStatus('⚠ Servidor indisponível. Verifique sua conexão e tente reconectar.');};ws.onclose=()=>{if(MP.socket===ws){mpClear();mpStatus('Desconectado. Toque em Entrar para reconectar.')}}};
 const mpDisconnect=()=>{if(MP.socket){try{MP.socket.close()}catch(e){}}MP.socket=null;mpClear()};
-const mpUpdate=dt=>{if(!MP.connected)return;const now=performance.now();if(now-MP.lastTx>90){MP.lastTx=now;mpSend({type:'move',x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y})}for(const [id,v] of MP.views){const u=MP.players.get(id);if(u){const p=new T.Vector3(u.x||0,u.y||0,u.z||0);v.group.position.lerp(p,Math.min(1,dt*12));v.group.rotation.y=u.yaw||0}}};
+const mpUpdate=dt=>{if(!MP.connected)return;const now=performance.now();if(now-MP.lastTx>90){MP.lastTx=now;mpSend({type:'move',x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y,speed:S.sp})}for(const [id,v] of MP.views){const u=MP.players.get(id);if(u){const p=new T.Vector3(u.x||0,u.y||0,u.z||0);v.group.position.lerp(p,Math.min(1,dt*12));v.group.rotation.y=u.yaw||0}}};
 $('roomButton').onclick=()=>{$('roomPanel').style.display='block'};
 $('roomClose').onclick=()=>{$('roomPanel').style.display='none'};
 $('roomJoin').onclick=mpJoin;$('roomLeave').onclick=()=>{mpDisconnect();mpStatus('Saiu da sala.')};
