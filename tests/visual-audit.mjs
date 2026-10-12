@@ -260,6 +260,17 @@ try{
     assert(unstuck.speed>=1234567,'Destravar preserva Speed');
     console.log('GAMEPLAY REGRESSION '+JSON.stringify({spawned,restored,unstuck}));
   }
+  // Entrada inicial nunca deve criar Rare/Epic/Legendary/Secret prontos.
+  const initialEggs=await page.evaluate(()=>{
+   const nested=eggs.filter(e=>e.nest);
+   return {common:nested.filter(e=>e.r<=1).length,rarer:nested.filter(e=>e.r>=2).length,
+    chanceSecret:CFG.rare[7]};
+  });
+  assert(initialEggs.common>=20,'Common e Uncommon continuam surgindo ao entrar');
+  assert.equal(initialEggs.rarer,0,'Sem excesso de ovos raros prontos ao entrar');
+  assert.equal(initialEggs.chanceSecret,.10,'Secret continua 10% por renovação');
+  console.log(mode.toUpperCase()+' ENTRADA SEM EXCESSO DE OVOS RAROS '+JSON.stringify(initialEggs));
+
   // Night renewal integration: 13 gates, 9+3 countdowns, physical collision,
   // growth multiplier, protected LIMITED, eggs pickable again after sunrise.
   const nightTest=await page.evaluate(()=>{
@@ -295,10 +306,7 @@ try{
    partBorderCollision(p2,gateZ+2);
    const gatesAreOpen=p2.z===gateZ-2;
    if(egg){egg.gr=1;egg.mesh.scale.copy(egg.base);P.x=egg.mesh.position.x;P.z=egg.mesh.position.z}
-   const savedNightSpeed=S.sp;
-   if(egg)S.sp=eggSpeedRequired(egg)+1;
    const pickableInDay=!!egg&&findEgg()===egg;
-   S.sp=savedNightSpeed;
    const ix=eggs.indexOf(limited);
    if(ix>=0)eggs.splice(ix,1);
    sc.remove(limited.mesh);
@@ -308,7 +316,7 @@ try{
     sunrisePhase,secondClock,sunriseWallCount,noEggDuringUnlock,dayPhase,openWalls,gatesAreOpen,pickableInDay};
   });
   assert(nightTest.started,'Night renewal starts');
-  assert(nightTest.previousEggs>50&&nightTest.newEggs>50,'Egg nests reset properly');
+  assert(nightTest.previousEggs>=20&&nightTest.newEggs>=20,'Normal eggs present without rare flood');
   assert(nightTest.removed,'Old nest eggs replaced');
   assert(nightTest.limitedKept,'Existing LIMITED remains untouched');
   assert.equal(nightTest.nightWallCount,13,'13 white walls closed');
@@ -325,56 +333,55 @@ try{
   assert(nightTest.gatesAreOpen&&nightTest.pickableInDay,'Normal access to eggs and areas restored');
   console.log(mode.toUpperCase()+' NOITE DOS OVOS 9+3S '+JSON.stringify(nightTest));
 
-  // Speed exigida em todos os biomas: 0/igual bloqueia, maior libera.
-  // Conferir também bloqueio direto via take(), inclusive ADMIN e LIMITED.
-  const speedGateTest=await page.evaluate(()=>{
-   const old={speed:S.sp,x:P.x,z:P.z,owner:ownerVerified,train:P.train};
-   const cases=[];
+  // Coleta por alcance físico, com bichos guardiões mais rápidos em Speed baixa.
+  const physical=await page.evaluate(()=>{
+   const old={sp:S.sp,x:P.x,z:P.z,vx:P.vx,vz:P.vz,stun:P.stun,train:P.train,god:A.god,
+    freeze:A.freeze,phase:EGG_NIGHT.phase};
+   const g=GD[1],rg=raccoonGuard;
+   const gState={st:g.st,t:g.t,p:g.m.position.clone()};
+   const rState=rg?{st:rg.st,t:rg.t,p:rg.m.position.clone()}:null;
    try{
-    for(const index of [0,1,3,7,12]){
-     const egg=eggs.find(e=>e.nest?.b===index);
-     if(!egg){cases.push({index,error:'Nenhum ovo no ninho'});continue;}
-     egg.gr=1;egg.mesh.scale.copy(egg.base);
-     P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;P.train=false;
-     const req=BI[index].req;
-     S.sp=req>0?req-1:0;
-     const low={allowed:eggSpeedEnough(egg),selected:findEgg()===egg,locked:lockedEggNearby()===egg};
-     const previousCarry=carry;take(egg);
-     const directBlocked=carry===previousCarry&&eggs.includes(egg);
-     S.sp=req;
-     const equal={allowed:eggSpeedEnough(egg),selected:findEgg()===egg};
-     S.sp=req+1;
-     const high={allowed:eggSpeedEnough(egg),selected:findEgg()===egg};
-     cases.push({index,req,low,directBlocked,equal,high});
+    EGG_NIGHT.phase='day';A.god=false;A.freeze=false;
+    const egg=eggs.find(e=>e.nest?.b===1&&e.j===0);
+    if(!egg)return {error:'Ovo comum ausente'};
+    egg.gr=1;egg.mesh.scale.copy(egg.base);
+    P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;P.vx=P.vz=0;
+    P.stun=0;P.train=false;S.sp=0;
+    g.st='sleep';g.t=0;g.m.position.copy(g.home);
+    const canPick=findEgg()===egg;
+    const rush=guardianShouldRush(1,g.home);
+    const chaseSpeed=guardianRushSpeed(1),walkingSpeed=walk(eff());
+    step(.35);
+    const knocked=P.stun>0,moved=g.m.position.distanceTo(g.home)>2;
+    P.stun=0;S.sp=BI[1].req+1;P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;
+    const canEscape=!guardianShouldRush(1,g.home);
+    let raccoonRush=false,raccoonKnock=false;
+    if(rg){
+     S.sp=0;P.stun=0;P.train=false;P.vx=P.vz=0;
+     P.x=rg.home.x+22;P.z=rg.home.z;
+     rg.st='guard';rg.t=0;rg.m.position.copy(rg.home);
+     raccoonRush=guardianShouldRush(3,rg.home);
+     step(.35);step(.03);
+     raccoonKnock=P.stun>0;
     }
-    const limited=makeLimitedEgg(75,-903),req=eggSpeedRequired(limited);
-    P.x=limited.mesh.position.x;P.z=limited.mesh.position.z;
-    S.sp=req;
-    const limEqual=eggSpeedEnough(limited),limSelected=!!findEgg()&&findEgg()===limited;
-    S.sp=req+1;
-    const limGreater=eggSpeedEnough(limited),limPickable=findEgg()===limited;
-    const ix=eggs.indexOf(limited);if(ix>=0)eggs.splice(ix,1);
-    sc.remove(limited.mesh);
-    const ownerEgg=eggs.find(e=>e.nest?.b===1);
-    ownerVerified=true;S.sp=BI[1].req;
-    const adminBlocked=!eggSpeedEnough(ownerEgg);
-    return {cases,limited:{req,limEqual,limSelected,limGreater,limPickable},adminBlocked};
+    return {canPick,rush,chaseSpeed,walkingSpeed,knocked,moved,canEscape,raccoonRush,raccoonKnock};
    }finally{
-    S.sp=old.speed;P.x=old.x;P.z=old.z;ownerVerified=old.owner;P.train=old.train;upHud();
+    S.sp=old.sp;P.x=old.x;P.z=old.z;P.vx=old.vx;P.vz=old.vz;
+    P.stun=old.stun;P.train=old.train;A.god=old.god;A.freeze=old.freeze;
+    EGG_NIGHT.phase=old.phase;
+    g.st=gState.st;g.t=gState.t;g.m.position.copy(gState.p);
+    if(rg&&rState){rg.st=rState.st;rg.t=rState.t;rg.m.position.copy(rState.p)}
+    upHud();
    }
   });
-  assert.equal(speedGateTest.cases.length,5,'Testadas 5 áreas incluindo a última');
-  for(const x of speedGateTest.cases){
-   assert(!x.error,'Espécie ativa presente em '+x.index);
-   assert(!x.low.allowed&&!x.low.selected&&x.low.locked&&x.directBlocked,'Speed baixa bloqueia coleta em '+x.index);
-   assert(!x.equal.allowed&&!x.equal.selected,'Speed igual é insuficiente em '+x.index);
-   assert(x.high.allowed&&x.high.selected,'Speed maior libera ovo em '+x.index);
-  }
-  assert.equal(speedGateTest.limited.req,5e10);
-  assert(!speedGateTest.limited.limEqual&&!speedGateTest.limited.limSelected,'LIMITED bloqueado no requisito exato');
-  assert(speedGateTest.limited.limGreater&&speedGateTest.limited.limPickable,'LIMITED liberado com Speed maior');
-  assert(speedGateTest.adminBlocked,'ADMIN também obedece à recomendação');
-  console.log(mode.toUpperCase()+' SPEED RECOMENDADA NA COLETA '+JSON.stringify(speedGateTest));
+  assert(!physical.error,'Ovo presente');
+  assert(physical.canPick,'Botão Pegar permite aproximar sem bloqueio por Speed');
+  assert(physical.rush,'Bicho percebe invasor lento ANTES de pegar');
+  assert(physical.chaseSpeed>physical.walkingSpeed*3,'Bicho corre muito mais rápido');
+  assert(physical.knocked&&physical.moved,'Colisão física empurra o jogador');
+  assert(physical.canEscape,'Speed suficiente permite chegar antes do bicho');
+  assert(physical.raccoonRush&&physical.raccoonKnock,'Guaxinim da parte 4 também persegue');
+  console.log(mode.toUpperCase()+' CORRIDA DOS BICHOS SEM TRAVA DE SPEED '+JSON.stringify(physical));
 
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
