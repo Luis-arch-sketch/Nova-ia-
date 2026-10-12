@@ -17,6 +17,7 @@ const SPECIES=[
  ['sprite','dove','lamb','imp','hound','peacock','angel','dragon'],
  ['gecko','beetle','bluejay','jackalope','panda','fox','lion','skywhale']
 ];
+const UNIQUE_DESIGNS=[null,"ENYQ","VCFW","OFWV","MREY","EBTN","EYQK","BKSC","PUDS",null,"JGWQ","KPDY","CGFQ","LVFW","GCQF","SHJQ","ELPY","ENBT","HLQY","ZOFK","SJYT","APSD","PSYK","CWKO","LHYQ","VQFW","JSDT","LYQK","ZLCK","APSV","STJY","SJKC","BVFW","TGQJ","QEYB","TJYK","ZCXF","CYXJ","FXWC","HXWS","VSYD","PUXF","HXYK","VJSQ","ZCFX","YJXC","CXWF","HXWC","VGFD","SJQD","JSQG","BQFS","DGQJ","OQBF","PCJO","HJST","BVFC","VWQS","KSYD","HKQY","LSYT","JLYT","SJFQ","JQST","ALSD","GSQO","OCYQ","OHQC","KJYS","OXWH","MWHS","HOFW","LVCW","GDSY","MRET","OIFW","FGQD","ALHQ","HSYT","ZMOF","APSY","PKAQ","IKSH","ILYQ","HQKY","JSQK","YCKQ","HWSX","XCFQ","OWFV","EHOW","HWSZ","YJSQ","OWFC","OWCK","XWSH","GSQC","APKY","VCFD","AOSY","MOBY","GSYT","SCFK","COQF","HXWCO"];
 const GENRE={
  chicken:'bird',dog:'quad',bird:'bird',owl:'bird',raccoon:'quad',fox:'quad',bear:'quad',
  golem:'biped',frog:'amphib',duck:'bird',fish:'fish',turtle:'shell',otter:'quad',
@@ -450,8 +451,7 @@ function create(three,id,k,col,scene){
  // ESCULTURAS POR ESPÉCIE: 103 silhuetas 3D, cada ID recebe partes geométricas
  // adicionais próprias (focinho, crista, chifres, pinças, asas, carapaça...).
  // Cores e escala são apenas complementares: diferenças vêm de geometria real.
- const uniqueDesigns=[null,"ENYQ","VCFW","OFWV","MREY","EBTN","EYQK","BKSC","PUDS",null,"JGWQ","KPDY","CGFQ","LVFW","GCQF","SHJQ","ELPY","ENBT","HLQY","ZOFK","SJYT","APSD","PSYK","CWKO","LHYQ","VCFW","JSDT","LYQK","ZLCK","APSV","STJY","SJKC","BVFW","TGQJ","QEYB","TJYK","ZCXF","CYXJ","FXWC","HXWS","VSYD","PUXF","HXYK","VJSQ","ZCFX","YJXC","CXWF","HXWS","VGFD","SJQD","JSQG","BQFS","DGQJ","OQBF","PCJO","HJST","BVFC","VWQS","KSYD","HKQY","LSYT","JLYT","SJFQ","JQST","ALSD","GSQO","OCYQ","OHQC","KJYS","OXWH","MWHS","HOFW","LVFW","GDSY","MRET","OIFW","FGQD","ALHQ","HSYT","ZMOF","APSY","PKAQ","IKSH","ILYQ","HQKY","JSQG","YCKQ","HWSX","XCFQ","OWFV","EHOW","HWSZ","YJSQ","OWFC","OWCK","XWSH","GSQC","APKY","VCFW","AOSY","MOBY","GSYT","SCFK","COQF","HXWCO"];
- const uniqueForm=uniqueDesigns[id];
+ const uniqueForm=UNIQUE_DESIGNS[id];
  if(uniqueForm){
   const chalk=0xf4e4c4,night=0x292a35,ice=0xb7edff,fire=0xffa04b;
   const sculpt=(type,color,size,pos)=>add(type,color,size,pos);
