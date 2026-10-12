@@ -588,7 +588,7 @@ function egg(three,e,GS,SZ,limitedId,scene){
  }
  const g=new T.Mesh(GS,material);
  g.castShadow=!((navigator.maxTouchPoints||0)>0);
- g.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited?3.8:1));
+ g.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited&&e.z!==4?3.8:1));
  scene.add(g);return g;
 }
 function terrain(three,rx,ry){
