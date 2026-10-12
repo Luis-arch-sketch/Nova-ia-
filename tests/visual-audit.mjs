@@ -599,6 +599,100 @@ try{
   assert(reachBase.raccoonReturned,'Guaxinim regressa à parte 4 depois da perseguição');
   console.log(mode.toUpperCase()+' GUARDIÕES PERSEGUEM ATÉ A BASE '+JSON.stringify(reachBase));
 
+  // Fronteira exata entre PARTE 2 e PARTE 3: só o mob de trás (parte 3)
+  // protege o ovo roubado da parte 3. Repetir para guaxinim da PARTE 4.
+  const borderOwnership=await page.evaluate(()=>{
+   const saved={sp:S.sp,tr:S.tr,carry,train:P.train,stun:P.stun,
+    god:A.god,freeze:A.freeze,phase:EGG_NIGHT.phase,reset:nextReset,
+    x:P.x,z:P.z,vx:P.vx,vz:P.vz};
+   const gBack=GD[2],gFront=GD[1],gOther=GD[4],rg=raccoonGuard;
+   const guards=[gBack,gFront,gOther,rg].filter(Boolean);
+   const original=guards.map(g=>({g,state:g.st,t:g.t,rush:g.rush,pos:g.m.position.clone()}));
+   const touched=[];
+   const setupEgg=(i,j=0)=>{
+    const egg=eggs.find(e=>e.nest?.b===i&&e.j===j);
+    if(!egg)throw Error('Faltou ovo da parte '+(i+1));
+    const nest=egg.nest;
+    touched.push({egg,nest,position:egg.mesh.position.clone(),scale:egg.mesh.scale.clone(),
+      gr:egg.gr,st:egg.st});
+    egg.gr=1;egg.mesh.scale.copy(egg.base);
+    return egg;
+   };
+   try{
+    EGG_NIGHT.phase='day';nextReset=Date.now()/1e3+3600;
+    A.god=false;A.freeze=false;P.train=false;P.stun=0;
+    S.sp=0;S.tr=-1;P.vx=P.vz=0;
+    const b=setupEgg(2);
+    P.x=b.mesh.position.x;P.z=b.mesh.position.z;
+    take(b);
+    const ownedBack=stolenGuardArea()===2;
+    // A divisa em z=-170 divide as partes 2 (frente) e 3 (atrás).
+    P.x=0;P.z=gz(2);P.vx=P.vz=0;
+    const exactBorder=P.z===-170;
+    const backRush=guardianShouldRush(2,gBack.home);
+    const frontRush=guardianShouldRush(1,gFront.home);
+    step(.05);
+    const backPursues=gBack.st==='chase';
+    const frontIdle=gFront.st!=='chase'&&gFront.st!=='wake';
+    const frontStillHome=gFront.m.position.distanceTo(gFront.home)<.1;
+    if(carry)drop();
+
+    // Guaxinim: ovo originário da PARTE 4, não da parte da frente.
+    const e=setupEgg(3);
+    P.x=e.mesh.position.x;P.z=e.mesh.position.z;P.stun=0;P.vx=P.vz=0;
+    take(e);
+    const ownedRaccoon=stolenGuardArea()===3;
+    const raccoonWake=rg.st==='wake'||rg.st==='chase';
+    P.x=0;P.z=gz(3);P.vx=P.vz=0;
+    const raccoonRush=guardianShouldRush(3,rg.home);
+    const neighborRush=guardianShouldRush(2,gBack.home);
+    const raccoonBefore=rg.m.position.clone();
+    step(.05);
+    const raccoonChases=rg.st==='chase';
+    const raccoonMoves=rg.m.position.distanceTo(raccoonBefore)>.25;
+    const neighborIdle=gBack.st!=='chase'&&gBack.st!=='wake';
+    const didNotSpawnSecondMob=!GD[3].m.parent;
+    if(carry)drop();
+    const afterDrop=rg.st==='ret'&&gBack.st!=='chase';
+    // Cercas: a original está na base e paredes brancas só nas áreas.
+    const baseFence=sc.children.filter(o=>o.isMesh
+      &&o.material?.color?.getHex?.()===0xc89b5a).length;
+    const baseWithoutWhiteWall=!('NIGHT_BASE_WALLS' in window);
+    const whiteAreaCount=GT.length;
+    return {ownedBack,exactBorder,backRush,frontRush,backPursues,frontIdle,frontStillHome,
+      ownedRaccoon,raccoonWake,raccoonRush,neighborRush,raccoonChases,raccoonMoves,
+      neighborIdle,didNotSpawnSecondMob,afterDrop,baseFence,baseWithoutWhiteWall,whiteAreaCount};
+   }finally{
+    if(carry&&carry!==saved.carry)drop();
+    for(const v of touched){
+     const {egg,nest,position,scale,gr,st}=v;
+     if(egg.mesh.parent!==sc){egg.mesh.parent?.remove(egg.mesh);sc.add(egg.mesh)}
+     egg.mesh.position.copy(position);egg.mesh.scale.copy(scale);egg.gr=gr;egg.st=st;
+     egg.nest=nest;nest.e=egg;if(!eggs.includes(egg))eggs.push(egg);
+    }
+    S.sp=saved.sp;S.tr=saved.tr;carry=saved.carry;P.train=saved.train;P.stun=saved.stun;
+    A.god=saved.god;A.freeze=saved.freeze;EGG_NIGHT.phase=saved.phase;
+    nextReset=saved.reset;P.x=saved.x;P.z=saved.z;P.vx=saved.vx;P.vz=saved.vz;
+    for(const {g,state,t,rush,pos} of original){
+     g.st=state;g.t=t;g.rush=rush;g.m.position.copy(pos);
+    }
+    upHud();
+   }
+  });
+  assert(borderOwnership.ownedBack&&borderOwnership.exactBorder,'O ovo da parte 3 mantém dono correto na linha -170');
+  assert(borderOwnership.backRush&&!borderOwnership.frontRush,'Só o mob de trás detecta o roubo na divisa');
+  assert(borderOwnership.backPursues&&borderOwnership.frontIdle&&borderOwnership.frontStillHome,
+   'Só um mob persegue, o da frente fica em seu posto');
+  assert(borderOwnership.ownedRaccoon&&borderOwnership.raccoonWake,'Roubar da PARTE 4 aciona o guaxinim');
+  assert(borderOwnership.raccoonRush&&!borderOwnership.neighborRush,'Somente guaxinim reconhece o ovo na divisa da Selva');
+  assert(borderOwnership.raccoonChases&&borderOwnership.raccoonMoves,'Guaxinim realmente persegue e se move');
+  assert(borderOwnership.neighborIdle&&borderOwnership.didNotSpawnSecondMob,'Nenhum segundo guardião na parte 4');
+  assert(borderOwnership.afterDrop,'Soltar ovo encerra a perseguição');
+  assert.equal(borderOwnership.baseFence,5,'Cerca original da base preservada');
+  assert(borderOwnership.baseWithoutWhiteWall&&borderOwnership.whiteAreaCount===13,
+   'Paredes brancas reservadas às 13 divisões, sem paredão na base');
+  console.log(mode.toUpperCase()+' GUAXINIM E FRONTEIRA GUARDA ÚNICA '+JSON.stringify(borderOwnership));
+
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
  }
