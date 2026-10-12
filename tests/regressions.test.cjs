@@ -97,3 +97,20 @@ test('Secret nasce com 10% por renovação, inclusive durante a noite',()=>{
  assert(html.includes("case 'saveChances':CFG.rare[7]=adValidNumber('chanceSecret',0,100)/100"));
  assert(html.includes("try{CFG.rare[7]=1;CFG.rare[8]=.5;CFG.rare[9]=.25;regrow(false)}finally{"));
 });
+
+test('coleta de ovos exige Speed ESTRITAMENTE MAIOR que a recomendada da área',()=>{
+ assert(html.includes('const eggAreaIndex=e=>'));
+ assert(html.includes("if(e?.nest&&Number.isInteger(e.nest.b))return e.nest.b"));
+ assert(html.includes("const eggSpeedRequired=e=>BI[eggAreaIndex(e)]?.req??0"));
+ assert(html.includes('const eggSpeedEnough=e=>Number.isFinite(S.sp)&&S.sp>eggSpeedRequired(e)'));
+ assert(html.includes('const findEgg=()=>nearestEgg(true)'));
+ assert(html.includes("if(!eggSpeedEnough(e)){reportMissingSpeed(e);return false;}"));
+ assert(html.includes("const blocked=lockedEggNearby();if(blocked){reportMissingSpeed(blocked);return}"));
+ assert(html.includes("exige Speed > "));
+ assert(html.includes('const lockedEggNearby='));
+ assert(html.includes("yaw:P.g.rotation.y,speed:S.sp"));
+ assert(server.includes('const AREA_SPEED=[0,900,1e4,4e4,1.7e5,7e5,2.5e6,1.8e7,7e8,2.5e9,7e9,2e10,5e10]'));
+ assert(server.includes('ws.speed=Number.isFinite(m.speed)&&m.speed>=0?m.speed:0'));
+ assert(server.includes('ws.speed>required'));
+ assert(html.includes("case 'speedSet':"));
+});

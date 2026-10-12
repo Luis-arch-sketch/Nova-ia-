@@ -52,7 +52,22 @@ test('Multiplayer: sala isolada, limpeza LIMITED e reconciliação de coleta', {
   a.send(encode('admin-limited',{eggs:[{x:0,z:-902}]}));
   assert.equal((await created).eggs.length,1);
 
-  b.send(encode('move',{x:0,y:0,z:-902,yaw:0}));
+  // Recomendação da Floresta Encantada: 5e10. Menos ou igual bloqueia até o LIMITED.
+  b.send(encode('move',{x:0,y:0,z:-902,yaw:0,speed:5e10-1}));
+  await wait(100);
+  const lowError=receive(b,m=>m.type==='error'&&m.message.includes('Speed insuficiente'));
+  const lowSync=receive(b,m=>m.type==='limited-sync');
+  b.send(encode('limited-take',{x:0,z:-902}));
+  assert.equal((await lowError).type,'error');
+  assert.equal((await lowSync).eggs.length,1);
+
+  b.send(encode('move',{x:0,y:0,z:-902,yaw:0,speed:5e10}));
+  await wait(100);
+  const equalError=receive(b,m=>m.type==='error'&&m.message.includes('Speed insuficiente'));
+  b.send(encode('limited-take',{x:0,z:-902}));
+  await equalError;
+
+  b.send(encode('move',{x:0,y:0,z:-902,yaw:0,speed:5e10+1}));
   await wait(100);
   const taken=receive(a,m=>m.type==='event'&&m.kind==='limited-take');
   b.send(encode('limited-take',{x:0,z:-902}));

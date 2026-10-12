@@ -295,7 +295,10 @@ try{
    partBorderCollision(p2,gateZ+2);
    const gatesAreOpen=p2.z===gateZ-2;
    if(egg){egg.gr=1;egg.mesh.scale.copy(egg.base);P.x=egg.mesh.position.x;P.z=egg.mesh.position.z}
+   const savedNightSpeed=S.sp;
+   if(egg)S.sp=eggSpeedRequired(egg)+1;
    const pickableInDay=!!egg&&findEgg()===egg;
+   S.sp=savedNightSpeed;
    const ix=eggs.indexOf(limited);
    if(ix>=0)eggs.splice(ix,1);
    sc.remove(limited.mesh);
@@ -321,6 +324,57 @@ try{
   assert.equal(nightTest.openWalls,0,'All white walls vanish');
   assert(nightTest.gatesAreOpen&&nightTest.pickableInDay,'Normal access to eggs and areas restored');
   console.log(mode.toUpperCase()+' NOITE DOS OVOS 9+3S '+JSON.stringify(nightTest));
+
+  // Speed exigida em todos os biomas: 0/igual bloqueia, maior libera.
+  // Conferir também bloqueio direto via take(), inclusive ADMIN e LIMITED.
+  const speedGateTest=await page.evaluate(()=>{
+   const old={speed:S.sp,x:P.x,z:P.z,owner:ownerVerified,train:P.train};
+   const cases=[];
+   try{
+    for(const index of [0,1,3,7,12]){
+     const egg=eggs.find(e=>e.nest?.b===index);
+     if(!egg){cases.push({index,error:'Nenhum ovo no ninho'});continue;}
+     egg.gr=1;egg.mesh.scale.copy(egg.base);
+     P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;P.train=false;
+     const req=BI[index].req;
+     S.sp=req>0?req-1:0;
+     const low={allowed:eggSpeedEnough(egg),selected:findEgg()===egg,locked:lockedEggNearby()===egg};
+     const previousCarry=carry;take(egg);
+     const directBlocked=carry===previousCarry&&eggs.includes(egg);
+     S.sp=req;
+     const equal={allowed:eggSpeedEnough(egg),selected:findEgg()===egg};
+     S.sp=req+1;
+     const high={allowed:eggSpeedEnough(egg),selected:findEgg()===egg};
+     cases.push({index,req,low,directBlocked,equal,high});
+    }
+    const limited=makeLimitedEgg(75,-903),req=eggSpeedRequired(limited);
+    P.x=limited.mesh.position.x;P.z=limited.mesh.position.z;
+    S.sp=req;
+    const limEqual=eggSpeedEnough(limited),limSelected=!!findEgg()&&findEgg()===limited;
+    S.sp=req+1;
+    const limGreater=eggSpeedEnough(limited),limPickable=findEgg()===limited;
+    const ix=eggs.indexOf(limited);if(ix>=0)eggs.splice(ix,1);
+    sc.remove(limited.mesh);
+    const ownerEgg=eggs.find(e=>e.nest?.b===1);
+    ownerVerified=true;S.sp=BI[1].req;
+    const adminBlocked=!eggSpeedEnough(ownerEgg);
+    return {cases,limited:{req,limEqual,limSelected,limGreater,limPickable},adminBlocked};
+   }finally{
+    S.sp=old.speed;P.x=old.x;P.z=old.z;ownerVerified=old.owner;P.train=old.train;upHud();
+   }
+  });
+  assert.equal(speedGateTest.cases.length,5,'Testadas 5 áreas incluindo a última');
+  for(const x of speedGateTest.cases){
+   assert(!x.error,'Espécie ativa presente em '+x.index);
+   assert(!x.low.allowed&&!x.low.selected&&x.low.locked&&x.directBlocked,'Speed baixa bloqueia coleta em '+x.index);
+   assert(!x.equal.allowed&&!x.equal.selected,'Speed igual é insuficiente em '+x.index);
+   assert(x.high.allowed&&x.high.selected,'Speed maior libera ovo em '+x.index);
+  }
+  assert.equal(speedGateTest.limited.req,5e10);
+  assert(!speedGateTest.limited.limEqual&&!speedGateTest.limited.limSelected,'LIMITED bloqueado no requisito exato');
+  assert(speedGateTest.limited.limGreater&&speedGateTest.limited.limPickable,'LIMITED liberado com Speed maior');
+  assert(speedGateTest.adminBlocked,'ADMIN também obedece à recomendação');
+  console.log(mode.toUpperCase()+' SPEED RECOMENDADA NA COLETA '+JSON.stringify(speedGateTest));
 
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
