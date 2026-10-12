@@ -171,7 +171,11 @@ test('vídeo: Selva com trail 2.5x usa Speed efetiva acima de 40K',()=>{
 });
 
 test('bichos seguem o ovo roubado ATÉ O DEPÓSITO na base, sem corte -14 ou 95 metros',()=>{
- assert(html.includes('const guardPath=(p,x,z)=>[x,z];'));
+ assert(html.includes('const guardPath=(p,x,z)=>{'));
+ assert(html.includes('if(z>-10&&p.z<-6)'));
+ assert(html.includes('return [0,-4]'));
+ assert(html.includes('if(z<-10&&p.z>-14)'));
+ assert(html.includes('return [0,-16]'));
  assert(html.includes('const aim=(g,x,z,s,dt)=>{'));
  assert(html.includes('partBorderCollision(p,oldZ,oldX)'));
  assert(!html.includes("p.z=Math.min(p.z,-14)"));
@@ -189,30 +193,30 @@ test('bichos seguem o ovo roubado ATÉ O DEPÓSITO na base, sem corte -14 ou 95 
  assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
 });
 
-test('de dia a base e as 13 partes ficam sem cercas nem colisão invisível',()=>{
+test('apenas a base tem cerca original, física e permanente dia/noite',()=>{
  assert(html.includes("const PART_BORDERS=BI.map((b,i)=>gz(i));"));
  assert(!html.includes("mk(GB,c,[89,2.7,1.1]"));
  assert(!html.includes("mk(GB,0xf2e6be,[1.6,3.5,1.6]"));
  assert(!html.includes("mk(GB,0x6b4a2a,[1.2,12,1.2]"));
- assert(!html.includes("mk(GB,0xc89b5a,[w,1.6,d]"));
- assert(!html.includes("for(let k=-20;k<=20;k+=2){OB.push("));
- assert(!html.includes("for(let k=-10;k<=30;k+=2){OB.push("));
+ assert(html.includes("/* ===== Cerca original da BASE: permanente de dia e à noite ===== */"));
+ assert(html.includes("f(-20,10,.6,40);f(20,10,.6,40);f(0,30,40,.6);"));
+ assert(html.includes("f(-12.5,-10,15,.6);f(12.5,-10,15,.6);"));
+ assert(html.includes("for(let k=-20;k<=20;k+=2){OB.push"));
+ assert(html.includes("for(let k=-10;k<=30;k+=2)OB.push"));
  assert(html.includes("if(EGG_NIGHT.phase==='day')return;"));
- assert(html.includes("const guardPath=(p,x,z)=>[x,z];"));
+ assert(html.includes("const guardPath=(p,x,z)=>{"));
  assert(html.includes("const oldPartX=P.x,oldPartZ=P.z;"));
 });
-test('9s + 3s: paredes brancas ocupam lugar das cercas e depois desaparecem',()=>{
+test('cronômetros 9s + 3s: paredes brancas só nas áreas, base com cerca original',()=>{
  assert(html.includes("EGG_NIGHT.until=now+9000"));
  assert(html.includes("EGG_NIGHT.phase='unlock';EGG_NIGHT.until+=3000"));
- assert(html.includes("[204,10.5,.8]")); // divisão toda, antes só 19.5.
- assert(html.includes("const NIGHT_BASE_WALLS=["));
- for(const pos of ["[0,5.25,-10]","[0,5.25,30]","[-20,5.25,10]","[20,5.25,10]"])assert(html.includes(pos));
- assert(html.includes("NIGHT_BASE_WALLS.forEach(w=>w.visible=false);"));
- assert(html.includes("NIGHT_BASE_WALLS.forEach(w=>w.visible=true);"));
- assert(html.includes("NIGHT_BASE_TIMER.visible=true;NIGHT_BASE_TIMER.set(text);"));
- assert(html.includes("NIGHT_BASE_TIMER.visible=false;EGG_NIGHT.last='day'"));
- assert(html.includes("const nightBaseWallCrossed=(oldX,oldZ,newX,newZ)=>{"));
- assert(html.includes("if(nightBaseWallCrossed(previousX,previousZ,player.x,player.z))"));
+ assert(html.includes("[204,10.5,.8]"));
+ assert(html.includes("const PART_BORDERS=BI.map((b,i)=>gz(i));"));
+ assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})"));
+ assert(html.includes("GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false})"));
+ assert(!html.includes("NIGHT_BASE_WALLS"));
+ assert(!html.includes("NIGHT_BASE_TIMER"));
+ assert(!html.includes("nightBaseWallCrossed"));
  assert(html.includes("partBorderCollision(P,oldPartZ,oldPartX)"));
  assert(html.includes("partBorderCollision(p,oldZ,oldX)"));
  assert(html.includes("if(EGG_NIGHT.phase!=='day')return null"));
