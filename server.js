@@ -4,7 +4,8 @@ const {WebSocketServer,WebSocket}=require('ws');
 const PORT=Number(process.env.PORT||3000),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map(),roomLimitedEggs=new Map();
 let serverSequence=1;
 const send=(ws,o)=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o));};
-const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,admin:ws.admin});
+const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,admin:ws.admin,baseSlot:ws.baseSlot});
+const baseSpawn=slot=>({x:[0,52,-52][slot%3],z:8+Math.floor(slot/3)*56});
 const peers=room=>rooms.get(room)||new Set();
 // Salas sob demanda, sem um número máximo definido de salas.
 // A lotação continua em 16 por sala; salas vazias são removidas automaticamente.
@@ -37,7 +38,7 @@ const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);
   broadcast(r,{type:'event',kind:'limited-drop',egg:ws.heldLimited},ws);
   ws.heldLimited=null;
  }
- p?.delete(ws);ws.room=null;ws.admin=false;if(p?.size===0){rooms.delete(r);roomLimitedEggs.delete(r);}else broadcastPresence(r)};
+ p?.delete(ws);ws.room=null;ws.admin=false;ws.baseSlot=null;if(p?.size===0){rooms.delete(r);roomLimitedEggs.delete(r);}else broadcastPresence(r)};
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):0};
 const sameHex=(a,b)=>{try{const x=Buffer.from(a,'hex'),y=Buffer.from(b,'hex');return x.length===32&&y.length===32&&crypto.timingSafeEqual(x,y)}catch{return false}};
 const error=(ws,message)=>send(ws,{type:'error',message});
@@ -157,9 +158,13 @@ const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?openPu
 const name=String(m.name||'').trim();
 if(!/^[A-Z0-9-]{3,12}$/.test(room)||name.length<2||name.length>20||/^admin$/i.test(name)){error(ws,'Nome ou código de sala inválido');return}
 leave(ws);if(peers(room).size>=MAX_ROOM){error(ws,'Sala cheia: máximo 16 jogadores');return}
-ws.room=room;ws.name=name;ws.admin=false;ws.x=0;ws.y=0;ws.z=8;
+const occupied=new Set([...peers(room)].map(p=>p.baseSlot));
+const baseSlot=Array.from({length:MAX_ROOM},(_,i)=>i).find(i=>!occupied.has(i));
+if(baseSlot===undefined){error(ws,'Sala sem bases livres');return}
+const spawn=baseSpawn(baseSlot);
+ws.room=room;ws.name=name;ws.admin=false;ws.baseSlot=baseSlot;ws.x=spawn.x;ws.y=0;ws.z=spawn.z;
 if(!rooms.has(room)){rooms.set(room,new Set());roomLimitedEggs.set(room,[])}rooms.get(room).add(ws);
-send(ws,{type:'joined',id:ws.id,room,players:[...peers(room)].map(publicUser),limitedEggs:roomLimitedEggs.get(room)||[]});broadcastPresence(room);return}
+send(ws,{type:'joined',id:ws.id,room,baseSlot:ws.baseSlot,players:[...peers(room)].map(publicUser),limitedEggs:roomLimitedEggs.get(room)||[]});broadcastPresence(room);return}
 if(!ws.room)return;
 if(m.type==='limited-take'){
  // Respeita o ovo da sala e exige proximidade real do jogador.
@@ -179,7 +184,7 @@ if(m.type==='limited-drop'){
  broadcast(ws.room,{type:'event',kind:'limited-drop',egg},ws);return;
 }
 if(m.type==='move'){const now=Date.now();if(now-ws.lastMove<45)return;ws.lastMove=now;
-ws.x=bound(m.x,-99,99);ws.y=bound(m.y,-1,50);ws.z=bound(m.z,-945,50);ws.yaw=bound(m.yaw,-100,100);
+ws.x=bound(m.x,-99,99);ws.y=bound(m.y,-1,50);ws.z=bound(m.z,-945,333);ws.yaw=bound(m.yaw,-100,100);
 broadcast(ws.room,{type:'players',players:[...peers(ws.room)].map(publicUser)},ws);return}
 if(m.type==='admin-auth'){if(!ADMIN_HASH){error(ws,'ADMIN_PASSWORD_HASH ausente no servidor');return}
 const pw=String(m.password||'').slice(0,256),hash=crypto.createHash('sha256').update(pw).digest('hex');
