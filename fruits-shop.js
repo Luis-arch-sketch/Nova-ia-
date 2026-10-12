@@ -115,14 +115,11 @@ fruitTag.position.set(0,5.6,0);fruitVendorGroup.add(fruitTag);
 
 /* UI segura para Android: mostra saldo, preço e bônus; mantém os outros menus. */
 const fruitCss=document.createElement('style');
-fruitCss.textContent='#fruitShopMask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#030e13b7;z-index:95;touch-action:pan-y;padding:12px;box-sizing:border-box}#fruitShopModal{width:min(440px,100%);max-height:88dvh;overflow:auto;touch-action:pan-y;background:linear-gradient(155deg,#25492f,#142720);color:white;border:3px solid #b7f084;border-radius:19px;padding:15px;box-shadow:0 20px 60px #000c;font:600 15px system-ui,sans-serif}#fruitShopModal button{cursor:pointer;touch-action:manipulation}#fruitShopClose{float:right;background:#493d35;color:white}#fruitShopModal h2{font-size:20px;margin:4px 0 7px}#fruitShopModal p{margin:7px 0}#fruitShopGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}#fruitShopGrid button{background:#eeffd9;color:#18251a;padding:14px 8px;min-height:112px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;line-height:1.35}#fruitShopGrid button:disabled{opacity:.75}#fruitShopFoot{font-size:13px;color:#d8efd5}#fruitShopQuick{position:fixed;right:12px;bottom:175px;z-index:15;background:#f5dd7a;color:#273326;padding:8px 10px;min-height:40px;border:2px solid #6c915a;border-radius:11px;font-size:13px;display:none}@media(max-width:390px){#fruitShopGrid{gap:7px}#fruitShopGrid button{font-size:13px;padding:9px 4px}}';
+fruitCss.textContent='#fruitShopMask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#030e13b7;z-index:95;touch-action:pan-y;padding:12px;box-sizing:border-box}#fruitShopModal{width:min(440px,100%);max-height:88dvh;overflow:auto;touch-action:pan-y;background:linear-gradient(155deg,#25492f,#142720);color:white;border:3px solid #b7f084;border-radius:19px;padding:15px;box-shadow:0 20px 60px #000c;font:600 15px system-ui,sans-serif}#fruitShopModal button{cursor:pointer;touch-action:manipulation}#fruitShopClose{float:right;background:#493d35;color:white}#fruitShopModal h2{font-size:20px;margin:4px 0 7px}#fruitShopModal p{margin:7px 0}#fruitShopGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}#fruitShopGrid button{background:#eeffd9;color:#18251a;padding:14px 8px;min-height:112px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;line-height:1.35}#fruitShopGrid button:disabled{opacity:.75}#fruitShopFoot{font-size:13px;color:#d8efd5}@media(max-width:390px){#fruitShopGrid{gap:7px}#fruitShopGrid button{font-size:13px;padding:9px 4px}}';
 document.head.appendChild(fruitCss);
 const fruitMask=document.createElement('div');fruitMask.id='fruitShopMask';
 fruitMask.innerHTML='<section id="fruitShopModal" role="dialog" aria-modal="true" aria-label="Vendedor de frutas"><button id="fruitShopClose" type="button">✕</button><h2>🍐🍎 Vendedor de Frutas</h2><p>“E aí, cara, qual fruta você quer? Aqui é baratinho!”</p><p id="fruitShopMoney"></p><div id="fruitShopGrid"></div><p id="fruitShopFoot">⏱️ Cada fruta dura 30 minutos em tempo real. Depois, compre novamente.</p><button id="fruitShopHear" type="button">🔊 Ouvir vendedor</button></section>';
 document.body.appendChild(fruitMask);
-const fruitQuick=document.createElement('button');
-fruitQuick.id='fruitShopQuick';fruitQuick.textContent='🍎 Barraca';fruitQuick.style.display='block';
-document.body.appendChild(fruitQuick);
 const fruitOpen=()=>fruitMask.style.display==='flex';
 function closeFruitShop(){
  fruitMask.style.display='none';
@@ -196,7 +193,6 @@ function fruitExpireAndUpdate(){
 fruitExpireAndUpdate();
 setInterval(fruitExpireAndUpdate,1000);
 
-fruitQuick.addEventListener('click',openFruitShop);
 document.getElementById('fruitShopClose').addEventListener('click',closeFruitShop);
 document.getElementById('fruitShopHear').addEventListener('click',()=>speakFruit('prices'));
 fruitMask.addEventListener('click',e=>{if(e.target===fruitMask)closeFruitShop()});
@@ -205,8 +201,5 @@ let fruitUiCounter=0;
 setInterval(()=>{
  if(document.hidden)return;
  const nearby=near(FRUIT_VENDOR_POS.x,FRUIT_VENDOR_POS.z,9);
- const meters=Math.round(Math.hypot(P.x-FRUIT_VENDOR_POS.x,P.z-FRUIT_VENDOR_POS.z));
- fruitQuick.style.display=fruitOpen()?'none':'block';
- fruitQuick.textContent=nearby?'🍎 Comprar frutas':'🍎 Barraca • '+meters+'m';
  if(nearby&&fruitUiCounter++%5===0)fruitTag.set('🍎 BARRACA DE FRUTAS 🍐');
 },600);
