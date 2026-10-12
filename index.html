@@ -131,7 +131,7 @@ const fm=value=>{
  return sign+Number(scaled.toFixed(decimals))+(U[i]||'e'+3*i);
 };
 /* ===== CONFIG: todos os números do jogo ficam aqui (editáveis) ===== */
-const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}}; // chance POR RENOVAÇÃO por raridade; entrada inicial só Common/Uncommon
+const CFG={reset:300,wake:.7,leash:1e5,gm:.9,g0:9,train:5,off:.25,offCap:28800,inc:50,w:.025,rare:{2:.40,3:.30,4:.20,7:.10,8:.04,9:.005}}; // chance POR RENOVAÇÃO por raridade; entrada inicial só Common/Uncommon
 const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED'],RS=[0,1,2,3,4,7,8,9]; // RS: raridade de cada posição de espécie no bioma
 
 const BI=[
@@ -466,7 +466,7 @@ const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p
  if(tab===2)h+='<p>Equipada: '+(S.tr<0?'nenhuma':TR[S.tr][0]+' x'+TR[S.tr][1])+'. Só uma por vez; multiplica sua Speed efetiva.</p>'+TR.map((t,i)=>{const o=S.own.includes(i);return'<div class=r><span>'+t[0]+' x'+t[1]+(o?'':' por $'+fm(t[2]))+'</span>'+(o?(S.tr===i?bt('un','Tirar'):bt('e'+i,'Equipar')):bt('b'+i,'Comprar',S.$<t[2]))+'</div>'}).join('');
  if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
   Object.keys(by).forEach(s=>{const l=by[s],c=SPC[s].inc*100;h+='<div class=r><span>'+SPC[s].n+' x'+l.length+', melhor $'+fm(Math.max(...l.map(pinc)))+'/s</span>'+(l.length>=3?bt('f'+s,'Fundir 3 por $'+fm(c),S.$<c):'')+'</div>'})}
- if(tab===4){h+='<p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>')}
+ if(tab===4){h+='<p><b>Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞.</b> Legendary é mais fraco que Secret; cada área tem sua progressão própria de renda.</p><p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>')}
  p.innerHTML=h;p.style.display='block';p.scrollTop=st};
 $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
  if(a[0]==='T')tab=+a[1];else if(a==='x')open=false;
@@ -890,7 +890,7 @@ const adminUI=(resetScroll=false)=>{
  h+='</div>';
  }
  if(adminTab===4){
- h='<h3>⚙️ Configurações de verdade</h3><p>As chances são sorteadas a cada renovação de ninhos para cada raridade especial. Cada uma tem sua própria chance.</p><div class="adGrid">';
+ h='<h3>⚙️ Configurações de verdade</h3><p>Chances por renovação: Rare 40% · Epic 30% · Legendary 20% · Secret '+fm(CFG.rare[7]*100)+'% · Eternal '+fm(CFG.rare[8]*100)+'% · Divine '+fm(CFG.rare[9]*100)+'%. <b>Em poder: Legendary é inferior a Secret, Eternal, Divine e LIMITED ∞.</b></p><div class="adGrid">';
  h+=adCard('🎲 Probabilidades (%)',`${adField('chanceSecret','Secret (%)','number','min="0" max="100" step="0.1"')}${adField('chanceEternal','Eternal (%)','number','min="0" max="100" step="0.1"')}${adField('chanceDivine','Divine (%)','number','min="0" max="100" step="0.1"')}${adBtn('saveChances','Aplicar chances')}`);
  h+=adCard('⏳ Tempos, treino e noite dos ovos',`${adField('resetSeconds','Segundos entre renovações (mínimo 10)','number','min="10" max="86400"')}${adField('trainMult','Multiplicador do ganho de Speed em treino','number','min="0.1" max="1000" step="0.1"')}${adBtn('saveTimers','Aplicar tempos')}${adBtn('eggNightNow','🌙 Iniciar renovação dos ovos','secondary')}<p class="adHint">Noite 9s, ovos protegidos e crescimento 30×; depois 3s para liberar as 13 áreas. Novos ovos podem vir melhores.</p>`);
  h+=adCard('🏃 Movimentos',`${adField('moveMult','Multiplicador de movimento (0.2–20)','number','min="0.2" max="20" step="0.1"')}${adField('jumpMult','Multiplicador do salto (0.5–8)','number','min="0.5" max="8" step="0.1"')}${adBtn('saveMoves','Aplicar movimentos')}`);

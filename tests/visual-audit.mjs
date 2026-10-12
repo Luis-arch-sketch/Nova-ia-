@@ -269,6 +269,19 @@ try{
   assert(initialEggs.common>=20,'Common e Uncommon continuam surgindo ao entrar');
   assert.equal(initialEggs.rarer,0,'Sem excesso de ovos raros prontos ao entrar');
   assert.equal(initialEggs.chanceSecret,.10,'Secret continua 10% por renovação');
+  const tierAudit=await page.evaluate(()=>{
+   const labels=[0,1,2,3,4,5,6,7].map(j=>RAR[RS[j]]);
+   const costs=[0,1,2,3,4,5,6,7].map(j=>SPC[2*8+j].inc);
+   const defaultOdds=[2,3,4,7,8,9].map(r=>CFG.rare[r]);
+   return {labels,costs,defaultOdds,limitedRate:SPC[LIMITED_ID].inc,
+    mostValuableNormal:Math.max(...SPC.slice(0,LIMITED_ID).map(p=>p.inc))};
+  });
+  assert.deepEqual(tierAudit.labels,['Common','Uncommon','Rare','Epic','Legendary','Secret','Eternal','Divine']);
+  assert.deepEqual(tierAudit.defaultOdds,[.40,.30,.20,.10,.04,.005],'Chance decrescente com raridade');
+  assert(tierAudit.costs.every((n,i,a)=>i===0||n>a[i-1]),'Evolução de ganho aumenta do Legendary ao Divine');
+  assert(tierAudit.limitedRate>tierAudit.mostValuableNormal,'LIMITED é o ovo mais poderoso de todos');
+  console.log(mode.toUpperCase()+' HIERARQUIA DAS RARIDADES '+JSON.stringify(tierAudit));
+
   console.log(mode.toUpperCase()+' ENTRADA SEM EXCESSO DE OVOS RAROS '+JSON.stringify(initialEggs));
 
   // Night renewal integration: 13 gates, 9+3 countdowns, physical collision,

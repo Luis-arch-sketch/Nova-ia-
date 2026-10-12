@@ -85,7 +85,7 @@ test('trocar ovos dos ninhos preserva LIMITED e sorte de raros',()=>{
 });
 
 test('Secret nasce com 10% por renovação, inclusive durante a noite',()=>{
- assert(html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
+ assert(html.includes('rare:{2:.40,3:.30,4:.20,7:.10,8:.04,9:.005}'));
  assert(html.includes('chances:{7:10,8:4,9:.5}'));
  assert(html.includes("chanceSecret:'10'"));
  assert(html.includes("const SECRET_CHANCE_MIGRATION_KEY='rue3d_secret_chance_10_v1'"));
@@ -100,7 +100,7 @@ test('Secret nasce com 10% por renovação, inclusive durante a noite',()=>{
 
 
 test('ao entrar não existem dezenas de ovos Rare Epic e Legendary prontos',()=>{
- assert(html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
+ assert(html.includes('rare:{2:.40,3:.30,4:.20,7:.10,8:.04,9:.005}'));
  assert(html.includes("if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)"));
  assert(html.includes("if(!first)for(const r in CFG.rare)"));
  assert(html.includes("if(Math.random()>=CFG.rare[r])continue"));
@@ -126,4 +126,19 @@ test('coleta é física e o bicho persegue rápido em vez de exibir Speed insufi
  assert(!server.includes('limitedSpeedRequired'));
  assert(html.includes("case 'speedSet':"));
  assert(html.includes("const ABUSE_NAMES="));
+});
+
+test('raridades ordenadas por chance e valor: Legendary abaixo de Secret e LIMITED como maior',()=>{
+ const rates={2:.40,3:.30,4:.20,7:.10,8:.04,9:.005};
+ for(let i=1,order=[2,3,4,7,8,9];i<order.length;i++)
+  assert(rates[order[i-1]]>rates[order[i]],'Ovo mais forte é menos frequente');
+ assert(html.includes('rare:{2:.40,3:.30,4:.20,7:.10,8:.04,9:.005}'));
+ assert(html.includes("const RAR=['Common','Uncommon','Rare','Epic','Legendary','Mythic','Cosmic','Secret','Eternal','Divine','LIMITED']"));
+ assert(html.includes('const RS=[0,1,2,3,4,7,8,9]')||html.includes(",RS=[0,1,2,3,4,7,8,9]"));
+ assert(html.includes('inc:CFG.inc*4**i*(1+1.5*j)'));
+ assert(html.includes("n:'LIMITED ∞ • Dragão de Fogo'"));
+ assert(html.includes('SPC.push({id:LIMITED_ID,n:'));
+ assert(html.includes("Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞."));
+ assert(html.includes('Rare 40% · Epic 30% · Legendary 20%'));
+ assert(!html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
 });
