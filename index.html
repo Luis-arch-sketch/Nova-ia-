@@ -149,7 +149,7 @@ const BI=[
 ['Anjos e Demônios',0xf2e6d8,0xc23b3b,2e10,'ArchAngel','Flame Sprite,Light Dove,Winged Lamb,Imp,Demon Hound,Holy Peacock,ArchAngel,World Burner'],
 ['Floresta Encantada',0x7be0b4,0xb36bff,5e10,'Celestial Sunlion','Prism Gecko,Petal Beetle,Enchanted Bluejay,Astral Jackalope,Spirit Panda,Starry Fox,Celestial Sunlion,Royal Skywhale']
 ].map(b=>({n:b[0],g:b[1],t:b[2],req:b[3],gd:b[4],sp:b[5].split(',')}));
-const SZ=[['Pequeno',.8,1,50],['Médio',1,1.5,35],['Enorme',1.4,3,12],['Gigante',1.9,6,3],['Colossal (12 unidades)',10/1.8,10,0]]; // nome, escala, mult. renda, peso do sorteio
+const SZ=[['Pequeno',.8,1,50],['Médio',1,1.5,35],['Enorme',1.4,3,12],['Gigante',1.9,6,3],['Colossal (12 unidades)',12/1.8,10,0]]; // nome, escala, mult. renda, peso do sorteio
 const MUT=[['Silver',1.2,.08,0xcfd8dc],['Golden',2.5,.04,0xffc400],['Rainbow',3.5,.015,0xff66cc],['Bloom',1.25,.06,0xffa6c9],['Parasite',3,.01,0x7a2fb0],['Fractured',2.75,.015,0x44ddff],['Scrambled',2.75,.015,0xaaff44],['Enchanted',2.8,.01,0x9d6bff]]; // chances são marcadores editáveis
 const TM=[['Treadmill',2,0,0x9aa5b1],['Sci-Fi',5,15e3,0x38e1ff],['Flame',12,25e4,0xff6a1a],['Celebrity',30,5e6,0xff4fd8],['Golden',80,12e7,0xffc400],['Freeze',100,3e9,0x9be8ff],['Lucky Block',200,75e9,0xffe83a],['Hacker',500,2e12,0x22ff66],['Demonic',1000,5e13,0xc4162a],['Angelic',2000,1e15,0xfff5b0]];
 const TR=[['Grey',1.5,2e3,0x9e9e9e],['Green',2,1e5,0x4caf50],['Blue',2.5,2e6,0x2196f3],['Purple',3,5e7,0x9c27b0],['Golden',3.5,1e9,0xffd700],['Red',4,2e10,0xf44336],['Galaxy',5,5e11,0x5b3bd8],['Secret',7,1e13,0x222222],['Eternal',10,2e14,0x66ddff],['Divine',14,5e15,0xfff3a0],['Moonbloom',20,1e17,0xffb8e1]];
@@ -924,7 +924,7 @@ const rankShow=()=>{const list=$('rankList');const order=[...LEAD].filter(x=>!x.
 };
 const rankToggle=flag=>{$('rankOverlay').style.display=flag?'flex':'none';if(flag){if(adminVisible)toggleAdmin(false);rankShow()}};
 const adminTabs=['Início','Ovos','Pets','Mundo','Config.','🔥 Abuse / Eventos','🏆 Placar','Dados'];
-const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'1',eggCount:'1',eggWhere:'nest',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'10',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
+const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'4',eggCount:'1',eggWhere:'nest',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'10',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
 AS.chanceSecret=String(CFG.rare[7]*100);AS.chanceEternal=String(CFG.rare[8]*100);AS.chanceDivine=String(CFG.rare[9]*100);
 AS.resetSeconds=String(CFG.reset);AS.trainMult=String(CFG.train);AS.moveMult=String(A.moveMult);AS.jumpMult=String(A.jumpMult);AS.autoSeconds=String(A.autoSecretEvery);AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));
 let adminMessage='Painel conectado ao jogo. Escolha uma ação.';
@@ -951,8 +951,8 @@ const adminUI=(resetScroll=false)=>{
  }
  if(adminTab===1){
  h='<h3>🥚 Spawn real de ovos</h3><p>O ovo aparece fisicamente no mundo e pode ser coletado, incubado e chocado normalmente.</p><div class="adGrid">';
- h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',BI[adNum('eggBiome',0,BI.length-1,0)|0].sp.map((n,j)=>n?[j,`${RAR[RS[j]]} • ${n}`]:null).filter(Boolean))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}</div>`);
- h+=adCard('Raridades especiais',`<div class="adStat">${adEggsCount()} ovos no mundo</div><p>Spawn de 1 ovo no bioma escolhido, com o tamanho selecionado.</p><div class="adControls">${adBtn('spawnSecret','🔵 Secret')}${adBtn('spawnEternal','💠 Eternal')}${adBtn('spawnDivine','🌸 Divine')}${adBtn('spawnLimited','🔥 LIMITED ∞')}${adBtn('regen','Renovar ninhos','secondary')}${adBtn('clearEggs','Limpar ovos soltos','danger')}</div>`);
+ h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',BI[adNum('eggBiome',0,BI.length-1,0)|0].sp.map((n,j)=>n?[j,`${RAR[RS[j]]} • ${n}`]:null).filter(Boolean))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}${adBtn('spawnEgg12','⚡ Spawn instantâneo 12u aqui','secondary')}</div>`);
+ h+=adCard('Raridades especiais',`<div class="adStat">${adEggsCount()} ovos no mundo</div><p>Spawn de 1 ovo no bioma escolhido, com o tamanho selecionado.</p><div class="adControls">${adBtn('spawnSecret','🔵 Secret')}${adBtn('spawnEternal','💠 Eternal')}${adBtn('spawnDivine','🌸 Divine')}${adBtn('spawnLimited','🔥 LIMITED ∞')}${adBtn('spawnLimitedNear','🔥 LIMITED 12u aqui','secondary')}${adBtn('regen','Renovar ninhos','secondary')}${adBtn('clearEggs','Limpar ovos soltos','danger')}</div>`);
  h+=adCard('Incubadoras',`<div class="adStat">${S.inc.filter(Boolean).length}/4 ocupadas</div><p>Conclua imediatamente os ovos incubando; os pets irão para a coleção.</p><div class="adControls">${adBtn('hatchAll','Chocar todos')}${adBtn('hatchNext','Chocar primeiro','secondary')}</div>`);
  h+='</div>';
  }
@@ -1070,7 +1070,7 @@ const syncRoomLimitedEggs=list=>{
  if(!Array.isArray(list))return;
  for(const p of list)if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
 };
-const adminSpawnLimited=(count=1,silent=false)=>{
+const adminSpawnLimited=(count=1,silent=false,nearPlayer=false)=>{
  if(!Number.isSafeInteger(count)||count<1||count>100)throw Error('Escolha de 1 a 100 LIMITED por comando. Repita à vontade!');
  const centerZ=-65-70*(BI.length-1);
  let first=null;
@@ -1078,7 +1078,7 @@ const adminSpawnLimited=(count=1,silent=false)=>{
   const serial=Number.isSafeInteger(S.limitedSerial)?S.limitedSerial:0;
   S.limitedSerial=serial+1;
   // Espalha os ovos na última área em posições diferentes.
-  const x=-84+(serial%15)*12,z=centerZ-30+(Math.floor(serial/15)%6)*11;
+  const x=nearPlayer?P.x+3+(k%5)*3:-84+(serial%15)*12,z=nearPlayer?P.z+4+Math.floor(k/5)*3:centerZ-30+(Math.floor(serial/15)%6)*11;
   const e=makeLimitedEgg(x,z);if(!first)first=e;
  }
  persistLimitedWorld();
@@ -1131,9 +1131,9 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'abStop':abuseStop(true);mpBroadcastAction(null,'stop');msg='Evento encerrado';break;
  case 'abRandom':abuseStart(['secret','eternal','divine','mixed','cosmic','money','profit2','profit10','training','speed','hatch','luck','rainbow','gold','meteor','moon','eclipse','sun','freeze','fury','fireworks'][Math.floor(Math.random()*21)]);mpBroadcastAction(null,'start');msg='Evento surpresa iniciado';break;
  case 'abMarathon':abuseMarathon();msg='Maratona de 5 eventos iniciada';break;
- case 'spawnLimited':case 'spawnLimitedBatch':{const count=act==='spawnLimited'?1:adNum('limitedCount',1,100,5)|0;
- const created=adminSpawnLimited(count);
- msg='🔥 '+created+' ovos LIMITED ∞ invocados na Floresta Encantada!';break;}
+ case 'spawnLimited':case 'spawnLimitedBatch':case 'spawnLimitedNear':{const count=act==='spawnLimitedNear'||act==='spawnLimited'?1:adNum('limitedCount',1,100,5)|0;
+ const near=act==='spawnLimitedNear',created=adminSpawnLimited(count,false,near);
+ msg='🔥 '+created+' ovos LIMITED ∞ de 12 unidades invocados '+(near?'perto de você!':'na Floresta Encantada!');break;}
   case 'rankOpen':rankToggle(true);msg='Placar exibido';break;
   case 'rankAdd':{const name=String(AS.rankName||'').trim().slice(0,28);if(!name)throw Error('Digite o nome do jogador.');if(/^(admin|administrador|dono|owner)$/i.test(name))throw Error('O administrador fica fora do placar.');const money=adValidNumber('rankMoney',0,1e100),speed=adValidNumber('rankSpeed',0,1e100);const old=LEAD.findIndex(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase());if(old>=0)LEAD[old]={name,money,speed};else {if(LEAD.length>=300)throw Error('Limite de 300 jogadores locais.');LEAD.push({name,money,speed});}rankSave();rankShow();msg='Jogador registrado no placar';break;}
   case 'rankClear':if(!confirm('Remover todos os outros jogadores do placar local?'))return;LEAD=[];rankSave();rankShow();msg='Placar limpo';break;
@@ -1162,7 +1162,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'trailSet':{const i=adNum('trailLevel',0,TR.length-1,0)|0;if(!S.own.includes(i))S.own.push(i);S.tr=i;msg='Trail '+TR[i][0]+' equipado';break}
  case 'trailOff':S.tr=-1;msg='Trail retirada';break;
  case 'trailAll':S.own=TR.map((_,i)=>i);msg='Todas as trails desbloqueadas';break;
- case 'spawnEgg':{const b=adNum('eggBiome',0,BI.length-1,0)|0,j=adNum('eggSlot',0,7,5)|0,z=adNum('eggSize',0,4,1)|0,count=adNum('eggCount',1,20,1)|0,where=AS.eggWhere==='player'?'player':'nest';let done=0,first=null;for(let i=0;i<count;i++){const e=adminSpawnEgg(b,j,z,where,false);if(e){done++;if(!first)first=e}}if(first&&first.r>=7)rareFx([first]);msg=done+' ovos '+RAR[RS[j]]+' criados em '+BI[b].n;break}
+ case 'spawnEgg':case 'spawnEgg12':{const near=act==='spawnEgg12',b=adNum('eggBiome',0,BI.length-1,0)|0,j=adNum('eggSlot',0,7,5)|0,z=near?4:adNum('eggSize',0,4,4)|0,count=adNum('eggCount',1,20,1)|0,where=near?'player':AS.eggWhere==='player'?'player':'nest';let done=0,first=null;for(let i=0;i<count;i++){const e=adminSpawnEgg(b,j,z,where,false);if(e){done++;if(!first)first=e}}if(first&&first.r>=7)rareFx([first]);msg=done+' ovos '+RAR[RS[j]]+(near?' de 12 unidades spawnados perto de você!':' criados em '+BI[b].n);break}
  case 'spawnSecret':case 'spawnEternal':case 'spawnDivine':{const j=act==='spawnSecret'?5:act==='spawnEternal'?6:7,b=adNum('eggBiome',0,BI.length-1,0)|0,z=adNum('eggSize',0,4,1)|0,e=adminSpawnEgg(b,j,z,AS.eggWhere==='player'?'player':'nest');msg=e?`Ovo ${RAR[e.r]} spawnou em ${BI[b].n}!`:'Limite de ovos atingido';break}
  case 'regen':abuseRegrow();msg='Ninhos renovados!';break;
  case 'clearEggs':if(!confirm('Apagar todos os ovos soltos no mapa?'))return;adminClearEggs();msg='Ovos soltos removidos';break;
@@ -1199,7 +1199,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  default:throw Error('Ação desconhecida: '+act);
  }
  adFinish(msg);
- if(act==='spawnLimited'||act==='spawnLimitedBatch'){P.train=false;P.stun=0;P.vx=P.vz=0;J.x=J.y=0;toast('🔥 LIMITEDs criados na última área! Admin Abuse disponível.');}
+ if(act==='spawnLimited'||act==='spawnLimitedBatch'||act==='spawnLimitedNear'){P.train=false;P.stun=0;P.vx=P.vz=0;J.x=J.y=0;toast('🔥 LIMITEDs criados na última área! Admin Abuse disponível.');}
  }catch(e){adStatus('⚠ '+(e&&e.message?e.message:'Erro no comando'));}
 };
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
