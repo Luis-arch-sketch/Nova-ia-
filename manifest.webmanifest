@@ -4,7 +4,7 @@
   "short_name": "Roube Ovo",
   "description": "Roube ovos raros, escape dos guardiões e jogue com amigos no Roube um Ovo 3D.",
   "lang": "pt-BR",
-  "start_url": "/?instalado=1",
+  "start_url": "/?instalado=1&capa=v2",
   "scope": "/",
   "display": "standalone",
   "display_override": [
@@ -16,16 +16,16 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/icone-192.png",
+      "src": "/capa-gerada-192-v2.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icone-512.png",
+      "src": "/capa-gerada-512-v2.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "screenshots": []
