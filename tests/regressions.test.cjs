@@ -108,27 +108,19 @@ test('ao entrar não existem dezenas de ovos Rare Epic e Legendary prontos',()=>
  assert(html.includes("if(!e||e.s===LIMITED_ID)continue"));
  assert(html.includes("const chances={7:CFG.rare[7],8:CFG.rare[8],9:CFG.rare[9]}"));
 });
-test('coleta é física e o bicho persegue rápido em vez de exibir Speed insuficiente',()=>{
+test('coleta física sem popup: só o guardião responsável persegue',()=>{
  assert(html.includes("const findEgg=()=>{"));
  assert(!html.includes('const eggSpeedEnough='));
- assert(!html.includes('const lockedEggNearby='));
  assert(!html.includes('const reportMissingSpeed='));
  assert(html.includes("if(d<distance&&d<range&&e.gr>=1){distance=d;best=e}"));
- assert(!html.includes('if(!eggSpeedEnough(e))'));
- assert(html.includes('const guardianShouldRush=(i,home)=>'));
- assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
- assert(html.includes('const guardianRushSpeed=i=>Math.max(95'));
- assert(html.includes('const guardianShouldRush=(i,home)=>EGG_NIGHT.phase===\'day\'&&!P.train&&!!carry&&!A.god'));
- assert(html.includes('const rush=!frozen&&ownsEgg&&guardianShouldRush(3,g.home)'));
- assert(html.includes('const p=g.m.position,i=g.b;')); assert(html.includes('const rush=!frozen&&ownsEgg&&guardianShouldRush(i,g.home)'));
+ assert(html.includes("const ownsStolenEgg=i=>!!carry&&stolenGuardArea()===i"));
+ assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!A.god"));
+ assert(html.includes("const guardianRushSpeed=i=>Math.max(carryingRunSpeed()*1.45"));
+ assert(html.includes('const guardianChaseSpeed=i=>'));
  assert(!html.includes('guardianPushBack(g)'));
- assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);"));
  assert(!server.includes('Speed insuficiente'));
- assert(!server.includes('limitedSpeedRequired'));
- assert(html.includes("case 'speedSet':"));
  assert(html.includes("const ABUSE_NAMES="));
 });
-
 test('raridades ordenadas por chance e valor: Legendary abaixo de Secret e LIMITED como maior',()=>{
  const rates={2:.40,3:.30,4:.20,7:.10,8:.04,9:.005};
  for(let i=1,order=[2,3,4,7,8,9];i<order.length;i++)
@@ -144,55 +136,41 @@ test('raridades ordenadas por chance e valor: Legendary abaixo de Secret e LIMIT
  assert(!html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
 });
 
-test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed recomendada',()=>{
- assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
- assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
- assert(!html.includes('const guardianPushBack='));
- assert(html.includes("if(!ownsEgg&&!abuseIs('fury')){g.st='ret';g.rush=false}"));
+test('Mãos livres impede perseguição normal, mesmo em área de alta Speed',()=>{
+ assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!A.god"));
+ assert(html.includes("const ownsStolenEgg=i=>!!carry&&stolenGuardArea()===i"));
+ assert(html.includes("if(!ownsEgg&&(!!carry||!abuseIs('fury')))"));
  assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
- assert(html.includes("if(rush&&g.st!=='chase'){g.st='chase';g.t=0}"));
- assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);"));
  assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
  assert(html.includes("if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}"));
- assert(html.includes("const findEgg=()=>{"));
+ assert(!html.includes('const guardianPushBack='));
 });
-
-test('vídeo: Selva com trail 2.5x usa Speed efetiva acima de 40K',()=>{
+test('trail aumenta a Speed efetiva da Selva e a corrida usa o peso real do ovo',()=>{
  assert(html.includes("const eff=()=>S.sp*(S.tr>=0?TR[S.tr][1]:1)"));
- assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
  assert(html.includes("Number.isFinite(eff())&&eff()<=BI[i].req"));
  assert(html.includes("['Blue',2.5,2e6,0x2196f3]"));
  assert(20100*2.5>40000);
+ assert(html.includes("const carryingRunSpeed=()=>{"));
+ assert(html.includes("const rawSp=carryingRunSpeed();"));
+ assert(html.includes("const speed=guardianChaseSpeed(3);"));
  assert(html.includes("P.stun=.6;"));
- assert(html.includes("P.x=Math.max(-99,Math.min(99,P.x+dx/d*5));"));
  assert(html.includes("else aim(g,g.home.x,g.home.z,36,dt)"));
- assert(html.includes("g.l.set(carry&&g.st==='chase'"));
  assert(html.includes("toast('O guardião recuperou o ovo. Você está de mãos livres!')"));
 });
-
-test('bichos seguem o ovo roubado ATÉ O DEPÓSITO na base, sem corte -14 ou 95 metros',()=>{
+test('mob da parte de trás segue quem roubou até a base e volta após o depósito',()=>{
  assert(html.includes('const guardPath=(p,x,z)=>{'));
- assert(html.includes('if(z>-10&&p.z<-6)'));
  assert(html.includes('return [0,-4]'));
- assert(html.includes('if(z<-10&&p.z>-14)'));
  assert(html.includes('return [0,-16]'));
- assert(html.includes('const aim=(g,x,z,s,dt)=>{'));
- assert(html.includes('partBorderCollision(p,oldZ,oldX)'));
  assert(!html.includes("p.z=Math.min(p.z,-14)"));
  assert(!html.includes('dist>95||frozen'));
  assert(!html.includes('Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash'));
  assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
- assert(html.includes("const speed=g.rush?guardianRushSpeed(3)"));
+ assert(html.includes("const speed=guardianChaseSpeed(3);"));
  assert(html.includes("aim(g,P.x,P.z,speed,dt)"));
- assert(html.includes("else aim(g,g.home.x,g.home.z,36,dt)"));
- assert(html.includes("if(rush)g.rush=true"));
- assert(html.includes("g.rush?guardianRushSpeed(i):gs(i)"));
+ assert(html.includes("ownsEgg?guardianChaseSpeed(i):gs(i)"));
  assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
- assert(html.includes("if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}"));
  assert(html.includes("if(carry&&near(0,-4,3.6))"));
- assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
 });
-
 test('apenas a base tem cerca original, física e permanente dia/noite',()=>{
  assert(html.includes("const PART_BORDERS=BI.map((b,i)=>gz(i));"));
  assert(!html.includes("mk(GB,c,[89,2.7,1.1]"));
@@ -222,27 +200,26 @@ test('cronômetros 9s + 3s: paredes brancas só nas áreas, base com cerca origi
  assert(html.includes("if(EGG_NIGHT.phase!=='day')return null"));
 });
 
-test('limite entre 2 partes: só o bicho da parte atrás protege o ovo',()=>{
+test('no meio entre duas partes só o mob de trás pode derrubar o ovo',()=>{
  assert(html.includes('const guardAreaAtZ=z=>z>-30?-1:Math.min(BI.length-1,Math.max(0,Math.floor((-30-z)/70)))'));
  assert(html.includes('const stolenGuardArea=()=>carry?.guardArea??-1'));
  assert(html.includes('e.guardArea=guardAreaOfEgg(e)'));
- assert(html.includes('if(e.guardArea===3&&raccoonGuard)'));
- assert(html.includes('const g=GD[e.guardArea]'));
- assert(html.includes('&&stolenGuardArea()===i'));
- assert(html.includes('const ownsEgg=!!carry&&stolenGuardArea()===i;'));
- assert(html.includes('if(!ownsEgg&&!abuseIs(\'fury\')){'));
+ assert(html.includes("const owner=e.guardArea===3?raccoonGuard:GD[e.guardArea]"));
+ assert(html.includes("if(owner){owner.st='chase';owner.t=0;owner.rush=eff()<=BI[e.guardArea].req}"));
+ assert(html.includes("const ownsStolenEgg=i=>!!carry&&stolenGuardArea()===i"));
+ assert(html.includes('const ownsEgg=ownsStolenEgg(i);'));
+ assert(html.includes("if(!ownsEgg&&(!!carry||!abuseIs('fury')))"));
+ assert(html.includes("if(ownsEgg)hit(g);"));
  assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
- assert(html.includes("if(g.st==='chase'||g.st==='wake')g.st='ret';"));
- assert(!html.includes('else{const bi=cb();if(bi>=0)'));
 });
-test('guaxinim da parte 4 existe e persegue o ladrão, mas respeita ovos das outras áreas',()=>{
+test('guaxinim da parte 4 persegue imediatamente sem ultrapassar quem tem 200K',()=>{
  assert(html.includes("let raccoonGuard=null;"));
  assert(html.includes('window.RoubeOvoVisuals?.create?.(T,4,0.83,0x89847c,sc)'));
  assert(html.includes("||creature(new T.Color(0x89847c),2.4)"));
- assert(html.includes("const ownsEgg=!!carry&&stolenGuardArea()===3;"));
- assert(html.includes("if(ownsEgg&&!frozen&&g.st==='guard'){g.st='wake';g.t=Math.min(CFG.wake,.45)}"));
- assert(html.includes('const speed=g.rush?guardianRushSpeed(3):Math.max(38,gs(3)*1.7)*abuseMoveMult();'));
- assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
+ assert(html.includes("const ownsEgg=ownsStolenEgg(3);"));
+ assert(html.includes("if(owner){owner.st='chase';owner.t=0;owner.rush=eff()<=BI[e.guardArea].req}"));
+ assert(html.includes("const speed=guardianChaseSpeed(3);"));
+ assert(!html.includes("Math.max(38,gs(3)*1.7)"));
  assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g)"));
  assert(!html.includes("dist>95||frozen"));
 });
@@ -255,4 +232,18 @@ test('só a cerca original da base fica permanente, sem parede branca na base',(
  assert(html.includes('GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})'));
  assert(html.includes('EGG_NIGHT.until=now+9000'));
  assert(html.includes('EGG_NIGHT.until+=3000'));
+});
+
+test('com 200 mil de Speed o guaxinim sempre perde a corrida na Selva',()=>{
+ assert(html.includes("const guardianChaseSpeed=i=>eff()<=BI[i].req"));
+ assert(html.includes("Math.max(1,Math.min(gs(i),carryingRunSpeed()*.72))"));
+ assert(!html.includes("Math.max(95,walk(BI[i].req)*3.5"));
+ for(const trail of [1,1.5,2.5,4,14]){
+  for(const weight of [0,2,10,40,100]){
+   const e=2e5*trail,walk=x=>Math.min(70,8+3.2*Math.log10(1+x));
+   const player=walk(e)/(1+.025*weight);
+   const guardian=Math.max(1,Math.min(walk(40000)*.9,player*.72));
+   assert(player>guardian,'Jogador de 200 mil deve fugir até carregando ovo pesado');
+  }
+ }
 });
