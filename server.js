@@ -2,9 +2,6 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const PORT=Number(process.env.PORT||3000),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map(),roomLimitedEggs=new Map();
-// Mesmos valores recomendados que as 13 regiões no jogo, para validação de LIMITED.
-const AREA_SPEED=[0,900,1e4,4e4,1.7e5,7e5,2.5e6,1.8e7,7e8,2.5e9,7e9,2e10,5e10];
-const limitedSpeedRequired=z=>z>-30?0:AREA_SPEED[Math.max(0,Math.min(12,Math.floor((-30-z)/70)))];
 let serverSequence=1;
 const send=(ws,o)=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(o));};
 const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,admin:ws.admin});
@@ -103,14 +100,14 @@ const httpServer=http.createServer((req,res)=>{
  res.writeHead(404).end('Not found');
 });
 const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:4096});
-wss.on('connection',ws=>{ws.id=crypto.randomUUID().slice(0,8);ws.room=null;ws.admin=false;ws.heldLimited=null;ws.name='';ws.x=0;ws.y=0;ws.z=8;ws.yaw=0;ws.speed=0;ws.lastMove=0;ws.failedAdminCount=0;
+wss.on('connection',ws=>{ws.id=crypto.randomUUID().slice(0,8);ws.room=null;ws.admin=false;ws.heldLimited=null;ws.name='';ws.x=0;ws.y=0;ws.z=8;ws.yaw=0;ws.lastMove=0;ws.failedAdminCount=0;
 ws.on('message',raw=>{let m;try{m=JSON.parse(String(raw));if(!m||typeof m!=='object')return}catch{return}
 if(m.type==='join'||m.type==='quick-join'||m.type==='create-server'){
 const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?openPublicRoom():String(m.room||'').toUpperCase();
 const name=String(m.name||'').trim();
 if(!/^[A-Z0-9-]{3,12}$/.test(room)||name.length<2||name.length>20||/^admin$/i.test(name)){error(ws,'Nome ou código de sala inválido');return}
 leave(ws);if(peers(room).size>=MAX_ROOM){error(ws,'Sala cheia: máximo 16 jogadores');return}
-ws.room=room;ws.name=name;ws.admin=false;ws.x=0;ws.y=0;ws.z=8;ws.speed=0;
+ws.room=room;ws.name=name;ws.admin=false;ws.x=0;ws.y=0;ws.z=8;
 if(!rooms.has(room)){rooms.set(room,new Set());roomLimitedEggs.set(room,[])}rooms.get(room).add(ws);
 send(ws,{type:'joined',id:ws.id,room,players:[...peers(room)].map(publicUser),limitedEggs:roomLimitedEggs.get(room)||[]});broadcastPresence(room);return}
 if(!ws.room)return;
@@ -121,10 +118,6 @@ if(m.type==='limited-take'){
  if(ws.heldLimited||!Number.isFinite(m.x)||!Number.isFinite(m.z)){resync();return}
  const idx=eggs.findIndex(p=>Math.hypot(p.x-m.x,p.z-m.z)<1.1);
  if(idx<0||Math.hypot(ws.x-m.x,ws.z-m.z)>11){resync();return}
-  const required=limitedSpeedRequired(eggs[idx].z);
-  if(!(Number.isFinite(ws.speed)&&ws.speed>required)){
-   resync();error(ws,'🔒 Speed insuficiente: precisa ser maior que '+required+' para pegar este ovo.');return;
-  }
  const [egg]=eggs.splice(idx,1);
  ws.heldLimited=egg;
  broadcast(ws.room,{type:'event',kind:'limited-take',egg},ws);return;
@@ -137,7 +130,6 @@ if(m.type==='limited-drop'){
 }
 if(m.type==='move'){const now=Date.now();if(now-ws.lastMove<45)return;ws.lastMove=now;
 ws.x=bound(m.x,-99,99);ws.y=bound(m.y,-1,50);ws.z=bound(m.z,-945,50);ws.yaw=bound(m.yaw,-100,100);
- ws.speed=Number.isFinite(m.speed)&&m.speed>=0?m.speed:0;
 broadcast(ws.room,{type:'players',players:[...peers(ws.room)].map(publicUser)},ws);return}
 if(m.type==='admin-auth'){if(!ADMIN_HASH){error(ws,'ADMIN_PASSWORD_HASH ausente no servidor');return}
 const pw=String(m.password||'').slice(0,256),hash=crypto.createHash('sha256').update(pw).digest('hex');
