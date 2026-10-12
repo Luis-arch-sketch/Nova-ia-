@@ -247,3 +247,24 @@ test('com 200 mil de Speed o guaxinim sempre perde a corrida na Selva',()=>{
   }
  }
 });
+
+
+test('guaxinim é mais lento que jogador de 200K até com joystick parcial no Android',()=>{
+ assert(html.includes("const raccoonFairSpeed=i=>{"));
+ assert(html.includes("if(intent<=.01)return baseline;"));
+ assert(html.includes("target*.40"));
+ assert(html.includes("actual*.70"));
+ assert(html.includes("i===3&&eff()>=100000"));
+ assert(html.includes("return l>1||(jp!==null&&l>.22)?[x/l,y/l]:[x,y]"));
+ const walk=s=>Math.min(70,8+3.2*Math.log10(1+s));
+ for(const weight of [0,2,10,40,100]){
+  for(const thumb of [.02,.1,.23,.5,1]){
+   const input=thumb>.22?1:thumb;
+   const max=walk(200000)/(1+.025*weight),player=max*input;
+   const baseline=walk(40000)*.9*.65;
+   // Simula a corrida estabilizada: é um teto; a aceleração reduz ainda mais o MOB.
+   const guardian=Math.max(.04,Math.min(baseline,player*.40,Math.max(.04,player*.70)));
+   assert(player>guardian,'Com 200K e joystick em movimento o jogador deve escapar');
+  }
+ }
+});
