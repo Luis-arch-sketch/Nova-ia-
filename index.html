@@ -101,13 +101,17 @@ button:disabled{opacity:.5}
 @media(max-width:450px){#top{right:4px;gap:3px}#top button{font-size:10px;padding:7px 5px}#hud{max-width:59vw;font-size:11px}}
 
 #roomButton{background:#ad53de;color:white;font-weight:900}
+#eggNightClock{display:none;position:fixed;z-index:47;left:50%;top:27%;transform:translate(-50%,-50%);width:min(83vw,340px);pointer-events:none;text-align:center;box-sizing:border-box;padding:11px 16px;background:#fffffff2;color:#16243c;border:3px solid #dbe9ff;border-radius:17px;box-shadow:0 5px 30px #0008,0 0 28px #fff9}
+#eggNightClock strong{display:block;font-size:clamp(26px,9vw,48px);line-height:1.08;color:#253963;font-variant-numeric:tabular-nums}
+#eggNightClock span{display:block;font-weight:850;font-size:clamp(12px,3.3vw,16px)}
+#eggNightClock small{display:block;font-size:11px;color:#395176;margin-top:5px}
 #recoverBtn{position:fixed;left:calc(8px + env(safe-area-inset-left,0px));top:calc(180px + env(safe-area-inset-top,0px));z-index:44;background:#244f80;color:#fff;border:1px solid #a9d9ff;font-size:12px;padding:8px 10px;opacity:.9}
 #roomPanel{display:none;position:fixed;z-index:85;inset:7% 5%;background:#12203bed;color:#fff;border:2px solid #dd91fc;border-radius:18px;box-shadow:0 12px 40px #0009;padding:16px;box-sizing:border-box;overflow-y:auto;touch-action:pan-y}
 #roomPanel h2{color:#ff9bdd;margin:4px 0 10px}#roomPanel input{padding:12px;font-size:17px;max-width:100%;width:100%;box-sizing:border-box;color:white;background:#1c3557;border:1px solid #a3bee5;border-radius:8px}
 #roomPanel button{margin:6px 5px 4px 0}#roomStatus{font-size:13px;color:#cfe3ff;white-space:pre-line}#roomPlayerList{font-size:13px;color:#ffe7ff}
 .k3,.k4,.k5,.k6,.k10{color:#fff;background:rgba(14,32,40,.9);text-shadow:0 1px 4px #0008}.k3 b{color:#c89bff}.k4 b{color:#ffda62}.k5 b{color:#ff83dc}.k6 b{color:#8cffff}.k10 b{color:#ffac45}
 </style></head><body>
-<canvas id=c></canvas><div id=hud></div>
+<canvas id=c></canvas><div id=hud></div><div id="eggNightClock" role="status" aria-live="off"><span id="eggNightTitle">🌙 RENOVAÇÃO DOS OVOS</span><strong id="eggNightTime">9s</strong><small id="eggNightHelp">Ovos protegidos • Crescimento 30×</small></div>
 <div id=top><button id=bam>⚙ Admin</button><button id=bRank>🏆 Placar</button><button id=roomButton>🌍 Salas</button><button id=bm>Loja</button><button id=bf>Tela cheia</button></div>
 <div id=js></div><div id=jk></div><button class=b id=bj>Pular</button><button class=b id=ba>Ação</button><button id=recoverBtn type=button title="Recuperar movimento sem apagar o progresso">🛠 Destravar</button>
 <div id="roomPanel"><button id="roomClose" style="float:right">✕</button><h2>🌍 Multiplayer por salas</h2><p>Entre na mesma sala que seus amigos para vê-los no mapa. Somente o ADMIN pode transmitir eventos.</p><label>Nome de jogador (2–20 caracteres)</label><input id="roomName" maxlength="20" placeholder="Seu nome" autocomplete="off"><label>Código da sala (3–12 caracteres)</label><input id="roomCode" maxlength="12" placeholder="EX.: OVOS123" autocomplete="off"><button id="roomJoin">🚪 Entrar / criar sala</button><button id="roomLeave">Sair da sala</button><div id="roomStatus" aria-live="polite">Desconectado</div><h3>👥 Jogadores</h3><div id="roomPlayerList">—</div><small>Cada entrada abre uma sala nova. Ovos LIMITED são exclusivos da sala, invocados pelo ADMIN; os outros ovos, pets e dinheiro continuam individuais. Para jogar com amigos, compartilhe o código da sala.</small><hr style="border:0;border-top:1px solid #87a9d766;margin:17px 0 12px"><h3 style="color:#ffb6ee">💾 Meu progresso</h3><p style="font-size:13px;color:#d6e6ff">O jogo salva neste navegador. Para trocar de endereço ou aparelho, exporte um backup e restaure no novo jogo.</p><div id="saveState" aria-live="polite" style="font-size:13px;padding:8px;background:#243a5a;border-radius:9px;color:#eaf5ff">Verificando salvamento…</div><button id="saveNowBtn" type="button">💾 Salvar agora</button><button id="saveBackupBtn" type="button">📦 Baixar backup</button><button id="restoreBackupBtn" type="button">📥 Restaurar backup</button><input id="restoreBackupFile" type="file" accept=".json,application/json" style="display:none"><p style="font-size:12px;color:#bcd6ff">Para recuperar um progresso do endereço antigo, abra o jogo antigo no mesmo navegador, entre em <strong>Admin → Dados → Exportar backup</strong>, depois use “Restaurar backup” aqui. Guarde o arquivo com cuidado.</p></div><div id=pn></div><div id=ms></div><div id=an></div><div id="abBanner" aria-live="polite"><strong id="abTitle"></strong><span id="abClock"></span></div><div id="abMessage" aria-live="assertive"><span class="broadcastBadge">👑 MENSAGEM DO ADMIN</span><div class="broadcastText" id="abMessageText"></div><div class="broadcastProgress"><span id="abMessageBar"></span></div></div><div id="rankOverlay"><div id="rankCard" role="dialog" aria-modal="true" aria-label="Placar de jogadores"><div class="rankHeader"><strong>🏆 MELHORES JOGADORES</strong><button id="rankClose" type="button">✕ Fechar</button></div><p>Ranking local de jogadores registrados • Administrador oculto</p><div id="rankList"></div><small>Este jogo é local. Para um placar online entre dispositivos, será necessário um servidor.</small></div></div><div id="adWrap" role="dialog" aria-modal="true" aria-label="Painel de administrador"><div id="adPanel" class="locked"><div id="adTop"><div><h2>⚙ Painel Admin</h2><small>Roube um Ovo 3D • Acesso com chave</small></div><button id="adClose" aria-label="Fechar painel">✕ Fechar</button></div><div id="adAuth"><form id="adLogin" autocomplete="off"><div class="adLockIcon" aria-hidden="true">🔐</div><h3>Área do Administrador</h3><p>Digite sua chave especial para liberar os comandos do jogo.</p><label for="adKey">Chave de acesso</label><input id="adKey" name="adminKey" type="password" placeholder="Sua chave especial" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required><button id="adEnter" type="submit">🔓 Desbloquear painel</button><div id="adAuthError" role="status" aria-live="polite"></div></form></div><div id="adTabs"></div><div id="adContent"></div></div></div>
@@ -269,9 +273,9 @@ const PART_BORDERS=BI.map((b,i)=>{
  return z;
 });
 // Portões de todas as 13 partes, um por região.
-const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xff3344,transparent:true,opacity:.28}),[204,10,.4],sc,[0,5,z]);sc.remove(bar);
+const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,depthWrite:true,side:T.DoubleSide}),[19.5,10.5,.8],sc,[0,5.25,z]);bar.visible=false;
  mk(GB,0x6b4a2a,[1.2,12,1.2],sc,[-10,6,z]);mk(GB,0x6b4a2a,[1.2,12,1.2],sc,[10,6,z]);mk(GB,0x6b4a2a,[22,1.2,1.2],sc,[0,11.5,z]);
- const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);return{z,bar,l,b,req:b.req}});
+ const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);const timer=label('',512,128,15);timer.position.set(0,5.35,z+.72);timer.visible=false;sc.add(timer);return{z,bar,timer,l,b,req:b.req}});
 let zlim=-938;
 const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=-938}; // todas as áreas liberadas: o número da placa é só recomendação
 /* ===== Ninhos, ovos, guardiões ===== */
@@ -293,7 +297,7 @@ if(window.RoubeOvoVisuals?.create){
  }
 }
 
-const newEgg=(b,j)=>{const z=pick(SZ);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
+const newEgg=(b,j)=>{let z=pick(SZ);if(EGG_NIGHT.phase==='night'&&Math.random()<.32)z=Math.min(SZ.length-1,z+1);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
 const eggMesh=e=>{const limited=e.s===LIMITED_ID,c=limited?new T.Color(0xff410c):new T.Color().setHSL((e.s*37%360)/360,.65,.62),m=new T.Mesh(GS,new T.MeshLambertMaterial({color:c,emissive:limited?0xff7e17:c.clone().multiplyScalar(e.j>=5?.45:0),emissiveIntensity:limited?.75:1}));m.castShadow=true;m.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited?3.8:1));sc.add(m);return m};
 const regrow=first=>{const nw=[],sp=n=>{if(REMOVED_BIRDS.has(n.b*8+n.j))return null;const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw)};
 const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.3,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return new T.CanvasTexture(c)})();
@@ -382,7 +386,7 @@ let carry=null;
 const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(dx,dz),m=b.r+r;if(d<m&&d>1e-4){o.x=b.x+dx/d*m;o.z=b.z+dz/d*m}}};
 // Colisão nas divisórias: cada parte só pode ser atravessada pelo portão central.
 const partBorderCollision=(player,previousZ)=>{
- if(Math.abs(player.x)<10)return;
+ if(Math.abs(player.x)<10&&EGG_NIGHT.phase==='day')return;
  for(const z of PART_BORDERS){
   if((previousZ-z)*(player.z-z)<=0){
    player.z=previousZ>=z?z+1.25:z-1.25;
@@ -391,8 +395,9 @@ const partBorderCollision=(player,previousZ)=>{
  }
 };
 const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
-const findEgg=()=>{let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
+const findEgg=()=>{if(EGG_NIGHT.phase!=='day')return null;let b=null,d=7;for(const e of eggs){const dd=Math.hypot(P.x-e.mesh.position.x,P.z-e.mesh.position.z),range=e.s===LIMITED_ID?7:4;if(dd<d&&dd<range&&e.gr>=1){d=dd;b=e}}return b};
 const take=e=>{
+ if(EGG_NIGHT.phase!=='day'){toast('🔒 Aguarde renovar os ovos e liberar as áreas!');return;}
  if(e.s===LIMITED_ID&&MP.connected)mpSend({type:'limited-take',x:e.mesh.position.x,z:e.mesh.position.z});
  eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
  // A PARTE 4 é protegida exclusivamente pelo guaxinim, em todos os oito ninhos.
@@ -401,7 +406,7 @@ const take=e=>{
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID){persistLimitedWorld();if(MP.connected)mpSend({type:'limited-drop',x:e.mesh.position.x,z:e.mesh.position.z})}beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
-const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
+const doAct=()=>{if(carry){drop();return}if(P.train){P.train=false;return}if(EGG_NIGHT.phase!=='day'){toast('🌙 Ovos bloqueados até abrir os portões!');return;}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
 const dep=k=>{const e=carry;carry=null;P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
@@ -461,6 +466,68 @@ const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.
 const TP=[];for(let k=0;k<28;k++){const m=new T.Mesh(GS,new T.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false}));m.visible=false;m.life=0;sc.add(m);TP.push(m)}
 /* ===== Loop ===== */
 let TT=0,nextReset=Date.now()/1e3+CFG.reset,nite=0,sec=0,hq=0,sv=0,tpI=0,tpT=0,lt=performance.now(),fa=0,fn=0;
+
+/* Noite automática de 9 s, seguida de 3 s de espera para abrir as áreas.
+   LIMITED, ovos já roubados, incubadoras e pets ficam preservados. */
+const EGG_NIGHT={phase:'day',until:0,last:'',cycles:0,renewed:0};
+const eggNightLocked=()=>EGG_NIGHT.phase!=='day';
+const refreshEggNightUI=(now=Date.now())=>{
+ const locked=eggNightLocked(),overlay=$('eggNightClock');
+ overlay.style.display=locked?'block':'none';
+ if(!locked){
+  if(EGG_NIGHT.last!=='day'){GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false});EGG_NIGHT.last='day';}
+  return;
+ }
+ const remaining=Math.max(0,Math.ceil((EGG_NIGHT.until-now)/1000)),night=EGG_NIGHT.phase==='night';
+ const text=(night?'🌙 ':'☀️ ')+remaining+'s',signature=EGG_NIGHT.phase+':'+remaining;
+ if(signature===EGG_NIGHT.last)return;
+ EGG_NIGHT.last=signature;
+ $('eggNightTitle').textContent=night?'🌙 NOITE • OVOS RENOVANDO':'☀️ AMANHECEU • PORTÕES TRANCADOS';
+ $('eggNightTime').textContent=remaining+'s';
+ $('eggNightHelp').textContent=night?'Ovos protegidos • Crescimento 30×':'Áreas liberadas em 3 segundos';
+ GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)});
+};
+const renewNestEggs=()=>{
+ let removed=0;
+ for(const n of NS){
+  const e=n.e;if(!e||e.s===LIMITED_ID)continue;
+  if(e.aura){sc.remove(e.aura);e.aura=null;}
+  if(e.mesh)sc.remove(e.mesh);
+  const ix=eggs.indexOf(e);if(ix>=0)eggs.splice(ix,1);
+  e.nest=null;n.e=null;removed++;
+ }
+ const chances={7:CFG.rare[7],8:CFG.rare[8],9:CFG.rare[9]};
+ try{
+  // Os raros podem vir melhores, porém continuam sendo sorte.
+  for(const r of [7,8,9])CFG.rare[r]=Math.min(1,chances[r]*1.4);
+  abuseRegrow();
+ }finally{for(const r of [7,8,9])CFG.rare[r]=chances[r]}
+ EGG_NIGHT.renewed=removed;
+ return removed;
+};
+const startEggNight=(now=Date.now())=>{
+ if(eggNightLocked())return false;
+ EGG_NIGHT.phase='night';EGG_NIGHT.until=now+9000;EGG_NIGHT.last='';
+ EGG_NIGHT.cycles++;renewNestEggs();
+ nite=1;refreshEggNightUI(now);
+ toast('🌙 NOITE! 9 segundos até amanhecer. Crescimento dos ovos 30×!');
+ beep(260,.36,'sine',.052);return true;
+};
+const updateEggNight=(now=Date.now())=>{
+ if(EGG_NIGHT.phase==='night'&&now>=EGG_NIGHT.until){
+  EGG_NIGHT.phase='unlock';EGG_NIGHT.until+=3000;EGG_NIGHT.last='';
+  toast('☀️ AMANHECEU! 3 segundos até desbloquear as 13 áreas!');
+  beep(660,.25,'triangle',.065);
+ }
+ if(EGG_NIGHT.phase==='unlock'&&now>=EGG_NIGHT.until){
+  EGG_NIGHT.phase='day';EGG_NIGHT.until=0;EGG_NIGHT.last='';
+  nextReset=now/1000+CFG.reset;
+  toast('✅ As 13 áreas foram liberadas! Pegue os novos ovos!');
+  beep(880,.28,'triangle',.07);
+ }
+ refreshEggNightUI(now);
+};
+
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
