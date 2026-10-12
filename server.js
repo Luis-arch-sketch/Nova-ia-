@@ -41,16 +41,8 @@ const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r);
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):0};
 const sameHex=(a,b)=>{try{const x=Buffer.from(a,'hex'),y=Buffer.from(b,'hex');return x.length===32&&y.length===32&&crypto.timingSafeEqual(x,y)}catch{return false}};
 const error=(ws,message)=>send(ws,{type:'error',message});
-// Esteira do ADMIN com renda fixa de Speed/s; sem alterar o arquivo fonte original.
-const applyOwnerTreadmill=html=>{
- const rules=[["const TM=[","const TREADMILL_RATE_TEXT='100000000000000000000000000000000000000000000000000000000000000000000000000000';const TREADMILL_RATE=Number(TREADMILL_RATE_TEXT);\nconst TM=["],["if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}","if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=(ownerVerified?TREADMILL_RATE:TM[S.tm][1]*CFG.train*abuseTrainMult())*dt}"],["TMO.lab.set('Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])","TMO.lab.set(ownerVerified?'⚡ Minha esteira: +'+fm(TREADMILL_RATE)+' Speed/s':'Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])"],["ownerVerified=true;adminBadge.visible=true;try{","ownerVerified=true;adminBadge.visible=true;styleTM();try{"]];
- for(const [from,to] of rules){
-  if(html.split(from).length!==2)throw new Error('Marcador da esteira ausente ou duplicado: '+from.slice(0,55));
-  html=html.replace(from,to);
- }
- return html;
-};
-// Script pequeno servido junto ao jogo, preservando a esteira 100Qav/s e saves.
+// Treino usa a mesma esteira para ADMIN e jogadores comuns.
+// O servidor preserva salas, ADMIN Abuse e saves com a esteira normal.
 const installServerBrowser=html=>{
  const rules=[["const mpJoin=()=>{","const mpJoin=(mode='join')=>{"],["if(name.length<2||room.length<3)","if(name.length<2||(mode==='join'&&room.length<3))"],["ws.onopen=()=>mpSend({type:'join',room,name});","ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name})};"],["$('roomJoin').onclick=mpJoin;","$('roomJoin').onclick=()=>mpJoin('join');"],["if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);MP.connected=true;","if(msg.type==='joined'){syncRoomLimitedEggs(msg.limitedEggs||[]);$('roomCode').value=msg.room;try{localStorage.setItem('rue3d_mp_room',msg.room)}catch(e){}MP.connected=true;"]];
  for(const [from,to] of rules){
@@ -77,7 +69,7 @@ const applyGraphicUpgrade=html=>{
  // GLTFLoader roda dentro do jogo; dependência remota extra removida.
  return html.replace('<script>\n','<script>\n'+loaderSource+'\nconst RACCOON_SOURCE_JSON='+JSON.stringify(raccoonSource)+';\n'+animalsSource+'\n</script>\n<script>\n');
 };
-const gameHtml=installServerBrowser(applyGraphicUpgrade(applyOwnerTreadmill(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))));
+const gameHtml=installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')));
 const httpServer=http.createServer((req,res)=>{
  let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}
  if(req.method!=='GET'){res.writeHead(405).end('Method not allowed');return}

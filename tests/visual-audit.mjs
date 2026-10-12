@@ -77,6 +77,23 @@ try{
   assert(state.webgl,'WebGL context created');
   assert(state.renderer?.calls>0,'Three.js must render at least one call');
   assert.equal(errors.length,0,'Game JavaScript runtime errors: '+JSON.stringify(errors));
+
+  // ADMIN confirmado ganha Speed pela fórmula da esteira comum.
+  const trainCheck=await page.evaluate(()=>{
+   const backup={sp:S.sp,tm:S.tm,train:P.train,verified:ownerVerified,cfg:CFG.train,x:P.x,z:P.z,vx:P.vx,vz:P.vz,stun:P.stun};
+   try{
+    S.sp=100;S.tm=0;P.train=true;P.stun=0;CFG.train=1;ownerVerified=true;
+    const old=S.sp;step(.05);
+    return {actual:S.sp-old,expected:TM[0][1]*.05};
+   }finally{
+    S.sp=backup.sp;S.tm=backup.tm;P.train=backup.train;P.stun=backup.stun;
+    ownerVerified=backup.verified;CFG.train=backup.cfg;
+    P.x=backup.x;P.z=backup.z;P.vx=backup.vx;P.vz=backup.vz;styleTM();
+   }
+  });
+  assert(Math.abs(trainCheck.actual-trainCheck.expected)<.001,'Treino do ADMIN igual ao dos demais: '+JSON.stringify(trainCheck));
+  console.log(mode.toUpperCase()+' ESTEIRA NORMAL '+JSON.stringify(trainCheck));
+
   if(mobile){
     // Toque Android de verdade pelo protocolo Chromium, usando o joystick existente.
     const session=await context.newCDPSession(page);

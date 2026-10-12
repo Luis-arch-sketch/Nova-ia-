@@ -43,5 +43,21 @@ test('retirar LIMITED inválido sincroniza e limpar apaga os carregados',()=>{
 });
 test('salas, guardião, esteira e Admin Abuse preservados',()=>{
  assert(html.includes('adminSpawnLimited'));assert(html.includes('const ABUSE_NAMES='));
- assert(server.includes('TREADMILL_RATE_TEXT'));assert(server.includes('installServerBrowser'));
+ assert(server.includes('installServerBrowser'));assert(!server.includes('TREADMILL_RATE'));
+});
+
+test('esteira normal para ADMIN, poderes sempre opcionais',()=>{
+ assert(!server.includes('applyOwnerTreadmill'));
+ assert(!server.includes('TREADMILL_RATE_TEXT'));
+ assert(!server.includes('ownerVerified?TREADMILL_RATE'));
+ assert(server.includes("const gameHtml=installServerBrowser(applyGraphicUpgrade(fs.readFileSync("));
+ assert(html.includes('S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt'));
+ assert(html.includes("TMO.lab.set('Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])"));
+ assert(html.includes('Sua esteira normal:'));
+ assert(html.includes("adBtn('playNormal','👤 Jogar normalmente'"));
+ assert(html.includes("case 'playNormal':"));
+ assert(html.includes('ADMIN e Admin Abuse continuam disponíveis'));
+ assert(html.includes("adBtn('spawnLimitedBatch'"));
+ assert(html.includes("case 'speedSet':"));
+ assert(html.includes("case 'moneySet':"));
 });

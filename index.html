@@ -405,7 +405,7 @@ let open=false,tab=0;
 const TB=['Esteira','Base','Trails','Pets','Index'],bt=(a,t,d)=>'<button data-a="'+a+'"'+(d?' disabled':'')+'>'+t+'</button>';
 const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p.scrollTop;
  let h='<div style="display:flex;gap:4px;flex-wrap:wrap">'+TB.map((t,i)=>bt('T'+i,t,i===tab)).join('')+bt('x','Fechar')+'</div><p>Dinheiro: <b>$'+moneyView()+'</b> &nbsp; Renda: <b>$'+incomeView()+'/s</b></p>';
- if(tab===0){const n=TM[S.tm],x=TM[S.tm+1];h+='<p>Sua esteira (única e só sua): <b>'+n[0]+' x'+n[1]+'</b>. O multiplicador aumenta o ganho de treino por segundo, não a velocidade de corrida.</p>'+(x?'<div class=r><span>'+x[0]+' x'+x[1]+' por $'+fm(x[2])+'</span>'+bt('tm','Melhorar',S.$<x[2])+'</div>':'<p>Nível máximo.</p>')}
+ if(tab===0){const n=TM[S.tm],x=TM[S.tm+1];h+='<p>Sua esteira normal: <b>'+n[0]+' x'+n[1]+'</b>. Melhore-a com dinheiro, como qualquer jogador. O ADMIN Abuse continua disponível quando você quiser.</p>'+(x?'<div class=r><span>'+x[0]+' x'+x[1]+' por $'+fm(x[2])+'</span>'+bt('tm','Melhorar',S.$<x[2])+'</div>':'<p>Nível máximo.</p>')}
  if(tab===1){const c=BC[S.bl+1];h+='<p>Base nível '+S.bl+': '+AP.length+' de '+CAP[S.bl]+' pets ativos, '+(S.pets.length-AP.length)+' guardados (ficam ativos os de maior renda).</p>'+(c!=null?'<div class=r><span>Nível '+(S.bl+1)+': '+CAP[S.bl+1]+' pets por $'+fm(c)+'</span>'+bt('up','Melhorar',S.$<c)+'</div>':'<p>Nível máximo.</p>')}
  if(tab===2)h+='<p>Equipada: '+(S.tr<0?'nenhuma':TR[S.tr][0]+' x'+TR[S.tr][1])+'. Só uma por vez; multiplica sua Speed efetiva.</p>'+TR.map((t,i)=>{const o=S.own.includes(i);return'<div class=r><span>'+t[0]+' x'+t[1]+(o?'':' por $'+fm(t[2]))+'</span>'+(o?(S.tr===i?bt('un','Tirar'):bt('e'+i,'Equipar')):bt('b'+i,'Comprar',S.$<t[2]))+'</div>'}).join('');
  if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
@@ -726,8 +726,9 @@ const adminUI=(resetScroll=false)=>{
  tabs.innerHTML=adminTabs.map((t,i)=>`<button type="button" data-tab="${i}" class="${adminTab===i?'active':''}">${t}</button>`).join('');
  let h='';
  if(adminTab===0){
- h='<h3>📊 Gestão do jogador</h3><p>Valores abaixo mudam imediatamente o jogo e ficam salvos neste navegador.</p>';
- h+='<div class="adGrid">'+adCard('💰 Dinheiro atual',`<div class="adStat">$${moneyView()}</div>${adField('cash','Valor a definir / adicionar')}<div id="adCashPreview" class="adHint">O valor digitado é independente do saldo total; seus pets continuam gerando dinheiro.</div><div class="adControls">${adBtn('moneySet','Definir')}${adBtn('moneyAdd','Adicionar')}${adBtn('moneyMillion','+ 1 milhão','secondary')}${adBtn('moneyBillion','+ 1 bilhão','secondary')}${adBtn('moneyZero','Zerar','danger')}</div>`);
+ h='<h3>📊 Gestão do jogador</h3><p>🎮 Sua esteira funciona como a de qualquer jogador. Use Admin Abuse e melhorias somente quando desejar.</p>';
+ h+='<div class="adGrid">'+adCard('🎮 Jogador normal',`<p>Volte ao movimento e às regras normais sem apagar seus pets, dinheiro, Speed ou progresso. Seu acesso ao Admin Abuse permanece liberado.</p><div class="adControls">${adBtn('playNormal','👤 Jogar normalmente','secondary')}</div>`);
+  h+=adCard('💰 Dinheiro atual',`<div class="adStat">$${moneyView()}</div>${adField('cash','Valor a definir / adicionar')}<div id="adCashPreview" class="adHint">O valor digitado é independente do saldo total; seus pets continuam gerando dinheiro.</div><div class="adControls">${adBtn('moneySet','Definir')}${adBtn('moneyAdd','Adicionar')}${adBtn('moneyMillion','+ 1 milhão','secondary')}${adBtn('moneyBillion','+ 1 bilhão','secondary')}${adBtn('moneyZero','Zerar','danger')}</div>`);
  h+=adCard('⚡ Speed atual',`<div class="adStat">${fm(S.sp)}</div>${adField('speed','Valor a definir / adicionar')}<div class="adControls">${adBtn('speedSet','Definir')}${adBtn('speedAdd','Adicionar')}${adBtn('speedBoost','+ 100 mil','secondary')}${adBtn('speedZero','Zerar','danger')}</div><div class="adControls">${adBtn('speedNormal','🏃 Velocidade normal','on')}</div><p class="adHint">Bônus pessoal de velocidade 10× removido. Este botão restaura o movimento padrão mantendo a Speed acumulada.</p>`);
  h+=adCard('🏰 Melhorias',`${adSelect('baseLevel','Nível da base',adOpts(CAP,(_,i)=>`Nível ${i} • ${CAP[i]} pets`))}${adBtn('baseSet','Aplicar base')}${adSelect('treadLevel','Nível da esteira',adOpts(TM,(t,i)=>`${t[0]} x${t[1]}`))}${adBtn('treadSet','Aplicar esteira')}`);
  h+=adCard('🌈 Trail',`${adSelect('trailLevel','Trail para desbloquear e equipar',adOpts(TR,(t)=>`${t[0]} x${t[1]}`))}<div class="adControls">${adBtn('trailSet','Desbloquear + equipar')}${adBtn('trailOff','Retirar','secondary')}${adBtn('trailAll','Desbloquear todas','secondary')}</div>`);
@@ -939,7 +940,8 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'speedSet':S.sp=adValidNumber('speed');msg='Speed definida: '+fm(S.sp);break;
  case 'speedAdd':S.sp+=adValidNumber('speed');if(!Number.isFinite(S.sp))throw Error('Valor alto demais.');msg='Speed adicionada.';break;
  case 'speedBoost':S.sp+=1e5;msg='+ 100 mil Speed';break;
- case 'speedNormal':A.personalFast=false;A.moveMult=1;AS.moveMult='1';msg='Movimento normal ativado';break;
+ case 'playNormal':{A.god=false;A.freeze=false;A.weightless=false;A.autoHatch=false;A.autoSecret=false;A.night=false;A.moveMult=1;A.personalFast=false;A.jumpMult=1;CFG.train=5;AS.moveMult='1';AS.jumpMult='1';AS.trainMult='5';P.train=false;P.stun=0;msg='🎮 Jogador normal! O ADMIN e Admin Abuse continuam disponíveis.';break;}
+  case 'speedNormal':A.personalFast=false;A.moveMult=1;AS.moveMult='1';msg='Movimento normal ativado';break;
  case 'speedZero':if(!confirm('Zerar sua Speed?'))return;S.sp=0;msg='Speed zerada.';break;
  case 'baseSet':S.bl=adNum('baseLevel',0,CAP.length-1,0)|0;msg='Base no nível '+S.bl;break;
  case 'treadSet':S.tm=adNum('treadLevel',0,TM.length-1,0)|0;styleTM();msg='Esteira: '+TM[S.tm][0];break;
