@@ -5,13 +5,34 @@ const FRUIT_CATALOG = Object.freeze({
  pear:{name:'Pera da Sombra',emoji:'🍐',price:50_000_000_000,mult:5,voice:'pear'},
  apple:{name:'Maçã',emoji:'🍎',price:1_000_000_000_000,mult:15,voice:'apple'}
 });
-const fruitSpeedMult=()=>{
- const n=Number(S.fruitBoost);
- return n===15?15:n===5?5:1;
+/* Frutas temporárias: 30 minutos reais por compra, mesmo offline. */
+const FRUIT_DURATION_MS=30*60*1000;
+const fruitKeyFor=v=>Number(v)===5?'pear':Number(v)===15?'apple':null;
+const fruitTimeLeft=key=>Math.max(0,(Number(S.fruitTimers?.[key])||0)-Date.now());
+const fruitClock=ms=>{
+ const sec=Math.ceil(Math.max(0,ms)/1000);
+ return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
 };
-S.fruitOwned=Array.isArray(S.fruitOwned)?S.fruitOwned.filter(k=>k==='pear'||k==='apple'):[];
-if(!S.fruitOwned.includes('apple') && Number(S.fruitBoost)===15)S.fruitBoost=1;
-if(!S.fruitOwned.includes('pear') && Number(S.fruitBoost)===5)S.fruitBoost=1;
+const fruitSpeedMult=()=>{
+ const key=fruitKeyFor(S.fruitBoost);
+ return key&&fruitTimeLeft(key)>0?FRUIT_CATALOG[key].mult:1;
+};
+if(!S.fruitTimersV2){
+ const old=Array.isArray(S.fruitOwned)?S.fruitOwned:[];
+ const now=Date.now();
+ S.fruitTimers={
+  pear:old.includes('pear')?now+FRUIT_DURATION_MS:0,
+  apple:old.includes('apple')?now+FRUIT_DURATION_MS:0
+ };
+ S.fruitTimersV2=true;
+ save();
+}
+if(!S.fruitTimers||typeof S.fruitTimers!=='object')S.fruitTimers={pear:0,apple:0};
+for(const key of Object.keys(FRUIT_CATALOG)){
+ const n=Number(S.fruitTimers[key]);
+ S.fruitTimers[key]=Number.isFinite(n)&&n>Date.now()?n:0;
+}
+if(!fruitKeyFor(S.fruitBoost)||fruitSpeedMult()===1)S.fruitBoost=1;
 
 /* Render carrega os arquivos gravados em /voices/fruits/. Se estiverem ausentes,
    a fala continua acessível pelo sintetizador português do Android. */
@@ -97,7 +118,7 @@ const fruitCss=document.createElement('style');
 fruitCss.textContent='#fruitShopMask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#030e13b7;z-index:95;touch-action:pan-y;padding:12px;box-sizing:border-box}#fruitShopModal{width:min(440px,100%);max-height:88dvh;overflow:auto;touch-action:pan-y;background:linear-gradient(155deg,#25492f,#142720);color:white;border:3px solid #b7f084;border-radius:19px;padding:15px;box-shadow:0 20px 60px #000c;font:600 15px system-ui,sans-serif}#fruitShopModal button{cursor:pointer;touch-action:manipulation}#fruitShopClose{float:right;background:#493d35;color:white}#fruitShopModal h2{font-size:20px;margin:4px 0 7px}#fruitShopModal p{margin:7px 0}#fruitShopGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}#fruitShopGrid button{background:#eeffd9;color:#18251a;padding:14px 8px;min-height:112px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;line-height:1.35}#fruitShopGrid button:disabled{opacity:.75}#fruitShopFoot{font-size:13px;color:#d8efd5}#fruitShopQuick{position:fixed;right:12px;bottom:175px;z-index:15;background:#f5dd7a;color:#273326;padding:8px 10px;min-height:40px;border:2px solid #6c915a;border-radius:11px;font-size:13px;display:none}@media(max-width:390px){#fruitShopGrid{gap:7px}#fruitShopGrid button{font-size:13px;padding:9px 4px}}';
 document.head.appendChild(fruitCss);
 const fruitMask=document.createElement('div');fruitMask.id='fruitShopMask';
-fruitMask.innerHTML='<section id="fruitShopModal" role="dialog" aria-modal="true" aria-label="Vendedor de frutas"><button id="fruitShopClose" type="button">✕</button><h2>🍐🍎 Vendedor de Frutas</h2><p>“E aí, cara, qual fruta você quer? Aqui é baratinho!”</p><p id="fruitShopMoney"></p><div id="fruitShopGrid"></div><p id="fruitShopFoot">⚡ Os bônus de velocidade são permanentes até você trocar de fruta.</p><button id="fruitShopHear" type="button">🔊 Ouvir vendedor</button></section>';
+fruitMask.innerHTML='<section id="fruitShopModal" role="dialog" aria-modal="true" aria-label="Vendedor de frutas"><button id="fruitShopClose" type="button">✕</button><h2>🍐🍎 Vendedor de Frutas</h2><p>“E aí, cara, qual fruta você quer? Aqui é baratinho!”</p><p id="fruitShopMoney"></p><div id="fruitShopGrid"></div><p id="fruitShopFoot">⏱️ Cada fruta dura 30 minutos em tempo real. Depois, compre novamente.</p><button id="fruitShopHear" type="button">🔊 Ouvir vendedor</button></section>';
 document.body.appendChild(fruitMask);
 const fruitQuick=document.createElement('button');
 fruitQuick.id='fruitShopQuick';fruitQuick.textContent='🍎 Barraca';fruitQuick.style.display='block';
@@ -107,20 +128,22 @@ function closeFruitShop(){
  fruitMask.style.display='none';
 }
 function fruitRefresh(){
- const b=document.getElementById('fruitShopMoney');
- b.textContent='💰 Seu saldo: $'+moneyView()+' • Velocidade de fruta: '+fruitSpeedMult()+'×';
+ fruitUpdateCountdown();
  const grid=document.getElementById('fruitShopGrid');grid.textContent='';
  for(const [key,f] of Object.entries(FRUIT_CATALOG)){
-  const owned=S.fruitOwned.includes(key),equip=S.fruitBoost===f.mult;
-  const button=document.createElement('button');button.type='button';
-  const name=document.createElement('strong');name.textContent=f.emoji+' '+f.name;
-  const effect=document.createElement('span');effect.textContent='⚡ '+f.mult+'× velocidade';
-  const price=document.createElement('span');price.textContent= equip?'✅ Equipada':owned?'🎒 Equipar grátis':'💰 $'+fm(f.price);
-  button.append(name,effect,price);
-  button.addEventListener('click',()=>fruitBuy(key));
-  grid.append(button);
+  const remaining=fruitTimeLeft(key),equipped=S.fruitBoost===f.mult&&remaining>0;
+  const btn=document.createElement('button');btn.type='button';
+  const n=document.createElement('strong');n.textContent=f.emoji+' '+f.name;
+  const e=document.createElement('span');e.textContent='⚡ '+f.mult+'× • 30 minutos';
+  const p=document.createElement('span');
+  p.textContent=remaining>0?(equipped?'✅ Ativa • '+fruitClock(remaining):'🎒 Equipar • '+fruitClock(remaining)):'💰 $'+fm(f.price);
+  btn.append(n,e,p);
+  if(equipped)btn.disabled=true;
+  else btn.addEventListener('click',()=>fruitBuy(key));
+  grid.append(btn);
  }
 }
+
 function openFruitShop(){
  if(adminVisible)return;
  fruitRefresh();fruitMask.style.display='flex';
@@ -128,16 +151,51 @@ function openFruitShop(){
 }
 function fruitBuy(key){
  const f=FRUIT_CATALOG[key];if(!f)return;
- if(S.fruitBoost===f.mult){toast(f.emoji+' '+f.name+' já está equipada');return}
- if(!S.fruitOwned.includes(key)){
-  if(!Number.isFinite(S.$)||S.$<f.price){speakFruit(f.voice);toast('💰 Precisa de $'+fm(f.price)+' para comprar '+f.name);return}
-  S.$-=f.price;S.fruitOwned.push(key);
+ const left=fruitTimeLeft(key);
+ if(S.fruitBoost===f.mult&&left>0){toast('⏱️ '+f.name+' por mais '+fruitClock(left));return}
+ if(left<=0){
+  if(!Number.isFinite(S.$)||S.$<f.price){
+   speakFruit(f.voice);toast('💰 Precisa de $'+fm(f.price)+' para comprar '+f.name);return;
+  }
+  S.$-=f.price;
+  S.fruitTimers[key]=Date.now()+FRUIT_DURATION_MS;
  }
  S.fruitBoost=f.mult;
- save();upHud();fruitRefresh();beep(680,.16);
+ save();upHud();fruitRefresh();fruitUpdateCountdown();beep(680,.16);
  speakFruit(f.voice);
- toast(f.emoji+' '+f.name+' equipada! Velocidade '+f.mult+'×');
+ toast(f.emoji+' '+f.name+' • '+f.mult+'× por '+fruitClock(fruitTimeLeft(key)));
 }
+/* Cronômetro na tela também com a loja fechada. */
+const fruitTimerBadge=document.createElement('div');
+fruitTimerBadge.id='fruitBuffCountdown';
+fruitTimerBadge.setAttribute('role','status');
+fruitTimerBadge.style.cssText='position:fixed;left:8px;bottom:175px;z-index:14;max-width:56vw;padding:7px 11px;border-radius:10px;background:#204e36e8;color:#fff2bd;border:1px solid #bdf084;font:800 13px system-ui,sans-serif;pointer-events:none;display:none';
+document.body.appendChild(fruitTimerBadge);
+function fruitUpdateCountdown(){
+ const key=fruitKeyFor(S.fruitBoost),time=key?fruitTimeLeft(key):0;
+ fruitTimerBadge.style.display=time>0?'block':'none';
+ if(time>0)fruitTimerBadge.textContent=FRUIT_CATALOG[key].emoji+' '+FRUIT_CATALOG[key].mult+'× • '+fruitClock(time);
+ const balance=document.getElementById('fruitShopMoney');
+ if(balance&&fruitOpen())balance.textContent='💰 Saldo $'+moneyView()+' • Velocidade '+fruitSpeedMult()+'× • '+(time>0?fruitClock(time):'sem bônus');
+}
+function fruitExpireAndUpdate(){
+ const now=Date.now();let changed=false,wasActive=false;
+ for(const key of Object.keys(FRUIT_CATALOG)){
+  const expiry=Number(S.fruitTimers[key])||0;
+  if(expiry>0&&expiry<=now){
+   S.fruitTimers[key]=0;changed=true;
+   if(S.fruitBoost===FRUIT_CATALOG[key].mult){S.fruitBoost=1;wasActive=true}
+  }
+ }
+ if(changed){
+  save();upHud();if(fruitOpen())fruitRefresh();
+  if(wasActive)toast('⏰ O efeito da fruta terminou! Velocidade normal.');
+ }
+ fruitUpdateCountdown();
+}
+fruitExpireAndUpdate();
+setInterval(fruitExpireAndUpdate,1000);
+
 fruitQuick.addEventListener('click',openFruitShop);
 document.getElementById('fruitShopClose').addEventListener('click',closeFruitShop);
 document.getElementById('fruitShopHear').addEventListener('click',()=>speakFruit('prices'));
