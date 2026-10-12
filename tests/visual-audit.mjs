@@ -346,55 +346,70 @@ try{
   assert(nightTest.gatesAreOpen&&nightTest.pickableInDay,'Normal access to eggs and areas restored');
   console.log(mode.toUpperCase()+' NOITE DOS OVOS 9+3S '+JSON.stringify(nightTest));
 
-  // Coleta por alcance físico, com bichos guardiões mais rápidos em Speed baixa.
-  const physical=await page.evaluate(()=>{
-   const old={sp:S.sp,x:P.x,z:P.z,vx:P.vx,vz:P.vz,stun:P.stun,train:P.train,god:A.god,
-    freeze:A.freeze,phase:EGG_NIGHT.phase};
-   const g=GD[1],rg=raccoonGuard;
-   const gState={st:g.st,t:g.t,p:g.m.position.clone()};
-   const rState=rg?{st:rg.st,t:rg.t,p:rg.m.position.clone()}:null;
+  // Reprodução do vídeo: HUD Mãos livres, Speed ~3,84K e guardião do Deserto.
+  // Caminhar sem ovo NÃO pode iniciar perseguição, mesmo com Speed inferior a 10K.
+  const guardTest=await page.evaluate(()=>{
+   const old={sp:S.sp,x:P.x,z:P.z,vx:P.vx,vz:P.vz,stun:P.stun,train:P.train,
+    god:A.god,freeze:A.freeze,phase:EGG_NIGHT.phase,carry};
+   const desert=GD[2],lake=GD[1],rg=raccoonGuard;
+   const guards=[desert,lake,rg].filter(Boolean);
+   const states=guards.map(g=>({g,st:g.st,t:g.t,pos:g.m.position.clone()}));
    try{
-    EGG_NIGHT.phase='day';A.god=false;A.freeze=false;
+    EGG_NIGHT.phase='day';A.god=false;A.freeze=false;P.train=false;P.stun=0;
+    S.sp=3840;P.x=0;P.z=desert.home.z+20;P.vx=P.vz=0;carry=null;
+    desert.st='sleep';desert.t=0;desert.m.position.copy(desert.home);
+    const emptyHandTrigger=guardianShouldRush(2,desert.home);
+    const initiallyIdle=desert.st==='sleep';
+    step(.15);step(.15);
+    const emptyHandsNoChase=desert.st!=='chase'&&desert.st!=='wake';
+    const distanceFromHome=desert.m.position.distanceTo(desert.home);
+    const walkToNextRegion=(P.stun<=0&&carry===null);
+    // Raccoon also must ignore a slow player who has not stolen an egg.
+    P.x=rg.home.x+22;P.z=rg.home.z;P.vx=P.vz=0;P.stun=0;
+    rg.st='guard';rg.t=0;rg.m.position.copy(rg.home);
+    const raccoonDoesNotRush=!guardianShouldRush(3,rg.home);
+    step(.15);
+    const raccoonRemainsGuard=rg.st==='guard';
+    // Agora realmente roubar um ovo da área Lago: perseguir é legítimo.
     const egg=eggs.find(e=>e.nest?.b===1&&e.j===0);
-    if(!egg)return {error:'Ovo comum ausente'};
+    if(!egg)return {error:'Ovo da área Lago ausente'};
     egg.gr=1;egg.mesh.scale.copy(egg.base);
-    P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;P.vx=P.vz=0;
-    P.stun=0;P.train=false;S.sp=0;
-    g.st='sleep';g.t=0;g.m.position.copy(g.home);
+    P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;P.vx=P.vz=0;P.stun=0;
+    lake.st='sleep';lake.t=0;lake.m.position.copy(lake.home);
     const canPick=findEgg()===egg;
-    const rush=guardianShouldRush(1,g.home);
+    take(egg);
+    const stoleEgg=carry===egg;
+    const lowSpeedChase=guardianShouldRush(1,lake.home);
     const chaseSpeed=guardianRushSpeed(1),walkingSpeed=walk(eff());
-    step(.35);
-    const knocked=P.stun>0,moved=g.m.position.distanceTo(g.home)>2;
-    P.stun=0;S.sp=BI[1].req+1;P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;
-    const canEscape=!guardianShouldRush(1,g.home);
-    let raccoonRush=false,raccoonKnock=false;
-    if(rg){
-     S.sp=0;P.stun=0;P.train=false;P.vx=P.vz=0;
-     P.x=rg.home.x+22;P.z=rg.home.z;
-     rg.st='guard';rg.t=0;rg.m.position.copy(rg.home);
-     raccoonRush=guardianShouldRush(3,rg.home);
-     step(.35);step(.03);
-     raccoonKnock=P.stun>0;
-    }
-    return {canPick,rush,chaseSpeed,walkingSpeed,knocked,moved,canEscape,raccoonRush,raccoonKnock};
+    step(.12);
+    const guardChased=lake.st==='chase'||lake.st==='ret';
+    const guardMoved=lake.m.position.distanceTo(lake.home)>1;
+    // O roubo termina: todo guardião interrompe o ataque imediatamente.
+    if(carry)drop();
+    step(.01);
+    const noChaseAfterDrop=lake.st!=='chase'&&lake.st!=='wake'&&rg.st!=='chase';
+    return {emptyHandTrigger,initiallyIdle,emptyHandsNoChase,distanceFromHome,
+     walkToNextRegion,raccoonDoesNotRush,raccoonRemainsGuard,canPick,stoleEgg,
+     lowSpeedChase,chaseSpeed,walkingSpeed,guardChased,guardMoved,noChaseAfterDrop};
    }finally{
     S.sp=old.sp;P.x=old.x;P.z=old.z;P.vx=old.vx;P.vz=old.vz;
     P.stun=old.stun;P.train=old.train;A.god=old.god;A.freeze=old.freeze;
-    EGG_NIGHT.phase=old.phase;
-    g.st=gState.st;g.t=gState.t;g.m.position.copy(gState.p);
-    if(rg&&rState){rg.st=rState.st;rg.t=rState.t;rg.m.position.copy(rState.p)}
+    EGG_NIGHT.phase=old.phase;carry=old.carry;
+    for(const st of states){st.g.st=st.st;st.g.t=st.t;st.g.m.position.copy(st.pos)}
     upHud();
    }
   });
-  assert(!physical.error,'Ovo presente');
-  assert(physical.canPick,'Botão Pegar permite aproximar sem bloqueio por Speed');
-  assert(physical.rush,'Bicho percebe invasor lento ANTES de pegar');
-  assert(physical.chaseSpeed>physical.walkingSpeed*3,'Bicho corre muito mais rápido');
-  assert(physical.knocked&&physical.moved,'Colisão física empurra o jogador');
-  assert(physical.canEscape,'Speed suficiente permite chegar antes do bicho');
-  assert(physical.raccoonRush&&physical.raccoonKnock,'Guaxinim da parte 4 também persegue');
-  console.log(mode.toUpperCase()+' CORRIDA DOS BICHOS SEM TRAVA DE SPEED '+JSON.stringify(physical));
+  assert(!guardTest.error,'Ovos normais carregados');
+  assert.equal(guardTest.emptyHandTrigger,false,'Deserto ignora jogador com Mãos livres e 3,84K Speed');
+  assert(guardTest.initiallyIdle&&guardTest.emptyHandsNoChase,'Guarda permanece quieto ao ver jogador sem ovo');
+  assert(guardTest.distanceFromHome<.1,'Guarda não avança contra jogador de mãos vazias');
+  assert(guardTest.walkToNextRegion,'Jogador pode explorar livremente sem ser atordoado');
+  assert(guardTest.raccoonDoesNotRush&&guardTest.raccoonRemainsGuard,'Guaxinim parte 4 aguarda um roubo');
+  assert(guardTest.canPick&&guardTest.stoleEgg,'Ovo pode ser roubado por aproximação');
+  assert(guardTest.lowSpeedChase&&guardTest.guardChased&&guardTest.guardMoved,'Guarda corre após o roubo');
+  assert(guardTest.chaseSpeed>guardTest.walkingSpeed*3,'Guarda muito mais rápido para ladrões lentos');
+  assert(guardTest.noChaseAfterDrop,'Guardiões voltam ao posto após soltar ovo');
+  console.log(mode.toUpperCase()+' BUG MÃOS LIVRES CORRIGIDO '+JSON.stringify(guardTest));
 
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();

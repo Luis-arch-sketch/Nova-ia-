@@ -118,10 +118,11 @@ test('coleta é física e o bicho persegue rápido em vez de exibir Speed insufi
  assert(html.includes('const guardianShouldRush=(i,home)=>'));
  assert(html.includes('Number.isFinite(S.sp)&&S.sp<=BI[i].req'));
  assert(html.includes('const guardianRushSpeed=i=>Math.max(95'));
- assert(html.includes('const guardianPushBack=g=>'));
+ assert(html.includes('const guardianShouldRush=(i,home)=>EGG_NIGHT.phase===\'day\'&&!P.train&&!!carry&&!A.god'));
  assert(html.includes('const rush=!frozen&&guardianShouldRush(3,g.home)'));
  assert(html.includes('const p=g.m.position,i=g.b,rush=!frozen&&guardianShouldRush(i,g.home)'));
- assert(html.includes('if(rush&&!carry)guardianPushBack(g)'));
+ assert(!html.includes('guardianPushBack(g)'));
+ assert(html.includes("if(len<3.5)hit(g)"));
  assert(!server.includes('Speed insuficiente'));
  assert(!server.includes('limitedSpeedRequired'));
  assert(html.includes("case 'speedSet':"));
@@ -141,4 +142,17 @@ test('raridades ordenadas por chance e valor: Legendary abaixo de Secret e LIMIT
  assert(html.includes("Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞."));
  assert(html.includes('Rare 40% · Epic 30% · Legendary 20%'));
  assert(!html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
+});
+
+test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed recomendada',()=>{
+ assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
+ assert(html.includes('Number.isFinite(S.sp)&&S.sp<=BI[i].req'));
+ assert(!html.includes('const guardianPushBack='));
+ assert(html.includes("if((!carry&&!rush&&!abuseIs('fury'))||Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash)g.st='ret'"));
+ assert(html.includes("if((!carry&&!rush)||dist>95||frozen)g.st='ret'"));
+ assert(html.includes("if(rush&&g.st!=='chase'){g.st='chase';g.t=0}"));
+ assert(html.includes("if(len<3.5)hit(g)"));
+ assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});"));
+ assert(html.includes("if(raccoonGuard&&(raccoonGuard.st==='chase'||raccoonGuard.st==='wake'))raccoonGuard.st='ret'"));
+ assert(html.includes("const findEgg=()=>{"));
 });

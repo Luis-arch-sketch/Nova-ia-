@@ -352,22 +352,13 @@ const limitedAuraUp=(e,dt)=>{const a=e.aura;if(!a)return;const u=a.userData;e.me
  u.sparks.forEach((m,i)=>{const v=(t*.27+i/u.sparks.length)%1,ang=i*6.283/u.sparks.length-t*.5,rad=3+v*5;m.position.set(Math.cos(ang)*rad,2+v*12,Math.sin(ang)*rad);m.scale.setScalar(.2+(1-v)*.5);m.material.opacity=Math.max(.05,(1-v)*.95)});
  u.light.intensity=(LIMITED_LOW_FX?.3:.6)+.12*Math.sin(t*4);u.label3.position.y=14+Math.sin(t*2)*.5;
 };
-// Guardiões interceptam quem tenta alcançar ninhos sem a Speed recomendada.
-// Isso é uma perseguição 3D real: sem texto de bloqueio, sem cadeados.
-const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!carry&&!A.god
+// Guardiões apenas perseguem quem JÁ ROUBOU um ovo. Jogador de mãos vazias pode passear.
+// Se o ladrão ainda tem Speed insuficiente, o guardião corre muito mais rápido.
+const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god
  &&Number.isFinite(S.sp)&&S.sp<=BI[i].req&&P.stun<=0
  &&Math.abs(P.z-home.z)<47&&Math.hypot(P.x-home.x,P.z-home.z)<63;
 const guardianRushSpeed=i=>Math.max(95,walk(BI[i].req)*3.5,
  walk(eff())*Math.max(1,A.moveMult)*abuseMoveMult()*2);
-const guardianPushBack=g=>{
- if(carry){hit(g);return}
- if(A.god||P.stun>0)return;
- const dx=P.x-g.m.position.x,dz=P.z-g.m.position.z,d=Math.hypot(dx,dz)||1;
- P.x=Math.max(-99,Math.min(99,P.x+dx/d*12));
- P.z=Math.max(zlim,Math.min(50,P.z+dz/d*12));
- P.vx=dx/d*15;P.vz=dz/d*15;P.stun=.9;
- g.st='ret';g.t=0;beep(145,.13,'sawtooth',.03);
-};
 const gs=i=>i?walk(BI[i].req)*CFG.gm:CFG.g0;
 const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08);m.position.copy(home);return{b:i,m,home,st:'sleep',t:0,l:(()=>{const l=label('',256,64,6);sc.add(l);return l})()}});
 // O guardião genérico da 4ª área sai do mapa: só o guaxinim protege a parte 4.
@@ -442,11 +433,17 @@ const take=e=>{
  if(e.b===3&&raccoonGuard){if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=CFG.wake}}
  else{const bi=cb();if(bi>=0){const g=GD[bi];if(g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=CFG.wake}}}
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
-const drop=()=>{const e=carry;carry=null;P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID){persistLimitedWorld();if(MP.connected)mpSend({type:'limited-drop',x:e.mesh.position.x,z:e.mesh.position.z})}beep(200,.15)};
+const drop=()=>{const e=carry;carry=null;
+ // O roubo terminou: interromper imediatamente qualquer perseguição normal.
+ GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});
+ if(raccoonGuard&&(raccoonGuard.st==='chase'||raccoonGuard.st==='wake'))raccoonGuard.st='ret';
+ P.g.remove(e.mesh);sc.add(e.mesh);e.mesh.scale.copy(e.base);e.mesh.position.set(P.x+Math.sin(P.g.rotation.y)*1.8,.45+e.base.y,P.z+Math.cos(P.g.rotation.y)*1.8);e.st='caido';eggs.push(e);if(e.s===LIMITED_ID){persistLimitedWorld();if(MP.connected)mpSend({type:'limited-drop',x:e.mesh.position.x,z:e.mesh.position.z})}beep(200,.15)};
 const hit=g=>{if(!carry||A.god)return;drop();P.stun=1.4;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*16;P.vz=Math.cos(a)*16;g.st='ret';beep(120,.3,'sawtooth');toast('O guardião te acertou! O ovo caiu.')};
 const doAct=()=>{if(carry){drop();return}if(P.stun>0)return;if(P.train){P.train=false;return}if(EGG_NIGHT.phase!=='day'){toast('🌙 Ovos bloqueados até abrir os portões!');return;}const e=findEgg();if(e){take(e);return}if(near(-14,4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
 const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
-const dep=k=>{const e=carry;carry=null;P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
+const dep=k=>{const e=carry;carry=null;
+ if(raccoonGuard&&(raccoonGuard.st==='chase'||raccoonGuard.st==='wake'))raccoonGuard.st='ret';
+ P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret'});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
  toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+fm(LIMITED_RATE)+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
@@ -569,7 +566,7 @@ const updateEggNight=(now=Date.now())=>{
 const CT=new T.Vector3(),NV=new T.Vector3();
 const aim=(g,x,z,s,dt)=>{const p=g.m.position,dx=x-p.x,dz=z-p.z,d=Math.hypot(dx,dz)||1,st=Math.min(d,s*dt);p.x+=dx/d*st;p.z+=dz/d*st;g.m.rotation.y=Math.atan2(dx,dz);push(p,1.6);p.z=Math.min(p.z,-14)};
 const step=dt=>{TT+=dt;abuseUpdate(dt);
- // Guaxinim da parte 4: fica em guarda, corre antes do roubo se a Speed é baixa e volta ao posto.
+ // Guaxinim da parte 4: só persegue depois do roubo; nunca ataca quem está de mãos vazias.
  if(raccoonGuard){
   const g=raccoonGuard,p=g.m.position,dist=Math.hypot(P.x-g.home.x,P.z-g.home.z);
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
@@ -588,7 +585,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
     const speedStep=Math.min(len,speed*dt);
     p.x+=dx/len*speedStep;p.z+=dz/len*speedStep;
     g.m.rotation.y=Math.atan2(dx,dz);
-    if(len<3.5){if(rush&&!carry)guardianPushBack(g);else hit(g)}
+    if(len<3.5)hit(g)
    }
   }
   if(g.st==='ret'){
@@ -641,8 +638,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
   if(g.st==='chase'){if((!carry&&!rush&&!abuseIs('fury'))||Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash)g.st='ret';
    else{aim(g,P.x,P.z,rush?guardianRushSpeed(i):gs(i),dt);
     if(Math.hypot(P.x-p.x,P.z-p.z)<3.6){
-     if(rush&&!carry)guardianPushBack(g);
-     else if(abuseIs('fury')&&!carry)abuseGuardianHit(g);
+     if(abuseIs('fury')&&!carry)abuseGuardianHit(g);
      else hit(g)
     }}}
   else if(g.st==='ret'){aim(g,g.home.x,g.home.z,gs(i)*.7,dt);if(Math.hypot(p.x-g.home.x,p.z-g.home.z)<1)g.st='sleep'}
