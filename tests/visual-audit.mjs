@@ -377,6 +377,8 @@ try{
     P.x=egg.mesh.position.x;P.z=egg.mesh.position.z;P.vx=P.vz=0;P.stun=0;
     lake.st='sleep';lake.t=0;lake.m.position.copy(lake.home);
     const canPick=findEgg()===egg;
+    // No Lago, Speed=0 fica ABAIXO dos 900 recomendados e ativa a corrida após o roubo.
+    S.sp=0;
     take(egg);
     const stoleEgg=carry===egg;
     const lowSpeedChase=guardianShouldRush(1,lake.home);
@@ -399,6 +401,7 @@ try{
     upHud();
    }
   });
+  console.log(mode.toUpperCase()+' ESTADO MÃOS LIVRES E ROUBO '+JSON.stringify(guardTest));
   assert(!guardTest.error,'Ovos normais carregados');
   assert.equal(guardTest.emptyHandTrigger,false,'Deserto ignora jogador com Mãos livres e 3,84K Speed');
   assert(guardTest.initiallyIdle&&guardTest.emptyHandsNoChase,'Guarda permanece quieto ao ver jogador sem ovo');
