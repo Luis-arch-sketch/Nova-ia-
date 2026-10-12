@@ -40,9 +40,22 @@ function speakFruit(which){
   }catch(e){}
  };
  try{
-  fruitAudio=new Audio(v.url);fruitAudio.volume=.85;fruitAudio.preload='none';
-  fruitAudio.addEventListener('error',fallback,{once:true});
-  const attempt=fruitAudio.play();if(attempt&&attempt.catch)attempt.catch(fallback);
+  // As cinco falas originais enviadas pelo criador estão em um único Ogg Opus.
+  // Posições: saudação, opções, pera, maçã e preços.
+  const seg={hello:[0,3.50],options:[3.724,5.786],pear:[6.008,8.216],
+             apple:[8.436,10.186],prices:[10.408,15.349]}[which];
+  if(!seg){fallback();return}
+  const player=new Audio('/voices/fruits/sprite.ogg');
+  fruitAudio=player;player.volume=.9;player.preload='auto';
+  player.addEventListener('loadedmetadata',()=>{
+    try{player.currentTime=seg[0]}catch(e){fallback()}
+  },{once:true});
+  player.addEventListener('timeupdate',()=>{
+    if(player.currentTime>=seg[1]-0.07){player.pause()}
+  });
+  player.addEventListener('error',fallback,{once:true});
+  const attempt=player.play();
+  if(attempt&&attempt.catch)attempt.catch(fallback);
  }catch(e){fallback()}
 }
 const fruitVendorGroup=new T.Group();
