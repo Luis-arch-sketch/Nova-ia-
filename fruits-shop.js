@@ -1,6 +1,6 @@
 /* Vendedor de frutas do Roube um Ovo 3D.
    Executado no escopo do jogo após a criação da cena, antes do primeiro frame. */
-const FRUIT_VENDOR_POS = {x:11,z:19};
+const FRUIT_VENDOR_POS = {x:6,z:-7};
 const FRUIT_CATALOG = Object.freeze({
  pear:{name:'Pera da Sombra',emoji:'🍐',price:50_000_000_000,mult:5,voice:'pear'},
  apple:{name:'Maçã',emoji:'🍎',price:1_000_000_000_000,mult:15,voice:'apple'}
@@ -69,7 +69,7 @@ FV(GB,0x2d1e18,[.45,3,.45],[2.55,1.65,-1.1]);
 FV(GB,0xe54b49,[6.5,.27,3.2],[0,3.13,0]);
 for(let i=-2;i<=2;i++)FV(GB,i%2?0xf2f0da:0xb3213b,[1.19,.17,3.3],[i*1.25,3.0,0]);
 FV(GB,0xffffff,[2.5,2.3,.12],[0,2.55,-1.2]);
-const fruitBoard=label('🍐 FRUTAS 🍎',512,96,4.3);fruitBoard.position.set(0,3.6,1.2);fruitVendorGroup.add(fruitBoard);
+const fruitBoard=label('🍐 FRUTAS 🍎',512,96,5.3);fruitBoard.position.set(0,4.1,1.2);fruitVendorGroup.add(fruitBoard);
 /* NPC com barba e avental */
 FV(GB,0x293b40,[.64,1.1,.48],[0,1.8,.75]);
 FV(GB,0x6c9c40,[.5,.8,.49],[0,1.95,1.04]);
@@ -89,8 +89,8 @@ for(let i=0;i<4;i++){
  const x=.95+(i%2)*.8,z=-.12+Math.floor(i/2)*.5;
  FV(GS,0x4f783b,[.23,.34,.22],[x,1.52,z]);FV(GC,0x2d8841,[.08,.19,.1],[x,1.88,z]);
 }
-const fruitTag=label('🍎 VENDEDOR • AÇÃO',640,90,5.3);
-fruitTag.position.set(0,5.0,0);fruitVendorGroup.add(fruitTag);
+const fruitTag=label('🍎 BARRACA DE FRUTAS 🍐',640,90,7.3);
+fruitTag.position.set(0,5.6,0);fruitVendorGroup.add(fruitTag);
 
 /* UI segura para Android: mostra saldo, preço e bônus; mantém os outros menus. */
 const fruitCss=document.createElement('style');
@@ -100,7 +100,7 @@ const fruitMask=document.createElement('div');fruitMask.id='fruitShopMask';
 fruitMask.innerHTML='<section id="fruitShopModal" role="dialog" aria-modal="true" aria-label="Vendedor de frutas"><button id="fruitShopClose" type="button">✕</button><h2>🍐🍎 Vendedor de Frutas</h2><p>“E aí, cara, qual fruta você quer? Aqui é baratinho!”</p><p id="fruitShopMoney"></p><div id="fruitShopGrid"></div><p id="fruitShopFoot">⚡ Os bônus de velocidade são permanentes até você trocar de fruta.</p><button id="fruitShopHear" type="button">🔊 Ouvir vendedor</button></section>';
 document.body.appendChild(fruitMask);
 const fruitQuick=document.createElement('button');
-fruitQuick.id='fruitShopQuick';fruitQuick.textContent='🍎 Frutas';
+fruitQuick.id='fruitShopQuick';fruitQuick.textContent='🍎 Barraca';fruitQuick.style.display='block';
 document.body.appendChild(fruitQuick);
 const fruitOpen=()=>fruitMask.style.display==='flex';
 function closeFruitShop(){
@@ -147,6 +147,8 @@ let fruitUiCounter=0;
 setInterval(()=>{
  if(document.hidden)return;
  const nearby=near(FRUIT_VENDOR_POS.x,FRUIT_VENDOR_POS.z,9);
- fruitQuick.style.display=nearby&&!fruitOpen()?'block':'none';
- if(nearby&&fruitUiCounter++%5===0)fruitTag.set('🍎 VENDEDOR • AÇÃO');
+ const meters=Math.round(Math.hypot(P.x-FRUIT_VENDOR_POS.x,P.z-FRUIT_VENDOR_POS.z));
+ fruitQuick.style.display=fruitOpen()?'none':'block';
+ fruitQuick.textContent=nearby?'🍎 Comprar frutas':'🍎 Barraca • '+meters+'m';
+ if(nearby&&fruitUiCounter++%5===0)fruitTag.set('🍎 BARRACA DE FRUTAS 🍐');
 },600);
