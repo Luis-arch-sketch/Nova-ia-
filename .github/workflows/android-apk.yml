@@ -12,6 +12,9 @@ permissions:
 
 jobs:
   android-apk:
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -21,7 +24,9 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Instalar SDK Android
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          SDKMGR=$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f | head -n 1)
+          "$SDKMGR" "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
