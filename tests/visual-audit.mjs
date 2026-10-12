@@ -263,5 +263,64 @@ try{
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));
   await context.close();
  }
+
+ // Verifica a exclusão de uma conta antiga no navegador do ADMIN.
+ const ownerCtx=await browser.newContext({viewport:{width:490,height:800}});
+ await ownerCtx.addInitScript(()=>{
+  if(localStorage.getItem('__owner_test_seeded'))return;
+  localStorage.setItem('__owner_test_seeded','1');
+  localStorage.setItem('rue3d_admin_badge_verified_v1','yes');
+  localStorage.setItem('rue3d_v1',JSON.stringify({sp:999999,$:888888,tm:8,bl:4,tr:3,own:[0,1],
+   pets:[{id:19,s:5,z:0,w:1,m:[]}],inc:[null,null,null,null],idx:{"5":1},id:20,t:Date.now()}));
+  localStorage.setItem('rue3d_admin_v2',JSON.stringify({god:true,freeze:true,moveMult:7,trainMult:200}));
+  localStorage.setItem('rue3d_mp_name','MeuNomeAntigo');
+ });
+ const ownerPage=await ownerCtx.newPage();
+ await ownerPage.goto('http://127.0.0.1:'+port+'/',{waitUntil:'domcontentloaded'});
+ await ownerPage.waitForTimeout(1500);
+ const erased=await ownerPage.evaluate(()=>({
+  money:S.$,speed:S.sp,pets:S.pets.length,tm:S.tm,bl:S.bl,tr:S.tr,
+  idx:Object.keys(S.idx).length,own:S.own.length,god:A.god,move:A.moveMult,
+  admin:ownerVerified,marker:localStorage.getItem(OWNER_RESET_KEY),
+  badge:localStorage.getItem(ADMIN_DEVICE_KEY),
+  previousName:localStorage.getItem('rue3d_mp_name')
+ }));
+ assert.deepEqual([erased.money,erased.speed,erased.pets,erased.tm,erased.bl,erased.tr,erased.idx,erased.own],
+  [0,0,0,0,0,-1,0,0],'Progresso do dono começa totalmente zerado');
+ assert.equal(erased.god,false);assert.equal(erased.move,1);
+ assert(erased.admin&&erased.badge==='yes','ADMIN mantém identificação');
+ assert.equal(erased.marker,'done','A exclusão ocorre uma única vez');
+ assert.equal(erased.previousName,null,'Identidade antiga do jogador excluída');
+ await ownerPage.evaluate(()=>{S.$=321;S.sp=42;save()});
+ await ownerPage.reload({waitUntil:'domcontentloaded'});
+ await ownerPage.waitForTimeout(700);
+ const saved=await ownerPage.evaluate(()=>({
+  money:S.$,speed:S.sp,admin:ownerVerified,marker:localStorage.getItem(OWNER_RESET_KEY)
+ }));
+ assert.equal(saved.money,321,'Dinheiro novo persistiu');
+ assert.equal(saved.speed,42,'Speed nova persistiu');
+ assert(saved.admin&&saved.marker==='done','ADMIN e conclusão do reset persistiram');
+ await ownerCtx.close();
+ console.log('RESET ÚNICO DE CONTA ADMIN '+JSON.stringify({erased,saved}));
+ // Um jogador comum conserva o progresso, mesmo após a nova atualização do jogo.
+ const normalCtx=await browser.newContext({viewport:{width:490,height:800}});
+ await normalCtx.addInitScript(()=>{
+  if(localStorage.getItem('__regular_test_seeded'))return;
+  localStorage.setItem('__regular_test_seeded','1');
+  localStorage.setItem('rue3d_v1',JSON.stringify({sp:999,$:12345,tm:1,bl:0,tr:-1,own:[],
+   pets:[],inc:[null,null,null,null],idx:{},id:1,t:Date.now()}));
+ });
+ const normalPage=await normalCtx.newPage();
+ await normalPage.goto('http://127.0.0.1:'+port+'/',{waitUntil:'domcontentloaded'});
+ await normalPage.waitForTimeout(700);
+ const normal=await normalPage.evaluate(()=>({
+  money:S.$,speed:S.sp,admin:ownerVerified,marker:localStorage.getItem(OWNER_RESET_KEY)
+ }));
+ assert.equal(normal.money,12345,'O dinheiro de outros jogadores continua salvo');
+ assert.equal(normal.speed,999,'A Speed de outros jogadores continua salva');
+ assert.equal(normal.admin,false);assert.equal(normal.marker,null);
+ await normalCtx.close();
+ console.log('CONTA DE OUTROS JOGADORES INTACTA '+JSON.stringify(normal));
+
  console.log('AUDITORIA VISUAL OK: Android + desktop, todos os controles preservados');
 }finally{await browser?.close();srv.kill('SIGTERM')}
