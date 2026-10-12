@@ -69,13 +69,51 @@ const applyGraphicUpgrade=html=>{
  // GLTFLoader roda dentro do jogo; dependência remota extra removida.
  return html.replace('<script>\n','<script>\n'+loaderSource+'\nconst RACCOON_SOURCE_JSON='+JSON.stringify(raccoonSource)+';\n'+animalsSource+'\n</script>\n<script>\n');
 };
-const gameHtml=installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')));
+// Vendedor de frutas: integração sem alterar a cena original nem os patches de gráficos.
+const installFruitVendor=html=>{
+ const patches=[
+  ["const v=walk(eff())*A.moveMult*abuseMoveMult()",
+   "const v=walk(eff())*A.moveMult*abuseMoveMult()*fruitSpeedMult()"],
+  ["const doAct=()=>{if(carry){drop();return}",
+   "const doAct=()=>{if(!carry&&near(11,19,6)){openFruitShop();return}if(carry){drop();return}"],
+  ["$('ba').textContent=carry?'Largar':P.train?",
+   "$('ba').textContent=carry?'Largar':near(11,19,6)?'🍎 Frutas':P.train?"]
+ ];
+ for(const [from,to] of patches){
+   if(html.split(from).length!==2)throw new Error('Trecho de frutas inesperado: '+from);
+   html=html.replace(from,to);
+ }
+ const end="requestAnimationFrame(loop);\n</script>";
+ if(html.split(end).length!==2)throw new Error('Final do jogo não localizado para incluir vendedor');
+ const vendor=fs.readFileSync(path.join(__dirname,'fruits-shop.js'),'utf8');
+ return html.replace(end,vendor+"\n"+end);
+};
+const gameHtml=installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))));
 const httpServer=http.createServer((req,res)=>{
  let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}
  if(req.method!=='GET'){res.writeHead(405).end('Method not allowed');return}
  if(u.pathname==='/health'){
   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'})
     .end(JSON.stringify({ok:true,rooms:rooms.size}));return;
+ }
+ if(u.pathname==='/api/fruits'){
+  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
+    .end(JSON.stringify({fruits:[
+      {id:'pear',name:'Pera da Sombra',price:50000000000,speedMultiplier:5},
+      {id:'apple',name:'Maçã',price:1000000000000,speedMultiplier:15}
+    ],currency:'dinheiro-do-jogo',scope:'cliente-local'}));return;
+ }
+ if(u.pathname.startsWith('/voices/fruits/')){
+  const filename=u.pathname.slice('/voices/fruits/'.length);
+  if(!new Set(['saudacao.mp3','opcoes.mp3','pera.mp3','maca.mp3','precos.mp3']).has(filename)){
+   res.writeHead(404).end('Áudio inexistente');return;
+  }
+  const assetPath=path.join(__dirname,'voices','fruits',filename);
+  if(!fs.existsSync(assetPath)){res.writeHead(404).end('Áudio aguardando envio');return}
+  const stream=fs.createReadStream(assetPath);
+  stream.on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()});
+  res.writeHead(200,{'Content-Type':'audio/mpeg','Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});
+  stream.pipe(res);return;
  }
  if(u.pathname==='/api/servers'){
   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
