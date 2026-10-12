@@ -85,7 +85,7 @@ test('trocar ovos dos ninhos preserva LIMITED e sorte de raros',()=>{
 });
 
 test('Secret nasce com 10% por renovação, inclusive durante a noite',()=>{
- assert(html.includes('rare:{7:.10,8:.04,9:.005}'));
+ assert(html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
  assert(html.includes('chances:{7:10,8:4,9:.5}'));
  assert(html.includes("chanceSecret:'10'"));
  assert(html.includes("const SECRET_CHANCE_MIGRATION_KEY='rue3d_secret_chance_10_v1'"));
@@ -98,19 +98,32 @@ test('Secret nasce com 10% por renovação, inclusive durante a noite',()=>{
  assert(html.includes("try{CFG.rare[7]=1;CFG.rare[8]=.5;CFG.rare[9]=.25;regrow(false)}finally{"));
 });
 
-test('coleta de ovos exige Speed ESTRITAMENTE MAIOR que a recomendada da área',()=>{
- assert(html.includes('const eggAreaIndex=e=>'));
- assert(html.includes("if(e?.nest&&Number.isInteger(e.nest.b))return e.nest.b"));
- assert(html.includes("const eggSpeedRequired=e=>BI[eggAreaIndex(e)]?.req??0"));
- assert(html.includes('const eggSpeedEnough=e=>Number.isFinite(S.sp)&&S.sp>eggSpeedRequired(e)'));
- assert(html.includes('const findEgg=()=>nearestEgg(true)'));
- assert(html.includes("if(!eggSpeedEnough(e)){reportMissingSpeed(e);return false;}"));
- assert(html.includes("const blocked=lockedEggNearby();if(blocked){reportMissingSpeed(blocked);return}"));
- assert(html.includes("exige Speed > "));
- assert(html.includes('const lockedEggNearby='));
- assert(html.includes("yaw:P.g.rotation.y,speed:S.sp"));
- assert(server.includes('const AREA_SPEED=[0,900,1e4,4e4,1.7e5,7e5,2.5e6,1.8e7,7e8,2.5e9,7e9,2e10,5e10]'));
- assert(server.includes('ws.speed=Number.isFinite(m.speed)&&m.speed>=0?m.speed:0'));
- assert(server.includes('ws.speed>required'));
+
+test('ao entrar não existem dezenas de ovos Rare Epic e Legendary prontos',()=>{
+ assert(html.includes('rare:{2:.25,3:.12,4:.05,7:.10,8:.04,9:.005}'));
+ assert(html.includes("if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)"));
+ assert(html.includes("if(!first)for(const r in CFG.rare)"));
+ assert(html.includes("if(Math.random()>=CFG.rare[r])continue"));
+ assert(html.includes("const renewNestEggs=()=>{"));
+ assert(html.includes("if(!e||e.s===LIMITED_ID)continue"));
+ assert(html.includes("const chances={7:CFG.rare[7],8:CFG.rare[8],9:CFG.rare[9]}"));
+});
+test('coleta é física e o bicho persegue rápido em vez de exibir Speed insuficiente',()=>{
+ assert(html.includes("const findEgg=()=>{"));
+ assert(!html.includes('const eggSpeedEnough='));
+ assert(!html.includes('const lockedEggNearby='));
+ assert(!html.includes('const reportMissingSpeed='));
+ assert(html.includes("if(d<distance&&d<range&&e.gr>=1){distance=d;best=e}"));
+ assert(!html.includes('if(!eggSpeedEnough(e))'));
+ assert(html.includes('const guardianShouldRush=(i,home)=>'));
+ assert(html.includes('Number.isFinite(S.sp)&&S.sp<=BI[i].req'));
+ assert(html.includes('const guardianRushSpeed=i=>Math.max(95'));
+ assert(html.includes('const guardianPushBack=g=>'));
+ assert(html.includes('const rush=!frozen&&guardianShouldRush(3,g.home)'));
+ assert(html.includes('const p=g.m.position,i=g.b,rush=!frozen&&guardianShouldRush(i,g.home)'));
+ assert(html.includes('if(rush&&!carry)guardianPushBack(g)'));
+ assert(!server.includes('Speed insuficiente'));
+ assert(!server.includes('limitedSpeedRequired'));
  assert(html.includes("case 'speedSet':"));
+ assert(html.includes("const ABUSE_NAMES="));
 });
