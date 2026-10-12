@@ -122,7 +122,7 @@ test('coleta é física e o bicho persegue rápido em vez de exibir Speed insufi
  assert(html.includes('const rush=!frozen&&guardianShouldRush(3,g.home)'));
  assert(html.includes('const p=g.m.position,i=g.b,rush=!frozen&&guardianShouldRush(i,g.home)'));
  assert(!html.includes('guardianPushBack(g)'));
- assert(html.includes("if(len<3.5)hit(g)"));
+ assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);"));
  assert(!server.includes('Speed insuficiente'));
  assert(!server.includes('limitedSpeedRequired'));
  assert(html.includes("case 'speedSet':"));
@@ -151,7 +151,7 @@ test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed rec
  assert(html.includes("if(!carry&&!abuseIs('fury')){g.st='ret';g.rush=false}"));
  assert(html.includes("if(!carry||frozen){g.st='ret';g.rush=false}"));
  assert(html.includes("if(rush&&g.st!=='chase'){g.st='chase';g.t=0}"));
- assert(html.includes("if(len<3.5)hit(g)"));
+ assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);"));
  assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
  assert(html.includes("if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}"));
  assert(html.includes("const findEgg=()=>{"));
