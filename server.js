@@ -83,10 +83,10 @@ const installFruitVendor=html=>{
    if(html.split(from).length!==2)throw new Error('Trecho de frutas inesperado: '+from);
    html=html.replace(from,to);
  }
- const end="requestAnimationFrame(loop);\n</script>";
- if(html.split(end).length!==2)throw new Error('Final do jogo não localizado para incluir vendedor');
- const vendor=fs.readFileSync(path.join(__dirname,'fruits-shop.js'),'utf8');
- return html.replace(end,vendor+"\n"+end);
+ // O arquivo separado impede que o navegador interprete código JS como HTML.
+ // Como script clássico, ele compartilha as variáveis globais do jogo Three.js.
+ if(html.split('</body>').length!==2)throw new Error('Final HTML não localizado para incluir vendedor');
+ return html.replace('</body>','<script src="/fruits-shop.js"></script></body>');
 };
 const gameHtml=installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))));
 const httpServer=http.createServer((req,res)=>{
@@ -121,6 +121,12 @@ const httpServer=http.createServer((req,res)=>{
  }
  if(u.pathname==='/animals3d.js'){
   const stream=fs.createReadStream(path.join(__dirname,'animals3d.js'));
+  stream.on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()});
+  res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
+  stream.pipe(res);return;
+ }
+ if(u.pathname==='/fruits-shop.js'){
+  const stream=fs.createReadStream(path.join(__dirname,'fruits-shop.js'));
   stream.on('error',()=>{if(!res.headersSent)res.writeHead(500);res.end()});
   res.writeHead(200,{'Content-Type':'application/javascript; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});
   stream.pipe(res);return;
