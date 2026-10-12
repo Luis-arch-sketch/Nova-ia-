@@ -119,8 +119,8 @@ test('coleta é física e o bicho persegue rápido em vez de exibir Speed insufi
  assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
  assert(html.includes('const guardianRushSpeed=i=>Math.max(95'));
  assert(html.includes('const guardianShouldRush=(i,home)=>EGG_NIGHT.phase===\'day\'&&!P.train&&!!carry&&!A.god'));
- assert(html.includes('const rush=!frozen&&guardianShouldRush(3,g.home)'));
- assert(html.includes('const p=g.m.position,i=g.b,rush=!frozen&&guardianShouldRush(i,g.home)'));
+ assert(html.includes('const rush=!frozen&&ownsEgg&&guardianShouldRush(3,g.home)'));
+ assert(html.includes('const p=g.m.position,i=g.b;')); assert(html.includes('const rush=!frozen&&ownsEgg&&guardianShouldRush(i,g.home)'));
  assert(!html.includes('guardianPushBack(g)'));
  assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);"));
  assert(!server.includes('Speed insuficiente'));
@@ -148,8 +148,8 @@ test('vídeo: guardião não persegue com Mãos livres mesmo abaixo da Speed rec
  assert(html.includes("const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god"));
  assert(html.includes('Number.isFinite(eff())&&eff()<=BI[i].req'));
  assert(!html.includes('const guardianPushBack='));
- assert(html.includes("if(!carry&&!abuseIs('fury')){g.st='ret';g.rush=false}"));
- assert(html.includes("if(!carry||frozen){g.st='ret';g.rush=false}"));
+ assert(html.includes("if(!ownsEgg&&!abuseIs('fury')){g.st='ret';g.rush=false}"));
+ assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
  assert(html.includes("if(rush&&g.st!=='chase'){g.st='chase';g.t=0}"));
  assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);"));
  assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
@@ -181,7 +181,7 @@ test('bichos seguem o ovo roubado ATÉ O DEPÓSITO na base, sem corte -14 ou 95 
  assert(!html.includes("p.z=Math.min(p.z,-14)"));
  assert(!html.includes('dist>95||frozen'));
  assert(!html.includes('Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash'));
- assert(html.includes("if(!carry||frozen){g.st='ret';g.rush=false}"));
+ assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
  assert(html.includes("const speed=g.rush?guardianRushSpeed(3)"));
  assert(html.includes("aim(g,P.x,P.z,speed,dt)"));
  assert(html.includes("else aim(g,g.home.x,g.home.z,36,dt)"));
@@ -220,4 +220,39 @@ test('cronômetros 9s + 3s: paredes brancas só nas áreas, base com cerca origi
  assert(html.includes("partBorderCollision(P,oldPartZ,oldPartX)"));
  assert(html.includes("partBorderCollision(p,oldZ,oldX)"));
  assert(html.includes("if(EGG_NIGHT.phase!=='day')return null"));
+});
+
+test('limite entre 2 partes: só o bicho da parte atrás protege o ovo',()=>{
+ assert(html.includes('const guardAreaAtZ=z=>z>-30?-1:Math.min(BI.length-1,Math.max(0,Math.floor((-30-z)/70)))'));
+ assert(html.includes('const stolenGuardArea=()=>carry?.guardArea??-1'));
+ assert(html.includes('e.guardArea=guardAreaOfEgg(e)'));
+ assert(html.includes('if(e.guardArea===3&&raccoonGuard)'));
+ assert(html.includes('const g=GD[e.guardArea]'));
+ assert(html.includes('&&stolenGuardArea()===i'));
+ assert(html.includes('const ownsEgg=!!carry&&stolenGuardArea()===i;'));
+ assert(html.includes('if(!ownsEgg&&!abuseIs(\'fury\')){'));
+ assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
+ assert(html.includes("if(g.st==='chase'||g.st==='wake')g.st='ret';"));
+ assert(!html.includes('else{const bi=cb();if(bi>=0)'));
+});
+test('guaxinim da parte 4 existe e persegue o ladrão, mas respeita ovos das outras áreas',()=>{
+ assert(html.includes("let raccoonGuard=null;"));
+ assert(html.includes('window.RoubeOvoVisuals?.create?.(T,4,0.83,0x89847c,sc)'));
+ assert(html.includes("||creature(new T.Color(0x89847c),2.4)"));
+ assert(html.includes("const ownsEgg=!!carry&&stolenGuardArea()===3;"));
+ assert(html.includes("if(ownsEgg&&!frozen&&g.st==='guard'){g.st='wake';g.t=Math.min(CFG.wake,.45)}"));
+ assert(html.includes('const speed=g.rush?guardianRushSpeed(3):Math.max(38,gs(3)*1.7)*abuseMoveMult();'));
+ assert(html.includes("if(!ownsEgg||frozen){g.st='ret';g.rush=false}"));
+ assert(html.includes("if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g)"));
+ assert(!html.includes("dist>95||frozen"));
+});
+test('só a cerca original da base fica permanente, sem parede branca na base',()=>{
+ assert(html.includes('/* ===== Cerca original da BASE: permanente de dia e à noite ===== */'));
+ assert(html.includes('f(-12.5,-10,15,.6);f(12.5,-10,15,.6);'));
+ assert(html.includes('const PART_BORDERS=BI.map((b,i)=>gz(i))'));
+ assert(!html.includes('NIGHT_BASE_WALLS'));
+ assert(!html.includes('NIGHT_BASE_TIMER'));
+ assert(html.includes('GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})'));
+ assert(html.includes('EGG_NIGHT.until=now+9000'));
+ assert(html.includes('EGG_NIGHT.until+=3000'));
 });
