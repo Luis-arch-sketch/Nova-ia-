@@ -214,4 +214,50 @@ if(m.type==='admin-limited-clear'){
  broadcast(ws.room,{type:'event',kind:'limited-clear'},ws);return;
 }
 });ws.on('close',()=>leave(ws));ws.on('error',()=>leave(ws))});
-httpServer.listen(PORT,'0.0.0.0',()=>{console.log('Roube um Ovo 3D salas: http://localhost:'+PORT);if(!ADMIN_HASH)console.warn('Configure ADMIN_PASSWORD_HASH para liberar o admin online.')});
+// Verificacao de integracao: dois clientes WebSocket reais, duas bases e movimento sincronizado.
+// A sala QA-* e temporaria e e removida no final, sem afetar os jogadores.
+const testMultiplayer=async()=>{
+ const clients=[],room='QA-'+crypto.randomBytes(3).toString('hex').toUpperCase();
+ const join=async name=>new Promise((resolve,reject)=>{
+  const ws=new WebSocket('ws://127.0.0.1:'+PORT+'/ws');clients.push(ws);
+  let settled=false;
+  const timer=setTimeout(()=>{if(!settled){settled=true;reject(new Error('timeout de conexao: '+name))}},8000);
+  ws.once('open',()=>ws.send(JSON.stringify({type:'join',room,name})));
+  ws.on('message',raw=>{
+   let m;try{m=JSON.parse(String(raw))}catch{return}
+   if(settled)return;
+   if(m.type==='joined'||m.type==='error'){
+    settled=true;clearTimeout(timer);
+    if(m.type==='error')reject(new Error(m.message));
+    else resolve({ws,joined:m});
+   }
+  });
+  ws.once('error',err=>{if(!settled){settled=true;clearTimeout(timer);reject(err)}});
+ });
+ try{
+  const first=await join('QAJogador1');
+  const second=await join('QAJogador2');
+  const a=first.joined,b=second.joined;
+  if(a.room!==room||b.room!==room)throw Error('salas diferentes');
+  if(a.baseSlot===b.baseSlot||a.baseSlot!==0||b.baseSlot!==1)throw Error('bases compartilhadas ou slot incorreto');
+  if(!Array.isArray(b.players)||b.players.length!==2||!b.players.some(u=>u.id===a.id&&u.baseSlot===0))
+   throw Error('lista de jogadores incompleta');
+  const moved=await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(new Error('movimento nao chegou ao segundo jogador')),4500);
+   second.ws.on('message',raw=>{
+    let m;try{m=JSON.parse(String(raw))}catch{return}
+    if(m.type==='players'&&m.players?.some(u=>u.id===a.id&&u.x===3&&u.z===9)){
+     clearTimeout(timer);resolve(true);
+    }
+   });
+   first.ws.send(JSON.stringify({type:'move',x:3,y:0,z:9,yaw:0}));
+  });
+  if(moved)console.log('MULTIPLAYER_TEST_OK: dois jogadores entraram na mesma sala, receberam bases distintas e movimento sincronizado');
+ }catch(err){console.error('MULTIPLAYER_TEST_FAIL:',err&&err.message?err.message:String(err))}
+ finally{for(const ws of clients){try{ws.close()}catch(e){}}}
+};
+httpServer.listen(PORT,'0.0.0.0',()=>{
+ console.log('Roube um Ovo 3D salas: http://localhost:'+PORT);
+ if(!ADMIN_HASH)console.warn('Configure ADMIN_PASSWORD_HASH para liberar o admin online.');
+ setTimeout(testMultiplayer,1200);
+});
