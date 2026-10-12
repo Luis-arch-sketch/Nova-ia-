@@ -459,8 +459,8 @@ $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e
 const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
- $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0')+'</div>';
- $('ba').textContent=carry?'Largar':P.train?'Parar':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
+ $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (recomendado '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>'+(EGG_NIGHT.phase==='day'?'Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0'):EGG_NIGHT.phase==='night'?'🌙 Noite dos ovos • Crescimento 30×':'☀️ Amanheceu • Portões abrindo')+'</div>';
+ $('ba').textContent=carry?'Largar':P.train?'Parar':EGG_NIGHT.phase!=='day'?'🔒 Ovos':findEgg()?'Pegar ovo':near(-14,4,4)?'Treinar':'Ação'};
 const ft=s=>s>=3600?Math.floor(s/3600)+'h'+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m'+Math.floor(s%60)+'s':Math.ceil(s)+'s';
 /* ===== Trail ===== */
 const TP=[];for(let k=0;k<28;k++){const m=new T.Mesh(GS,new T.MeshBasicMaterial({color:0xffffff,transparent:true,depthWrite:false}));m.visible=false;m.life=0;sc.add(m);TP.push(m)}
@@ -598,7 +598,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
   else if(g.st==='ret'){aim(g,g.home.x,g.home.z,gs(i)*.7,dt);if(Math.hypot(p.x-g.home.x,p.z-g.home.z)<1)g.st='sleep'}
   p.y=g.st==='sleep'?Math.sin(TT*2)*.06:Math.abs(Math.sin(TT*10))*.3;g.l.position.set(p.x,p.y+8,p.z);g.l.set((g.st==='sleep'?'zzz ':'ALERTA ')+BI[i].gd)});
  /* ovos crescendo */
- for(const e of eggs)if(e.gr<1){e.gr=Math.min(1,e.gr+dt/2.5);e.mesh.scale.copy(e.base).multiplyScalar(e.gr);e.mesh.position.y=.45+e.base.y*e.gr}
+ for(const e of eggs)if(e.gr<1){e.gr=Math.min(1,e.gr+dt*(EGG_NIGHT.phase==='night'?30:1)/2.5);e.mesh.scale.copy(e.base).multiplyScalar(e.gr);e.mesh.position.y=.45+e.base.y*e.gr}
  /* depósito */
  manageLimitedAuras(dt);for(const e of eggs)auraUp(e,dt);if(carry)auraUp(carry,dt);
  if(carry&&near(0,-4,3.6)){const k2=S.inc.indexOf(null);if(k2>=0)dep(k2);else if(tt<=0)toast('Todas as incubadoras estão cheias.')}
@@ -613,8 +613,10 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  /* economia, reset dos ninhos (noite curta) */
  // Cada segundo aumenta o dinheiro pela renda dos pets: LIMITED tem quantia finita.
  S.$+=tot*dt*abuseRentMult();
- if(Date.now()/1e3>=nextReset){nextReset=Date.now()/1e3+CFG.reset;nite=1;toast('Os ninhos renovaram. Novos ovos nasceram!');abuseRegrow();beep(260,.5,'sine',.06)}
- if(nite>0)nite=Math.max(0,nite-dt/4);bg.copy(day).lerp(nit,A.night?1:nite*.85);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.3:1-.6*nite);abuseSky(dt)
+ if(EGG_NIGHT.phase==='day'&&Date.now()/1e3>=nextReset)startEggNight();
+ updateEggNight();
+ if(EGG_NIGHT.phase==='night')nite=Math.min(1,nite+dt*2);else nite=Math.max(0,nite-dt*1.4);
+ bg.copy(day).lerp(nit,A.night?1:nite*.92);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.28:1-.73*nite);abuseSky(dt)
  if(A.autoSecret){adminAutoTime+=dt;if(adminAutoTime>=Math.max(5,+A.autoSecretEvery||30)){adminAutoTime=0;if(eggs.filter(e=>e.s!==LIMITED_ID).length<190)adminSpawnEgg(Math.floor(Math.random()*BI.length),5,Math.floor(Math.random()*SZ.length),'nest',false)}}else adminAutoTime=0;
   if(A.autoHatch||abuseIs('hatch')){for(let i=0;i<S.inc.length;i++)if(S.inc[i])hatch(i)}
   if(tt>0){tt-=dt;if(tt<=0)$('ms').style.opacity=0}
@@ -840,7 +842,7 @@ const adminUI=(resetScroll=false)=>{
  if(adminTab===4){
  h='<h3>⚙️ Configurações de verdade</h3><p>As chances são sorteadas a cada renovação de ninhos para cada raridade especial. Cada uma tem sua própria chance.</p><div class="adGrid">';
  h+=adCard('🎲 Probabilidades (%)',`${adField('chanceSecret','Secret (%)','number','min="0" max="100" step="0.1"')}${adField('chanceEternal','Eternal (%)','number','min="0" max="100" step="0.1"')}${adField('chanceDivine','Divine (%)','number','min="0" max="100" step="0.1"')}${adBtn('saveChances','Aplicar chances')}`);
- h+=adCard('⏳ Tempos e treino',`${adField('resetSeconds','Segundos entre renovações (mínimo 10)','number','min="10" max="86400"')}${adField('trainMult','Multiplicador do ganho de Speed em treino','number','min="0.1" max="1000" step="0.1"')}${adBtn('saveTimers','Aplicar tempos')}`);
+ h+=adCard('⏳ Tempos, treino e noite dos ovos',`${adField('resetSeconds','Segundos entre renovações (mínimo 10)','number','min="10" max="86400"')}${adField('trainMult','Multiplicador do ganho de Speed em treino','number','min="0.1" max="1000" step="0.1"')}${adBtn('saveTimers','Aplicar tempos')}${adBtn('eggNightNow','🌙 Iniciar renovação dos ovos','secondary')}<p class="adHint">Noite 9s, ovos protegidos e crescimento 30×; depois 3s para liberar as 13 áreas. Novos ovos podem vir melhores.</p>`);
  h+=adCard('🏃 Movimentos',`${adField('moveMult','Multiplicador de movimento (0.2–20)','number','min="0.2" max="20" step="0.1"')}${adField('jumpMult','Multiplicador do salto (0.5–8)','number','min="0.5" max="8" step="0.1"')}${adBtn('saveMoves','Aplicar movimentos')}`);
  h+=adCard('🔁 Spawn automático de Secret',`${adField('autoSeconds','Intervalo em segundos (mínimo 5)','number','min="5" max="3600"')}${adBtn('autoSecret',A.autoSecret?'Auto Secret: LIGADO':'Auto Secret: desligado',A.autoSecret?'on':'secondary')}<p class="adHint">Gera ovos Secret automaticamente; o limite de segurança evita excesso de objetos 3D.</p>`);
  h+='</div>';
@@ -1055,7 +1057,8 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'goBase':msg='Teleportado para '+adminTele(-1);break;
  case 'dropEgg':if(carry){drop();msg='Ovo solto'}else msg='Nenhum ovo carregado';break;
  case 'saveChances':CFG.rare[7]=adValidNumber('chanceSecret',0,100)/100;CFG.rare[8]=adValidNumber('chanceEternal',0,100)/100;CFG.rare[9]=adValidNumber('chanceDivine',0,100)/100;msg='Chances salvas: Secret '+AS.chanceSecret+'%';break;
- case 'saveTimers':CFG.reset=adValidNumber('resetSeconds',10,86400);CFG.train=adValidNumber('trainMult',.1,1000);nextReset=Date.now()/1e3+CFG.reset;msg='Tempo de spawn e treino atualizados';break;
+ case 'eggNightNow':msg=startEggNight()?'🌙 Noite de renovação iniciada!':'Renovação já acontecendo';break;
+  case 'saveTimers':CFG.reset=adValidNumber('resetSeconds',10,86400);CFG.train=adValidNumber('trainMult',.1,1000);nextReset=Date.now()/1e3+CFG.reset;msg='Tempo de spawn e treino atualizados';break;
  case 'saveMoves':A.moveMult=adValidNumber('moveMult',.2,20);A.personalFast=false;A.jumpMult=adValidNumber('jumpMult',.5,8);msg='Movimento e salto personalizados aplicados';break;
  case 'autoSecret':A.autoSecretEvery=adValidNumber('autoSeconds',5,3600);A.autoSecret=!A.autoSecret;adminAutoTime=0;msg='Auto Secret '+(A.autoSecret?'ligado':'desligado');break;
  case 'saveNow':msg='Progresso e painel admin salvos';break;
