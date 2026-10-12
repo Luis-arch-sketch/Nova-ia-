@@ -355,13 +355,22 @@ const guardAreaOfEgg=e=>e?.s===LIMITED_ID
  ?guardAreaAtZ(e.mesh.position.z)
  :Number.isInteger(e?.b)&&e.b>=0&&e.b<BI.length?e.b:guardAreaAtZ(e.mesh.position.z);
 const stolenGuardArea=()=>carry?.guardArea??-1;
-const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!!carry&&!A.god
- &&stolenGuardArea()===i
- &&Number.isFinite(eff())&&eff()<=BI[i].req&&P.stun<=0
- &&Math.abs(P.z-home.z)<47&&Math.hypot(P.x-home.x,P.z-home.z)<63;
-const guardianRushSpeed=i=>Math.max(95,walk(BI[i].req)*3.5,
- walk(eff())*Math.max(1,A.moveMult)*abuseMoveMult()*2);
+// Na divisa, só o mob da parte de trás (origem do ovo) ataca.
+// Este dono continua sendo o mesmo enquanto o ovo for carregado até a base.
+const ownsStolenEgg=i=>!!carry&&stolenGuardArea()===i;
+const guardianShouldRush=(i,home)=>EGG_NIGHT.phase==='day'&&!P.train&&!A.god
+ &&ownsStolenEgg(i)&&Number.isFinite(eff())&&eff()<=BI[i].req&&P.stun<=0;
 const gs=i=>i?walk(BI[i].req)*CFG.gm:CFG.g0;
+// A corrida do mob DEVE levar em conta a velocidade REAL do jogador,
+// incluindo peso do ovo, trail, multiplicador ADMIN e eventos.
+const carryingRunSpeed=()=>{
+ const v=walk(eff())*A.moveMult*abuseMoveMult()
+  /(carry&&!A.weightless?1+CFG.w*carry.w:1);
+ return Number.isFinite(v)?Math.max(.1,Math.min(1400,v)):walk(0);
+};
+const guardianRushSpeed=i=>Math.max(carryingRunSpeed()*1.45,gs(i)*1.15);
+const guardianChaseSpeed=i=>eff()<=BI[i].req
+ ?guardianRushSpeed(i):Math.max(1,Math.min(gs(i),carryingRunSpeed()*.72));
 const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08);m.position.copy(home);return{b:i,m,home,st:'sleep',t:0,l:(()=>{const l=label('',256,64,6);sc.add(l);return l})()}});
 // O guardião genérico da 4ª área sai do mapa: só o guaxinim protege a parte 4.
 if(GD[3]){sc.remove(GD[3].m);sc.remove(GD[3].l);}
@@ -436,12 +445,13 @@ const take=e=>{
  e.guardArea=guardAreaOfEgg(e); // fixar origem ANTES de remover do ninho
  if(e.s===LIMITED_ID&&MP.connected)mpSend({type:'limited-take',x:e.mesh.position.x,z:e.mesh.position.z});
  eggs.splice(eggs.indexOf(e),1);if(e.nest){e.nest.e=null;e.nest=null}carry=e;e.st='carregado';sc.remove(e.mesh);P.g.add(e.mesh);e.mesh.scale.copy(e.base).multiplyScalar(e.s===LIMITED_ID?.13:.8);e.mesh.position.set(0,e.s===LIMITED_ID?2.6:1.5,.8);if(e.s===LIMITED_ID){if(!e.aura)mkLimitedAura(e);persistLimitedWorld()}
- // Guardião da PARTE DE TRÁS (origem do ovo), nunca os dois lados da divisa.
- if(e.guardArea===3&&raccoonGuard){
-  if(raccoonGuard.st!=='chase'){raccoonGuard.st='wake';raccoonGuard.t=Math.min(CFG.wake,.45);}
- }else if(e.guardArea>=0&&e.guardArea!==3){
-  const g=GD[e.guardArea];
-  if(g&&g.st!=='chase'&&g.st!=='wake'){g.st='wake';g.t=Math.min(CFG.wake,.45)}
+ // O mob correto inicia a perseguição IMEDIATAMENTE após o roubo.
+ const owner=e.guardArea===3?raccoonGuard:GD[e.guardArea];
+ if(owner){owner.st='chase';owner.t=0;owner.rush=eff()<=BI[e.guardArea].req}
+ // Um ovo nunca pode atrair o mob da frente, nem com evento de fúria.
+ GD.forEach(g=>{if(g!==owner&&(g.st==='chase'||g.st==='wake')){g.st='ret';g.rush=false}});
+ if(raccoonGuard&&raccoonGuard!==owner&&(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')){
+  raccoonGuard.st='ret';raccoonGuard.rush=false;
  }
  beep(300,.15);toast('Pegou '+RAR[e.r]+' '+SPC[e.s].n+' ('+SZ[e.z][0]+', peso '+e.w+'). Fuja!')};
 const drop=()=>{const e=carry;carry=null;
@@ -621,7 +631,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(raccoonGuard){
   const g=raccoonGuard,p=g.m.position;
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
-  const ownsEgg=!!carry&&stolenGuardArea()===3;
+  const ownsEgg=ownsStolenEgg(3);
   if(!ownsEgg||frozen){
    if(g.st==='chase'||g.st==='wake')g.st='ret';
    g.rush=false;
@@ -639,7 +649,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
    if(!ownsEgg||frozen){g.st='ret';g.rush=false}
    else{
     // Da PARTE 4 até a BASE: o guaxinim segue o ladrão sem abandonar após 95m.
-    const speed=g.rush?guardianRushSpeed(3):Math.max(38,gs(3)*1.7)*abuseMoveMult();
+    const speed=guardianChaseSpeed(3);
     aim(g,P.x,P.z,speed,dt);
     if(Math.hypot(P.x-p.x,P.z-p.z)<3.5)hit(g);
    }
@@ -664,8 +674,8 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  const [ix,iy]=mvIn(),mg=Math.hypot(ix,iy);if(P.train&&mg>.3)P.train=false;
  // Corrida usa o multiplicador configurado, sem bônus automático 10× do ADMIN.
  const runMultiplier=A.moveMult;
- const rawSp=walk(eff())*runMultiplier*abuseMoveMult()/(carry&&!A.weightless?1+CFG.w*carry.w:1);
- let sp=Number.isFinite(rawSp)?Math.max(.1,Math.min(rawSp,1400)):walk(0);
+ const rawSp=carryingRunSpeed();
+ let sp=rawSp;
  if(P.stun>0){P.stun-=dt;sp=0}
  const s_=Math.sin(P.yaw),c_=Math.cos(P.yaw);let tx=(-s_*iy+c_*ix)*sp,tz=(-c_*iy-s_*ix)*sp;
  if(P.train){tx=tz=0;P.x=-14;P.z=4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}
@@ -689,9 +699,9 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
   const frozen=(A.freeze&&!abuseIs('fury'))||abuseIs('freeze');
   if(frozen){g.st='sleep';g.t=0;g.rush=false;g.m.position.copy(g.home)}
   const p=g.m.position,i=g.b;
-  const ownsEgg=!!carry&&stolenGuardArea()===i;
+  const ownsEgg=ownsStolenEgg(i);
   // No limite de duas áreas, o guardião DA FRENTE fica no posto.
-  if(!ownsEgg&&!abuseIs('fury')){
+  if(!ownsEgg&&(!!carry||!abuseIs('fury'))){
    if(g.st==='chase'||g.st==='wake')g.st='ret';
    g.rush=false;
   }
@@ -700,11 +710,11 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
   if(rush)g.rush=true;
   if(rush&&g.st!=='chase'){g.st='chase';g.t=0}
   if(g.st==='wake'){g.t-=dt;if(g.t<=0){g.st='chase';beep(90,.4,'sawtooth',.06)}}
-  if(g.st==='chase'){if(!ownsEgg&&!abuseIs('fury')){g.st='ret';g.rush=false}
-   else{aim(g,P.x,P.z,g.rush?guardianRushSpeed(i):gs(i),dt);
+  if(g.st==='chase'){if(!ownsEgg&&(!!carry||!abuseIs('fury'))){g.st='ret';g.rush=false}
+   else{aim(g,P.x,P.z,ownsEgg?guardianChaseSpeed(i):gs(i),dt);
     if(Math.hypot(P.x-p.x,P.z-p.z)<3.6){
-     if(abuseIs('fury')&&!carry)abuseGuardianHit(g);
-     else hit(g)
+     if(ownsEgg)hit(g);
+     else if(abuseIs('fury')&&!carry)abuseGuardianHit(g);
     }}}
   else if(g.st==='ret'){aim(g,g.home.x,g.home.z,Math.max(28,gs(i)*.7),dt);if(Math.hypot(p.x-g.home.x,p.z-g.home.z)<1){g.st='sleep';g.rush=false}}
   p.y=g.st==='sleep'?Math.sin(TT*2)*.06:Math.abs(Math.sin(TT*10))*.3;g.l.position.set(p.x,p.y+8,p.z);g.l.set((g.st==='sleep'?'zzz ':'ALERTA ')+BI[i].gd)});
