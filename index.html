@@ -369,8 +369,18 @@ const carryingRunSpeed=()=>{
  return Number.isFinite(v)?Math.max(.1,Math.min(1400,v)):walk(0);
 };
 const guardianRushSpeed=i=>Math.max(carryingRunSpeed()*1.45,gs(i)*1.15);
+// Quem tem 100K+ de Speed consegue fugir do guaxinim até no celular.
+// A velocidade do guardião considera o joystick, o peso do ovo e a aceleração REAL.
+// Parado, ele continua se aproximando; correndo, o jogador sempre pode abrir distância.
+const raccoonFairSpeed=i=>{
+ const [x,y]=mvIn(),intent=Math.min(1,Math.hypot(x,y)),baseline=gs(i)*.65;
+ if(intent<=.01)return baseline;
+ const target=carryingRunSpeed()*intent,actual=Math.hypot(P.vx,P.vz);
+ return Math.max(.04,Math.min(baseline,target*.40,Math.max(.04,actual*.70)));
+};
 const guardianChaseSpeed=i=>eff()<=BI[i].req
- ?guardianRushSpeed(i):Math.max(1,Math.min(gs(i),carryingRunSpeed()*.72));
+ ?guardianRushSpeed(i):i===3&&eff()>=100000
+ ?raccoonFairSpeed(i):Math.max(1,Math.min(gs(i),carryingRunSpeed()*.72));
 const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.Color().setHSL((i*.09+.55)%1,.6,.5),2.6+i*.08);m.position.copy(home);return{b:i,m,home,st:'sleep',t:0,l:(()=>{const l=label('',256,64,6);sc.add(l);return l})()}});
 // O guardião genérico da 4ª área sai do mapa: só o guaxinim protege a parte 4.
 if(GD[3]){sc.remove(GD[3].m);sc.remove(GD[3].l);}
@@ -527,7 +537,7 @@ cv.addEventListener('pointerup',pu);cv.addEventListener('pointercancel',pu);cv.a
 addEventListener('blur',()=>{jp=cp=null;J.x=J.y=0;Object.keys(K).forEach(x=>K[x]=0);$('js').style.display=$('jk').style.display='none'});
 cv.addEventListener('wheel',e=>{P.dist=Math.max(4,Math.min(18,P.dist+e.deltaY*.01))});
 $('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e.preventDefault();doAct()};
-const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1?[x/l,y/l]:[x,y]};
+const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1||(jp!==null&&l>.22)?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
  $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (Speed recomendada '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>'+(EGG_NIGHT.phase==='day'?'Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0'):EGG_NIGHT.phase==='night'?'🌙 Noite dos ovos • Crescimento 30×':'☀️ Amanheceu • Portões abrindo')+'</div>';
