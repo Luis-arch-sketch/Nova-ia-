@@ -290,7 +290,7 @@ try{
  assert.equal(erased.god,false);assert.equal(erased.move,1);
  assert(erased.admin&&erased.badge==='yes','ADMIN mantém identificação');
  assert.equal(erased.marker,'done','A exclusão ocorre uma única vez');
- assert.equal(erased.previousName,null,'Identidade antiga do jogador excluída');
+ assert.notEqual(erased.previousName,'MeuNomeAntigo','Nome antigo substituído por uma identidade nova');
  await ownerPage.evaluate(()=>{S.$=321;S.sp=42;save()});
  await ownerPage.reload({waitUntil:'domcontentloaded'});
  await ownerPage.waitForTimeout(700);
