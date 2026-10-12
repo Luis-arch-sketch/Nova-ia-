@@ -146,7 +146,7 @@ function fruitRefresh(){
 
 function openFruitShop(){
  if(adminVisible)return;
- fruitRefresh();fruitMask.style.display='flex';
+ fruitMask.style.display='flex';fruitRefresh();
  speakFruit('hello');
 }
 function fruitBuy(key){
