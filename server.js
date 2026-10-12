@@ -99,8 +99,8 @@ const httpServer=http.createServer((req,res)=>{
  if(u.pathname==='/api/fruits'){
   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
     .end(JSON.stringify({fruits:[
-      {id:'pear',name:'Pera da Sombra',price:50000000000,speedMultiplier:5},
-      {id:'apple',name:'Maçã',price:1000000000000,speedMultiplier:15}
+      {id:'pear',name:'Pera da Sombra',price:50000000000,speedMultiplier:5,durationSeconds:1800},
+      {id:'apple',name:'Maçã',price:1000000000000,speedMultiplier:15,durationSeconds:1800}
     ],currency:'dinheiro-do-jogo',scope:'cliente-local'}));return;
  }
  if(u.pathname.startsWith('/voices/fruits/')){
