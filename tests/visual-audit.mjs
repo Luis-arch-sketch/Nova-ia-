@@ -610,11 +610,19 @@ try{
    const original=guards.map(g=>({g,state:g.st,t:g.t,rush:g.rush,pos:g.m.position.clone()}));
    const touched=[];
    const setupEgg=(i,j=0)=>{
-    const egg=eggs.find(e=>e.nest?.b===i&&e.j===j);
-    if(!egg)throw Error('Faltou ovo da parte '+(i+1));
-    const nest=egg.nest;
-    touched.push({egg,nest,position:egg.mesh.position.clone(),scale:egg.mesh.scale.clone(),
-      gr:egg.gr,st:egg.st});
+    let egg=eggs.find(e=>e.nest?.b===i&&e.j===j);
+    let created=false,nest;
+    // Outros cenários anteriores podem ter consumido os dois ovos comuns.
+    // Criar um ovo comum SOMENTE no teste, restaurando o mundo no finally.
+    if(!egg){
+     nest=NS.find(n=>n.b===i&&n.j===j&&n.e===null);
+     if(!nest)throw Error('Ninho de teste indisponível na parte '+(i+1));
+     egg=newEgg(i,j);egg.mesh=eggMesh(egg);egg.base=egg.mesh.scale.clone();
+     egg.gr=1;egg.mesh.position.set(nest.x,.45+egg.base.y,nest.z);
+     egg.nest=nest;nest.e=egg;eggs.push(egg);created=true;
+    }else nest=egg.nest;
+    touched.push({egg,nest,created,position:egg.mesh.position.clone(),
+      scale:egg.mesh.scale.clone(),gr:egg.gr,st:egg.st});
     egg.gr=1;egg.mesh.scale.copy(egg.base);
     return egg;
    };
@@ -665,7 +673,12 @@ try{
    }finally{
     if(carry&&carry!==saved.carry)drop();
     for(const v of touched){
-     const {egg,nest,position,scale,gr,st}=v;
+     const {egg,nest,created,position,scale,gr,st}=v;
+     if(created){
+      egg.mesh.parent?.remove(egg.mesh);
+      const idx=eggs.indexOf(egg);if(idx>=0)eggs.splice(idx,1);
+      nest.e=null;continue;
+     }
      if(egg.mesh.parent!==sc){egg.mesh.parent?.remove(egg.mesh);sc.add(egg.mesh)}
      egg.mesh.position.copy(position);egg.mesh.scale.copy(scale);egg.gr=gr;egg.st=st;
      egg.nest=nest;nest.e=egg;if(!eggs.includes(egg))eggs.push(egg);
