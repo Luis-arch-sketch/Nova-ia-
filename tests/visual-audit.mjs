@@ -172,10 +172,10 @@ try{
 
   }
   if(mode==='desktop'){
-    // Verifica spawn ilimitado, persistência real no navegador e recuperação do movimento.
+    // Verifica 200 LIMITED sem sobreposição, isolamento de salas, persistência da Speed e recuperação do movimento.
     const spawned=await page.evaluate(()=>{
       S.sp=1234567;
-      const before=S.limitedWorld?.length||0;
+      const before=eggs.filter(e=>e.s===LIMITED_ID).length;
       adminSpawnLimited(100,true);
       adminSpawnLimited(100,true);
       const created=eggs.filter(e=>e.s===LIMITED_ID);
@@ -193,8 +193,10 @@ try{
       saved:S.limitedWorld?.length||0,
       speed:S.sp
     }));
-    assert.equal(restored.saved,spawned.before+200,'LIMITED persistidos no save');
-    assert.equal(restored.eggs,spawned.before+200,'LIMITED restaurados na cena');
+    // Ovos LIMITED são exclusivos da sala. Ao recarregar, uma NOVA sala é criada.
+    // Invocações locais, sem ADMIN autenticado na rede, jamais atravessam salas.
+    assert.equal(restored.saved,0,'LIMITED não podem vazar para o save local de outra sala');
+    assert.equal(restored.eggs,0,'Ovos LIMITED de uma sala anterior não aparecem numa sala nova');
     assert(restored.speed>=1234567,'Speed manteve valor salvo');
     await page.evaluate(()=>{P.x=42;P.z=-220;P.stun=1.5});
     await page.locator('#recoverBtn').click();
