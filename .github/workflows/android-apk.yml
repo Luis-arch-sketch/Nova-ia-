@@ -1,0 +1,50 @@
+name: APK Android - Roube um Ovo 3D
+on:
+  push:
+    branches: [roube-um-ovo-3d-multiplayer]
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Instalar SDK Android
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK do jogo
+        run: gradle -p android-app :app:assembleDebug --no-daemon
+      - name: Disponibilizar APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roube-um-Ovo-3D-APK
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publicar instalador para download direto
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk Roube-um-Ovo-3D.apk
+          if gh release view android-apk-v1 >/dev/null 2>&1; then
+            gh release upload android-apk-v1 Roube-um-Ovo-3D.apk --clobber
+          else
+            gh release create android-apk-v1 Roube-um-Ovo-3D.apk \
+              --target "$GITHUB_SHA" \
+              --title "Roube um Ovo 3D — Android" \
+              --notes "APK para instalar no Android. Joga nas mesmas salas online do site e recebe as atualizações do jogo. Internet necessária. Versão de teste assinada para instalação manual."
+          fi
