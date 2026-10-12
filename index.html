@@ -490,7 +490,7 @@ const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train
 const INCUBATOR_MAX_GROWTH=16; // cada ovo pode atingir 16 vezes seu tamanho ao ser colocado na incubadora
 const dep=k=>{const e=carry;carry=null;
  if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}
- P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.mesh.scale.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
+ P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.base.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
  toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+fm(LIMITED_RATE)+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
@@ -735,7 +735,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  manageLimitedAuras(dt);for(const e of eggs)auraUp(e,dt);if(carry)auraUp(carry,dt);
  if(carry&&near(0,-4,3.6)){const k2=S.inc.indexOf(null);if(k2>=0)dep(k2);else if(tt<=0)toast('Todas as incubadoras estão cheias.')}
  /* incubadoras */
- IV.forEach((o,k2)=>{const s=S.inc[k2];o.e.visible=!!s;if(s){
+ IV.forEach((o,k2)=>{const s=S.inc[k2];o.e.visible=!!s;if(!s)o.l.position.y=3.3;if(s){
    const f=Math.max(0,Math.min(1,(Date.now()-s.a)/Math.max(1000,s.b-s.a)));
    // Conservar exatamente a escala visual que o ovo tinha na mão ao ser depositado.
    // Os saves anteriores continuam funcionando usando o tamanho correspondente à categoria.
@@ -743,10 +743,11 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
    const base=Array.isArray(s.initialScale)&&s.initialScale.length===3&&s.initialScale.every(v=>Number.isFinite(v)&&v>0)
     ?s.initialScale:[.55*k,.75*k,.55*k];
    const maxGrowth=Number.isFinite(s.maxGrowth)?Math.max(1,Math.min(30,s.maxGrowth)):INCUBATOR_MAX_GROWTH;
-   const growth=1+(maxGrowth-1)*f*f;
+   const growth=1+(maxGrowth-1)*(1-(1-f)*(1-f)); // crescimento rápido e visível desde os primeiros segundos
    o.e.material.color.setHSL((s.s*37%360)/360,.65,.62);
    o.e.scale.set(base[0]*growth,base[1]*growth,base[2]*growth);
    o.e.position.y=.5+o.e.scale.y; // manter a base do ovo apoiada na incubadora
+   o.l.position.y=Math.max(3.3,1.2+o.e.scale.y*2); // rótulo acima do ovo, mesmo gigante
    o.e.rotation.z=f>.85?Math.sin(TT*30)*.05:0;
   }});
  /* pets */
