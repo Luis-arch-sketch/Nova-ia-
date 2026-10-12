@@ -53,3 +53,33 @@ test('reset único do dono mantém ADMIN',()=>{
  assert(html.includes('ensureTM(S.pid);regrow(true);'));
  assert(!server.includes('applyOwnerTreadmill'));
 });
+
+test('renovação dos ovos: 9 segundos de noite, depois 3 até abrir as áreas',()=>{
+ assert(html.includes("const EGG_NIGHT={phase:'day',until:0,last:'',cycles:0,renewed:0}"));
+ assert(html.includes("EGG_NIGHT.phase='night';EGG_NIGHT.until=now+9000"));
+ assert(html.includes("EGG_NIGHT.phase='unlock';EGG_NIGHT.until+=3000"));
+ assert(html.includes("EGG_NIGHT.phase='day';EGG_NIGHT.until=0"));
+ assert(html.includes("nextReset=now/1000+CFG.reset"));
+ assert(html.includes("if(EGG_NIGHT.phase==='day'&&Date.now()/1e3>=nextReset)startEggNight()"));
+ assert(html.includes("case 'eggNightNow':msg=startEggNight()"));
+ assert(html.includes("adBtn('eggNightNow','🌙 Iniciar renovação dos ovos'"));
+});
+test('13 paredes brancas com relógios bloqueiam áreas e coleta noturna',()=>{
+ assert(html.includes('color:0xffffff,transparent:true,opacity:.92'));
+ assert(html.includes('return{z,bar,timer,l,b,req:b.req}'));
+ assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})"));
+ assert(html.includes("GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false})"));
+ assert(html.includes("if(Math.abs(player.x)<10&&EGG_NIGHT.phase==='day')return"));
+ assert(html.includes("if(EGG_NIGHT.phase!=='day')return null"));
+ assert(html.includes("if(EGG_NIGHT.phase!=='day'){toast('🔒 Aguarde renovar os ovos"));
+ assert(html.includes('id="eggNightClock"'));
+ assert(html.includes("EGG_NIGHT.phase==='night'?30:1"));
+});
+test('trocar ovos dos ninhos preserva LIMITED e sorte de raros',()=>{
+ assert(html.includes("if(!e||e.s===LIMITED_ID)continue"));
+ assert(html.includes("if(e.aura){sc.remove(e.aura);e.aura=null;}"));
+ assert(html.includes("const ix=eggs.indexOf(e);if(ix>=0)eggs.splice(ix,1)"));
+ assert(html.includes("Math.min(1,chances[r]*1.4)"));
+ assert(html.includes("EGG_NIGHT.phase==='night'&&Math.random()<.32"));
+ assert(html.includes("}finally{for(const r of [7,8,9])CFG.rare[r]=chances[r]}"));
+});
