@@ -78,21 +78,41 @@ try{
   assert(state.renderer?.calls>0,'Three.js must render at least one call');
   assert.equal(errors.length,0,'Game JavaScript runtime errors: '+JSON.stringify(errors));
 
-  // ADMIN confirmado ganha Speed pela fórmula da esteira comum.
-  const trainCheck=await page.evaluate(()=>{
-   const backup={sp:S.sp,tm:S.tm,train:P.train,verified:ownerVerified,cfg:CFG.train,x:P.x,z:P.z,vx:P.vx,vz:P.vz,stun:P.stun};
+  // Jogador comum continua com treino; ADMIN perde a esteira física e o Speed/s.
+  const treadmillAudit=await page.evaluate(()=>{
+   const old={sp:S.sp,tm:S.tm,train:P.train,verified:ownerVerified,
+    cfg:CFG.train,x:P.x,y:P.y,z:P.z,vx:P.vx,vy:P.vy,vz:P.vz,stun:P.stun,tab};
    try{
-    S.sp=100;S.tm=0;P.train=true;P.stun=0;CFG.train=1;ownerVerified=true;
-    const old=S.sp;step(.05);
-    return {actual:S.sp-old,expected:TM[0][1]*.05};
+    ownerVerified=false;ensureTM(S.pid);
+    S.sp=100;S.tm=0;CFG.train=1;P.train=true;P.stun=0;
+    const beforeNormal=S.sp;step(.05);
+    const gainedNormal=S.sp-beforeNormal,visibleNormal=!!TMO&&sc.children.includes(TMO.g);
+    ownerVerified=true;S.tm=8;P.train=true;
+    removeOwnerTreadmill();
+    const removed=!(TMO&&sc.children.includes(TMO.g)),level=S.tm,trainingStopped=!P.train;
+    P.train=true;
+    const beforeAdmin=S.sp;step(.05);
+    const gainedAdmin=S.sp-beforeAdmin,adminTrainStopped=!P.train;
+    tab=1;ui();
+    const shopHidden=!document.getElementById('pn')?.innerHTML.includes('data-a="T0"');
+    return {gainedNormal,gainedAdmin,visibleNormal,removed,level,trainingStopped,adminTrainStopped,shopHidden};
    }finally{
-    S.sp=backup.sp;S.tm=backup.tm;P.train=backup.train;P.stun=backup.stun;
-    ownerVerified=backup.verified;CFG.train=backup.cfg;
-    P.x=backup.x;P.z=backup.z;P.vx=backup.vx;P.vz=backup.vz;styleTM();
+    ownerVerified=old.verified;
+    if(ownerVerified)removeOwnerTreadmill();else ensureTM(S.pid);
+    S.sp=old.sp;S.tm=ownerVerified?0:old.tm;
+    CFG.train=old.cfg;P.train=ownerVerified?false:old.train;P.stun=old.stun;
+    P.x=old.x;P.y=old.y;P.z=old.z;P.vx=old.vx;P.vy=old.vy;P.vz=old.vz;tab=old.tab;
+    styleTM();ui();
    }
   });
-  assert(Math.abs(trainCheck.actual-trainCheck.expected)<.001,'Treino do ADMIN igual ao dos demais: '+JSON.stringify(trainCheck));
-  console.log(mode.toUpperCase()+' ESTEIRA NORMAL '+JSON.stringify(trainCheck));
+  assert(Math.abs(treadmillAudit.gainedNormal-.1)<.001,'Esteira de jogadores comuns funciona');
+  assert.equal(treadmillAudit.gainedAdmin,0,'ADMIN não ganha Speed pela esteira');
+  assert(treadmillAudit.visibleNormal,'Esteira dos jogadores comuns permanece no mapa');
+  assert(treadmillAudit.removed,'Esteira física removida da cena do ADMIN');
+  assert.equal(treadmillAudit.level,0,'Level salvo da esteira do ADMIN zerado');
+  assert(treadmillAudit.trainingStopped&&treadmillAudit.adminTrainStopped,'ADMIN impedido de treinar');
+  assert(treadmillAudit.shopHidden,'Loja do ADMIN sem aba de esteira');
+  console.log(mode.toUpperCase()+' ADMIN SEM ESTEIRA '+JSON.stringify(treadmillAudit));
 
   if(mobile){
     // Toque Android de verdade pelo protocolo Chromium, usando o joystick existente.

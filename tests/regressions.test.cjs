@@ -61,3 +61,22 @@ test('esteira normal para ADMIN, poderes sempre opcionais',()=>{
  assert(html.includes("case 'speedSet':"));
  assert(html.includes("case 'moneySet':"));
 });
+
+test('conta ADMIN fica realmente sem esteira nem treino automático',()=>{
+ assert(html.includes('const removeOwnerTreadmill=()=>{'));
+ assert(html.includes('if(TMO){sc.remove(TMO.g);TMO=null;}'));
+ assert(html.includes('P.train=false;S.tm=0;'));
+ assert(html.includes('if(ownerVerified)removeOwnerTreadmill();else ensureTM(S.pid);'));
+ assert(html.includes('if(ownerVerified&&P.train)P.train=false;'));
+ assert(html.includes('if(P.train&&!ownerVerified){tx=tz=0;'));
+ assert(html.includes("if(!ownerVerified&&near(-14,4,4))"));
+ assert(html.includes("ownerVerified&&i===0?'':bt('T'+i"));
+ assert(html.includes("case 'trainToggle':if(ownerVerified)"));
+ assert(html.includes("case 'treadSet':if(ownerVerified)"));
+ assert(html.includes("case 'playNormal':{removeOwnerTreadmill();"));
+ assert(html.includes("ownerVerified=true;adminBadge.visible=true;removeOwnerTreadmill();"));
+ assert(html.includes('const adminLogin=async e=>'));
+ assert(html.includes('const ABUSE_NAMES='));
+ assert(html.includes("case 'speedSet':"));
+ assert(html.includes("case 'moneySet':"));
+});
