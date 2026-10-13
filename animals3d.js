@@ -544,6 +544,7 @@ function create(three,id,k,col,scene){
  scene.add(g);return g;
 }
 function animate(g,t,phase){
+ if(g?.userData?.customUpdate){g.userData.customUpdate(t,phase);return;}
  if(g?.userData?.mixer){
   const data=g.userData,desired=data.mobAction||"idle";
   if(data.actions&&data.activeClip!==desired){
