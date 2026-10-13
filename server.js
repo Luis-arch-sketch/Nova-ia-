@@ -109,9 +109,9 @@ const installHalloween=html=>{
  if(html.split(render).length!==2||html.split('</body>').length!==2)throw new Error('Integração Halloween: HTML inesperado');
  const threeTag='<script src="/three.min.js"></script>';
  if(html.split(threeTag).length!==2)throw new Error('Integração Halloween: Three.js inesperado');
- return html.replace(threeTag,threeTag+'<script src="/halloween-pets.js?v=20261013-pets-v2"></script>')
+ return html.replace(threeTag,threeTag+'<script src="/halloween-pets.js?v=20261013-pets-eternal-divino-v3"></script>')
   .replace(render,'if(window.RoubeOvoHalloween)window.RoubeOvoHalloween.update();'+render)
-  .replace('</body>','<script src="/halloween-event.js?v=20261013-pets-v2"></script></body>');
+  .replace('</body>','<script src="/halloween-event.js?v=20261013-pets-eternal-divino-v3"></script></body>');
 };
 PWA_FILES['/halloween-event.js']=['halloween-event.js','application/javascript; charset=utf-8'];
 PWA_FILES['/halloween-pets.js']=['halloween-pets.js','application/javascript; charset=utf-8'];
