@@ -76,7 +76,7 @@ function mesh(g,shape,c,scale,pos){
 function create(three,id,k,col,scene){
  init(three);
  // Novos mobs 3D derivados dos STL/3MF recebidos: versão de baixa complexidade para Android.
- if(window.RoubeOvoUserMobs?.has(id)){
+ if(id!==68 && window.RoubeOvoUserMobs?.has(id)){ // Fantasma 3MF é decoração; restaura o Skeleton original
   try{const imported=window.RoubeOvoUserMobs.create(three,id,k,scene);if(imported)return imported}
   catch(e){console.warn('Mob customizado: usando animal procedural',id,e)}
  }
