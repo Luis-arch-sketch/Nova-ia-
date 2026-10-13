@@ -122,6 +122,11 @@ const httpServer=http.createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':filename.endsWith('.ogg')?'audio/ogg':'audio/mpeg','Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});
   stream.pipe(res);return;
  }
+ if(u.pathname==='/api/leaderboard'){
+  const players=[...rooms].flatMap(([room,clients])=>[...clients].filter(ws=>ws.readyState===WebSocket.OPEN&&!ws.admin).map(ws=>({name:ws.name,room,money:Number.isFinite(ws.money)?ws.money:0,speed:Number.isFinite(ws.speed)?ws.speed:0})));
+  players.sort((a,b)=>b.money-a.money||b.speed-a.speed);
+  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}).end(JSON.stringify({players:players.slice(0,50),total:players.length}));return;
+ }
  if(u.pathname==='/api/servers'){
   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
     .end(JSON.stringify(listPublicRooms(u.searchParams.get('page'))));return;
