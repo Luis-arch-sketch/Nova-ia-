@@ -75,6 +75,11 @@ function mesh(g,shape,c,scale,pos){
 }
 function create(three,id,k,col,scene){
  init(three);
+ // Novos mobs 3D derivados dos STL/3MF recebidos: versão de baixa complexidade para Android.
+ if(window.RoubeOvoUserMobs?.has(id)){
+  try{const imported=window.RoubeOvoUserMobs.create(three,id,k,scene);if(imported)return imported}
+  catch(e){console.warn('Mob customizado: usando animal procedural',id,e)}
+ }
  const bi=id>=0&&id<104?Math.floor(id/8):id===104?5:(id-105)%13;
  const slot=id>=0&&id<104?id%8:id===104?7:6;
  const kind=id===104?'dragon':SPECIES[bi]?.[slot];if(!kind)return null;
