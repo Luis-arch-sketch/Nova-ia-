@@ -39,11 +39,20 @@ test('mobs corrigidos usam malhas suavizadas e Kitsune é a guardiã visível',(
  assert.doesNotThrow(()=>new Function(polished));
  assert(polished.includes("const colors={galinha:0xffe1ac,escorpiao:0x8d4d30"));
  assert(polished.includes('geo.computeVertexNormals()'));
- assert(polished.includes('STL/3MF smoothed mobile v4'));
+ const animal=fs.readFileSync('animals3d.js','utf8');
+ assert(polished.includes('STL/3MF original limpo v5'));
+ assert(polished.includes('body.scale.set(1,1,1)'));
+ assert(!polished.includes("if(name==='kitsune'){"));
+ assert(!polished.includes("if(name==='trex'){"));
+ assert(!polished.includes('orb('));
+ assert(polished.includes('relativeSizes={galinha:1.32,escorpiao:1.40,trex:1.80,kitsune:1.42}'));
+ assert(animal.includes('id!==68 && window.RoubeOvoUserMobs?.has(id)'));
+ assert(html.includes("'Cosmic Skeleton','Centapede,Cosmic Gecko"));
+ assert(!html.includes('Fantasma Cósmico'));
+
  assert(server.includes("guardianSpecies=[6,5,6,6,6,5,5,5,4,7,6,6,6]"));
  assert(server.includes("fs.readFileSync(path.join(__dirname,'mobs-polished.js'),'utf8')"));
  assert(server.includes("'+polishedMobsSource+'"));
- const animal=fs.readFileSync('animals3d.js','utf8');
  assert(animal.includes('if(g?.userData?.customUpdate)'));
  assert(html.includes("'Cerejeiras',0xf3a6c8,0xff7eb6,2.5e9,'Kitsune'"));
  assert(html.includes("<button id=bm>Loja</button>"));
