@@ -269,7 +269,7 @@
   const d=byId.get(e.s);if(!d)return null;const type=types[d.tier],geo=init(T);
   const g=new T.Group(),shell=new T.Mesh(geo.sphere,new T.MeshLambertMaterial({color:type.color,emissive:type.glow,emissiveIntensity:.46}));
   shell.castShadow=true;g.add(shell);eggDecor(T,e.s,g);
-  g.name='Ovo '+type.name;g.userData.halloweenTier=d.tier;g.scale.set(.62,.83,.62).multiplyScalar(SZ[e.z][1]*1.2);
+  g.name='Ovo '+type.name;g.userData.halloweenTier=d.tier;g.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2);
   if(scene)scene.add(g);return g;
  }
  function styleIncubator(T,mesh,species){

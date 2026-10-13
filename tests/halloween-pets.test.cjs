@@ -46,7 +46,9 @@ test('todos os modelos e ovos são malhas 3D completas, animadas e sem valores i
   for(let z=0;z<sizes.length;z++){
    const e=c.HW.egg(THREE,{s:d.id,z},sizes,scene);
    assert(e.isGroup&&e.children.length>=5);assert.equal(e.userData.halloweenTier,d.tier);
-   assert(e.scale.y>0);assert(e.name.includes(c.HW.types[d.tier].name));scene.remove(e);
+   assert(e.scale.y>0);assert(e.name.includes(c.HW.types[d.tier].name));
+   if(z===4){const height=new THREE.Box3().setFromObject(e).getSize(new THREE.Vector3()).y;assert(Math.abs(height-12)<1e-6,'ovo gigante de Halloween mede 12 unidades');}
+   scene.remove(e);
   }
   scene.remove(g);
  }

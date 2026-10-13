@@ -89,15 +89,15 @@ test('HTTP serve faixa completa, intervalos de áudio e integração válida com
   const head=await fetch(origin+state.musicUrl,{method:'HEAD'});assert.equal(head.status,200);
   assert.equal(Number(head.headers.get('content-length')),expected.length);assert.equal((await head.arrayBuffer()).byteLength,0);
   const html=await (await fetch(origin+'/')).text();
-  assert(html.includes('/halloween-event.js?v=20261013-pets-v1'));assert(html.includes('/fruits-shop.js'));assert(html.includes('/servers-ui.js'));
-  assert(html.indexOf('/halloween-pets.js?v=20261013-pets-v1')<html.indexOf('const HW=window.RoubeOvoHalloweenPets'));
-  const petsResponse=await fetch(origin+'/halloween-pets.js?v=20261013-pets-v1');assert.equal(petsResponse.status,200);
+  assert(html.includes('/halloween-event.js?v=20261013-pets-v2'));assert(html.includes('/fruits-shop.js'));assert(html.includes('/servers-ui.js'));
+  assert(html.indexOf('/halloween-pets.js?v=20261013-pets-v2')<html.indexOf('const HW=window.RoubeOvoHalloweenPets'));
+  const petsResponse=await fetch(origin+'/halloween-pets.js?v=20261013-pets-v2');assert.equal(petsResponse.status,200);
   assert.equal(await petsResponse.text(),fs.readFileSync('halloween-pets.js','utf8'));
   assert.equal(state.newAnimals,16);assert.equal(state.eggTypes.length,4);
   assert(html.includes('window.RoubeOvoHalloween.update();R.render(sc,cam)'));
   const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
   for(const script of scripts)new vm.Script(script[1]);
-  const scriptResponse=await fetch(origin+'/halloween-event.js?v=20261013-pets-v1');assert.equal(scriptResponse.status,200);
+  const scriptResponse=await fetch(origin+'/halloween-event.js?v=20261013-pets-v2');assert.equal(scriptResponse.status,200);
   assert.equal(await scriptResponse.text(),source);
  }finally{child.kill();await new Promise(resolve=>{if(child.exitCode!==null)resolve();else child.once('exit',resolve)})}
 });
