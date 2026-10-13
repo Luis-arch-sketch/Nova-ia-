@@ -67,8 +67,30 @@ function create(T,id,k,scene){
   for(const x of [-.24,.24])orb(0x161616,.09,x,1.69,.35);
  }
  if(name==='kitsune'){
-  for(const x of [-.22,.22]){orb(0x291814,.08,x,1.28,.47);tip(0xf6e2b6,.19,.40,x*1.5,1.69,.1)}
-  orb(0xffe3bb,.19,0,1.03,.48,[1.3,.7,.55]);
+  // Raposa de nove caudas: reforça a anatomia reconhecível mesmo em Android.
+  body.material.color.setHex(0xde8642);
+  orb(0xe98e47,.50,0,1.04,0,[1.10,.82,1.35]); // corpo da raposa
+  orb(0xeea45f,.38,0,1.35,.64,[1,.95,.88]); // cabeça
+  for(const x of [-.23,.23]){
+   tip(0xdb783a,.22,.60,x*1.6,1.83,.60);
+   tip(0xffd7ad,.13,.36,x*1.6,1.85,.70);
+   orb(0x171719,.075,x,1.42,1.00,[1,1,.55]);
+  }
+  orb(0xffe8ce,.20,0,1.20,1.01,[1.25,.55,.80]);
+  orb(0x231914,.075,0,1.22,1.18);
+  for(const x of [-.36,.36])for(const z of [-.56,.56]){
+   orb(0xc7723c,.16,x,.56,z,[.82,1.65,.85]);
+   orb(0xf9e8db,.16,x,.33,z+.12,[1,.48,1.28]);
+  }
+  // Caudas individuais orientadas para trás (lado oposto ao focinho).
+  for(let i=0;i<9;i++){
+   const angle=(i-4)*.31,xx=Math.sin(angle)*.77,zz=-1.02-Math.cos(angle)*.25;
+   const tail=new T.Group();tail.position.set(xx*.65,.95,zz);root.add(tail);
+   const stem=new T.Mesh(new T.ConeGeometry(.21,.97,9),new T.MeshLambertMaterial({color:i%2?0xd47940:0xeea35f}));
+   stem.rotation.x=-Math.PI/2.7;stem.rotation.z=-angle*.6;tail.add(stem);
+   orb(0xffefd8,.20,xx*.80,1.33,zz-.55,[.80,1.15,1.0]);
+  }
+  g.userData.kitsuneNineTails=true;
  }
  if(name==='trex'){
   for(const x of [-.16,.16])orb(0xffcf4d,.075,x,.94,1.06);
