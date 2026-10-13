@@ -5,19 +5,14 @@
  const ENDS_AT=Date.parse('2026-11-01T00:00:00-03:00');
  const MUSIC_URL='/audio/halloween-spooky-scary-skeletons.mp3';
  let serverTime=null,clockAnchor=0,active=false,interacted=false,playPending=false;
- let decorations=null,resources=[],uiSeconds=-1;
+ let decorations=null,resources=[];
  const originalTitle=document.title,originalSunColor=sun.color.clone();
  const skyDay=new T.Color(0x63417d),skyNight=new T.Color(0x20132f),skyTone=new T.Color();
  const music=new Audio(MUSIC_URL);
  music.loop=true;music.controls=false;music.autoplay=true;music.preload='none';
  music.volume=.45;music.muted=false;
  const now=()=>serverTime===null?Date.now():serverTime+performance.now()-clockAnchor;
- const style=document.createElement('style');
- style.textContent='#halloweenBanner{position:fixed;left:50%;top:calc(54px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:26;box-sizing:border-box;width:min(230px,58vw);padding:6px 10px;border:1px solid #ffbb57;border-radius:12px;background:linear-gradient(110deg,#281237ee,#653121ee);color:#ffe4b5;text-align:center;font:700 11px system-ui,sans-serif;pointer-events:none;box-shadow:0 3px 15px #0005}#halloweenBanner strong{display:block;color:#ffcc73;font-size:14px}#halloweenBanner small{display:block;font-size:10px;margin-top:2px}#halloweenBanner[hidden]{display:none}@media(max-height:450px){#halloweenBanner{top:calc(44px + env(safe-area-inset-top,0px));padding:3px 8px}#halloweenBanner strong{font-size:12px}}';
- document.head.appendChild(style);
- const banner=document.createElement('aside');banner.id='halloweenBanner';
- banner.setAttribute('role','status');banner.setAttribute('aria-live','off');banner.hidden=true;
- document.body.appendChild(banner);
+ if(window.RoubeOvoHalloweenPets)window.RoubeOvoHalloweenPets.setClock(now);
  const keep=r=>{resources.push(r);return r};
  const beginMusic=()=>{
   if(!active||playPending||!music.paused)return;
@@ -92,26 +87,25 @@
   bulbs.instanceMatrix.needsUpdate=true;root.add(bulbs);
   sc.add(root);return root;
  }
- function showCountdown(time){
-  const seconds=Math.max(0,Math.ceil((ENDS_AT-time)/1000));if(seconds===uiSeconds)return;uiSeconds=seconds;
-  const days=Math.floor(seconds/86400),hours=Math.floor(seconds%86400/3600),minutes=Math.floor(seconds%3600/60);
-  banner.innerHTML='<strong>🎃 HALLOWEEN</strong>Até 31/10 • '+days+'d '+hours+'h '+minutes+'min<small>Spooky Scary Skeletons ♫</small>';
- }
  function checkEvent(){
   const time=now(),shouldBeActive=time>=STARTS_AT&&time<ENDS_AT;
   if(shouldBeActive!==active){
-   active=shouldBeActive;banner.hidden=!active;
+   active=shouldBeActive;
    if(active){
     decorations=makeDecorations();document.title='Roube um Ovo 3D — Halloween';
+    if(typeof spawnHalloweenNestEggs==='function')spawnHalloweenNestEggs(true);
     music.preload='auto';beginMusic();
    }else{
     music.pause();music.currentTime=0;music.preload='none';
+    if(window.RoubeOvoHalloweenPets)for(let i=eggs.length-1;i>=0;i--){
+     const e=eggs[i];if(!window.RoubeOvoHalloweenPets.has(e.s))continue;
+     sc.remove(e.mesh);if(e.aura)sc.remove(e.aura);if(e.nest)e.nest.e=null;eggs.splice(i,1);
+    }
     if(decorations){sc.remove(decorations);decorations=null}
     for(const resource of resources)resource.dispose();resources=[];
     sun.color.copy(originalSunColor);document.title=originalTitle;
    }
   }
-  if(active)showCountdown(time);
   return active;
  }
  async function syncClock(){

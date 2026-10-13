@@ -115,6 +115,7 @@ button:disabled{opacity:.5}
 #roomPanel h2{color:#ff9bdd;margin:4px 0 10px}#roomPanel input{padding:12px;font-size:17px;max-width:100%;width:100%;box-sizing:border-box;color:white;background:#1c3557;border:1px solid #a3bee5;border-radius:8px}
 #roomPanel button{margin:6px 5px 4px 0}#roomStatus{font-size:13px;color:#cfe3ff;white-space:pre-line}#roomPlayerList{font-size:13px;color:#ffe7ff}
 .k3,.k4,.k5,.k6,.k10{color:#fff;background:rgba(14,32,40,.9);text-shadow:0 1px 4px #0008}.k3 b{color:#c89bff}.k4 b{color:#ffda62}.k5 b{color:#ff83dc}.k6 b{color:#8cffff}.k10 b{color:#ffac45}
+.k11,.k12,.k13,.k14{color:#fff;background:#281636ed}.k11 b{color:#ffba6b}.k12 b{color:#cba0ff}.k13 b{color:#6effd3}.k14 b{color:#ff8da9}
 </style></head><body>
 <canvas id=c></canvas><div id=hud></div><div id="eggNightClock" role="status" aria-live="off"><span id="eggNightTitle">🌙 RENOVAÇÃO DOS OVOS</span><strong id="eggNightTime">9s</strong><small id="eggNightHelp">Ovos protegidos • Crescimento 30×</small></div>
 <div id=top><button id=bam>⚙ Admin</button><button id=bRank>🏆 Placar</button><button id=roomButton>🌍 Salas</button><button id=bm>Loja</button><button id=bf>Tela cheia</button></div>
@@ -166,6 +167,7 @@ const LIMITED_RATE_TEXT='1000000000000000000000000000000000000000000000000000000
 const LIMITED_RATE=Number(LIMITED_RATE_TEXT);
 const LIMITED_ID=SPC.length;
 SPC.push({id:LIMITED_ID,n:'LIMITED ∞ • Dragão de Fogo',b:0,r:10,inc:LIMITED_RATE});
+const HW=window.RoubeOvoHalloweenPets;if(HW)HW.register(SPC,RAR);
 // O pintinho e o pato ficam fora do jogo; manter IDs antigos preserva os saves.
 const REMOVED_BIRDS=new Set([0,9]);
 const ACTIVE_SPECIES=SPC.filter(p=>!REMOVED_BIRDS.has(p.id));
@@ -313,9 +315,45 @@ let raccoonGuard=null;
 
 const newEgg=(b,j)=>{let z=pick(SZ);if(EGG_NIGHT.phase==='night'&&Math.random()<.32)z=Math.min(SZ.length-1,z+1);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
 const eggMesh=e=>{const limited=e.s===LIMITED_ID,c=limited?new T.Color(0xff410c):new T.Color().setHSL((e.s*37%360)/360,.65,.62),m=new T.Mesh(GS,new T.MeshLambertMaterial({color:c,emissive:limited?0xff7e17:c.clone().multiplyScalar(e.j>=5?.45:0),emissiveIntensity:limited?.75:1}));m.castShadow=true;m.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited&&e.z!==4?3.8:1));sc.add(m);return m};
-const regrow=first=>{const nw=[],sp=n=>{if(REMOVED_BIRDS.has(n.b*8+n.j))return null;const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw)};
+// Event eggs use normal pickup, guardians, incubators, pets and saves.
+const spawnHalloweenEgg=(tier=0,b=0,z=1,where='nest',species=null)=>{
+ if(!HW?.active()||eggs.length>=200)return null;
+ tier=Math.max(0,Math.min(HW.types.length-1,tier|0));
+ b=Math.max(0,Math.min(BI.length-1,b|0));z=Math.max(0,Math.min(SZ.length-1,z|0));
+ const d=HW.definition(species)||HW.draw(tier);if(!d||d.tier!==tier)return null;
+ const e=newEgg(b,4+tier);e.s=d.id;e.r=HW.types[tier].r;e.halloween=true;
+ e.z=z;e.w=+((3+tier*2)*SZ[z][1]*2).toFixed(1);e.nest=null;e.st='caido';e.gr=1;
+ e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();
+ const x=where==='player'?P.x+(Math.random()-.5)*4:(Math.random()<.5?-1:1)*(31+Math.random()*5);
+ const zp=where==='player'?P.z+3:-65-70*b+(Math.random()-.5)*36;
+ e.mesh.position.set(Math.max(-96,Math.min(96,x)),.45+e.base.y,Math.max(-935,Math.min(333,zp)));
+ const tag=label('🎃 '+HW.types[tier].name,512,64,4.3);tag.position.y=1.95;e.mesh.add(tag);
+ eggs.push(e);if(AUR[e.r])mkAura(e);return e;
+};
+const spawnHalloweenNestEggs=first=>{
+ if(!HW?.active())return;
+ if(!S.halloween2026||typeof S.halloween2026!=='object')S.halloween2026={};
+ const progress=S.halloween2026;
+ if(!progress.welcomeDelivered&&!carry?.halloweenWelcome&&!eggs.some(e=>e.halloweenWelcome)){
+  let d=HW.definition(progress.welcomeSpecies);
+  if(!d||d.tier!==0){d=HW.draw(0);progress.welcomeSpecies=d.id;save();}
+  const e=spawnHalloweenEgg(0,0,1,'nest',d.id);
+  if(e){e.halloweenWelcome=true;e.mesh.position.set(12,.45+e.base.y,-47);}
+ }
+ if(first)return;
+ const added=[];
+ for(let tier=0;tier<HW.types.length;tier++){
+  if(eggs.filter(e=>HW.has(e.s)).length>=6)break;
+  if(Math.random()<HW.types[tier].chance){
+   const e=spawnHalloweenEgg(tier,Math.floor(Math.random()*BI.length),pick(SZ));
+   if(e)added.push(e);
+  }
+ }
+ if(added.length)rareFx(added);
+};
+const regrow=first=>{const nw=[],sp=n=>{if(REMOVED_BIRDS.has(n.b*8+n.j))return null;const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw);spawnHalloweenNestEggs(first)};
 const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.3,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return new T.CanvasTexture(c)})();
-const AUR={3:[0xaf67ff,.78],4:[0xffc93d,.92],5:[0xff4acc,1.05],6:[0x6ff9ff,1.18],7:[0x2f7bff,1.3],8:[0x2fe3ff,1.45],9:[0x9fd0ff,1.65]}; // auras: Epic, Legendary, Mythic, Cosmic, Secret, Eternal e Divine
+const AUR={3:[0xaf67ff,.78],4:[0xffc93d,.92],5:[0xff4acc,1.05],6:[0x6ff9ff,1.18],7:[0x2f7bff,1.3],8:[0x2fe3ff,1.45],9:[0x9fd0ff,1.65],...HW?.auras}; // auras: Epic, Legendary, Mythic, Cosmic, Secret, Eternal e Divine
 const GBM=new T.CylinderGeometry(.35,1,26,16,1,true),GRG=new T.TorusGeometry(1.4,.05,6,36),AV=new T.Vector3();
 const mkAura=e=>{const [col,k]=AUR[e.r],g=new T.Group(),o={blending:T.AdditiveBlending,transparent:true,depthWrite:false,fog:false};
  const gl=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:col,...o}));gl.scale.setScalar(7*k);g.add(gl);
@@ -503,7 +541,7 @@ const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train
 const INCUBATOR_MAX_GROWTH=16; // cada ovo pode atingir 16 vezes seu tamanho ao ser colocado na incubadora
 const dep=k=>{const e=carry;carry=null;
  if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}
- P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.base.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
+ P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}if(e.halloweenWelcome){S.halloween2026=S.halloween2026||{};S.halloween2026.welcomeDelivered=true;}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.base.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
  toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+fm(LIMITED_RATE)+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
@@ -526,7 +564,7 @@ const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p
  if(tab===2)h+='<p>Equipada: '+(S.tr<0?'nenhuma':TR[S.tr][0]+' x'+TR[S.tr][1])+'. Só uma por vez; multiplica sua Speed efetiva.</p>'+TR.map((t,i)=>{const o=S.own.includes(i);return'<div class=r><span>'+t[0]+' x'+t[1]+(o?'':' por $'+fm(t[2]))+'</span>'+(o?(S.tr===i?bt('un','Tirar'):bt('e'+i,'Equipar')):bt('b'+i,'Comprar',S.$<t[2]))+'</div>'}).join('');
  if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
   Object.keys(by).forEach(s=>{const l=by[s],c=SPC[s].inc*100;h+='<div class=r><span>'+SPC[s].n+' x'+l.length+', melhor $'+fm(Math.max(...l.map(pinc)))+'/s</span>'+(l.length>=3?bt('f'+s,'Fundir 3 por $'+fm(c),S.$<c):'')+'</div>'})}
- if(tab===4){h+='<p><b>Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞.</b> Legendary é mais fraco que Secret; cada área tem sua progressão própria de renda.</p><p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>')}
+ if(tab===4){h+='<p><b>Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞.</b> Legendary é mais fraco que Secret; cada área tem sua progressão própria de renda.</p><p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>');if(HW)h+=HW.indexHtml(S);}
  p.innerHTML=h;p.style.display='block';p.scrollTop=st};
 $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
  if(a[0]==='T')tab=+a[1];else if(a==='x')open=false;
@@ -762,6 +800,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
    const maxGrowth=Number.isFinite(s.maxGrowth)?Math.max(1,Math.min(30,s.maxGrowth)):INCUBATOR_MAX_GROWTH;
    const growth=1+(maxGrowth-1)*(1-(1-f)*(1-f)); // crescimento rápido e visível desde os primeiros segundos
    o.e.material.color.setHSL((s.s*37%360)/360,.65,.62);
+   if(HW)HW.styleIncubator(T,o.e,s.s);
    o.e.scale.set(base[0]*growth,base[1]*growth,base[2]*growth);
    o.e.position.y=.5+o.e.scale.y; // manter a base do ovo apoiada na incubadora
    o.l.position.y=Math.max(3.3,1.2+o.e.scale.y*2); // rótulo acima do ovo, mesmo gigante
@@ -994,13 +1033,14 @@ const adminUI=(resetScroll=false)=>{
  if(adminTab===1){
  h='<h3>🥚 Spawn real de ovos</h3><p>O ovo aparece fisicamente no mundo e pode ser coletado, incubado e chocado normalmente.</p><div class="adGrid">';
  h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',BI[adNum('eggBiome',0,BI.length-1,0)|0].sp.map((n,j)=>n?[j,`${RAR[RS[j]]} • ${n}`]:null).filter(Boolean))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}${adBtn('spawnEgg12','⚡ Spawn instantâneo 12u aqui','secondary')}</div>`);
+ h+=adCard('🎃 Ovos raros de Halloween',`${adSelect('halloweenTier','Tipo do ovo',HW.types.map((t,i)=>[i,'Ovo '+t.name]))}${adSelect('halloweenSpecies','Animal (ou sorteio)',[[-1,'Sortear animal do tipo escolhido'],...HW.defs.map(d=>[d.id,d.name+' • '+HW.types[d.tier].short])])}<p>Precisa ser incubado. Usa tamanho, quantidade e bioma do criador acima.</p><div class="adControls">${adBtn('spawnHalloween','🎃 Spawnar ovos de Halloween')}${adBtn('spawnHalloweenNear','🎃 Spawnar aqui','secondary')}</div>`);
  h+=adCard('Raridades especiais',`<div class="adStat">${adEggsCount()} ovos no mundo</div><p>Spawn de 1 ovo no bioma escolhido, com o tamanho selecionado.</p><div class="adControls">${adBtn('spawnSecret','🔵 Secret')}${adBtn('spawnEternal','💠 Eternal')}${adBtn('spawnDivine','🌸 Divine')}${adBtn('spawnLimited','🔥 LIMITED ∞')}${adBtn('spawnLimitedNear','🔥 LIMITED 12u aqui','secondary')}${adBtn('regen','Renovar ninhos','secondary')}${adBtn('clearEggs','Limpar ovos soltos','danger')}</div>`);
  h+=adCard('Incubadoras',`<div class="adStat">${S.inc.filter(Boolean).length}/4 ocupadas</div><p>Conclua imediatamente os ovos incubando; os pets irão para a coleção.</p><div class="adControls">${adBtn('hatchAll','Chocar todos')}${adBtn('hatchNext','Chocar primeiro','secondary')}</div>`);
  h+='</div>';
  }
  if(adminTab===2){
  h='<h3>🐾 Gerador de pets</h3><p>Adiciona pets verdadeiros à coleção, calcula a renda e atualiza os pets exibidos na base.</p><div class="adGrid">';
- h+=adCard('Criar pets',`${adSelect('petSpecies','Espécie do pet',SPC.filter(p=>p.id!==LIMITED_ID&&!REMOVED_BIRDS.has(p.id)).map((p)=>[p.id,`${BI[p.b].n} • ${p.n} (${RAR[RS[p.r]]})`]))}${adSelect('petSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('petMutation','Mutação',[[-1,'Sem mutação'],...MUT.map((m,i)=>[i,`${m[0]} x${m[1]}`]),['all','Todas as mutações']])}${adField('petCount','Quantidade (1–30)','number','min="1" max="30" step="1"')}<div class="adControls">${adBtn('givePet','Criar pets')}${adBtn('giveSecretPet','Pet Secret aleatório','secondary')}${adBtn('giveDivinePet','Pet Divine aleatório','secondary')}</div>`);
+ h+=adCard('Criar pets',`${adSelect('petSpecies','Espécie do pet',SPC.filter(p=>p.id!==LIMITED_ID&&!REMOVED_BIRDS.has(p.id)).map((p)=>[p.id,`${BI[p.b].n} • ${p.n} (${RAR[p.hr??RS[p.r]]})`]))}${adSelect('petSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('petMutation','Mutação',[[-1,'Sem mutação'],...MUT.map((m,i)=>[i,`${m[0]} x${m[1]}`]),['all','Todas as mutações']])}${adField('petCount','Quantidade (1–30)','number','min="1" max="30" step="1"')}<div class="adControls">${adBtn('givePet','Criar pets')}${adBtn('giveSecretPet','Pet Secret aleatório','secondary')}${adBtn('giveDivinePet','Pet Divine aleatório','secondary')}</div>`);
  h+=adCard('Coleção / Index',`<div class="adStat">${S.pets.length} pets</div><p>Renda atual: $${incomeView()}/s • Index ${ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length}/${ACTIVE_SPECIES.length}</p><div class="adControls">${adBtn('indexAll','Completar Index')}${adBtn('deleteLastPet','Excluir último pet','danger')}${adBtn('deleteAllPets','Apagar todos os pets','danger')}</div>`);
  h+='</div>';
  }
@@ -1153,7 +1193,7 @@ const adminRestore=obj=>{
  if(!obj||!obj.game||!Array.isArray(obj.game.pets)||!Array.isArray(obj.game.inc)||!Array.isArray(obj.game.own)||typeof obj.game.idx!=='object')throw Error('Backup inválido: faltam dados do jogo.');
  const g=obj.game,ns={...S,...g};
  if(!Number.isFinite(ns.$)||ns.$<0||!Number.isFinite(ns.sp)||ns.sp<0||!Number.isInteger(ns.tm)||ns.tm<0||ns.tm>=TM.length||!Number.isInteger(ns.bl)||ns.bl<0||ns.bl>=CAP.length)throw Error('Backup contém progresso incompatível.');
- if(ns.inc.length!==4||!Array.isArray(ns.pets)||ns.pets.some(p=>!Number.isInteger(p.s)||p.s<0||p.s>=SPC.length||!Number.isInteger(p.z)||p.z<0||p.z>3||!Array.isArray(p.m)||p.m.some(i=>!Number.isInteger(i)||i<0||i>=MUT.length)))throw Error('Backup de pets/incubadoras inválido.');
+ if(ns.inc.length!==4||!Array.isArray(ns.pets)||ns.pets.some(p=>!Number.isInteger(p.s)||p.s<0||p.s>=SPC.length||!Number.isInteger(p.z)||p.z<0||p.z>=SZ.length||!Array.isArray(p.m)||p.m.some(i=>!Number.isInteger(i)||i<0||i>=MUT.length)))throw Error('Backup de pets/incubadoras inválido.');
  if(!Number.isInteger(ns.id)||ns.id<1)ns.id=1;ns.id=Math.max(ns.id,...ns.pets.map(p=>p.id+1).filter(Number.isFinite),1);
  S=ns;
  if(Array.isArray(obj.leaderboard)){LEAD=obj.leaderboard.filter(x=>x&&typeof x.name==='string'&&Number.isFinite(x.money)&&Number.isFinite(x.speed)&&x.admin!==true).slice(0,300);rankSave();}
@@ -1205,6 +1245,15 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'trailOff':S.tr=-1;msg='Trail retirada';break;
  case 'trailAll':S.own=TR.map((_,i)=>i);msg='Todas as trails desbloqueadas';break;
  case 'spawnEgg':case 'spawnEgg12':{const near=act==='spawnEgg12',b=adNum('eggBiome',0,BI.length-1,0)|0,j=adNum('eggSlot',0,7,5)|0,z=near?4:adNum('eggSize',0,4,4)|0,count=adNum('eggCount',1,20,1)|0,where=near?'player':AS.eggWhere==='player'?'player':'nest';let done=0,first=null;for(let i=0;i<count;i++){const e=adminSpawnEgg(b,j,z,where,false);if(e){done++;if(!first)first=e}}if(first&&first.r>=7)rareFx([first]);msg=done+' ovos '+RAR[RS[j]]+(near?' de 12 unidades spawnados perto de você!':' criados em '+BI[b].n);break}
+ case 'spawnHalloween':case 'spawnHalloweenNear':{
+  if(!HW?.active()){msg='O evento de Halloween terminou.';break}
+  const selected=HW.definition(adNum('halloweenSpecies',-1,SPC.length-1,-1)|0);
+  const tier=selected?selected.tier:adNum('halloweenTier',0,HW.types.length-1,0)|0;
+  const b=adNum('eggBiome',0,BI.length-1,0)|0,z=adNum('eggSize',0,SZ.length-1,1)|0;
+  const count=adNum('eggCount',1,20,1)|0,where=act==='spawnHalloweenNear'?'player':'nest';
+  let done=0;for(let i=0;i<count;i++)if(spawnHalloweenEgg(tier,b,z,where,selected?.id))done++;
+  msg=done+' ovos '+HW.types[tier].name+' criados para incubar.';break
+ }
  case 'spawnSecret':case 'spawnEternal':case 'spawnDivine':{const j=act==='spawnSecret'?5:act==='spawnEternal'?6:7,b=adNum('eggBiome',0,BI.length-1,0)|0,z=adNum('eggSize',0,4,1)|0,e=adminSpawnEgg(b,j,z,AS.eggWhere==='player'?'player':'nest');msg=e?`Ovo ${RAR[e.r]} spawnou em ${BI[b].n}!`:'Limite de ovos atingido';break}
  case 'regen':abuseRegrow();msg='Ninhos renovados!';break;
  case 'clearEggs':if(!confirm('Apagar todos os ovos soltos no mapa?'))return;adminClearEggs();msg='Ovos soltos removidos';break;
