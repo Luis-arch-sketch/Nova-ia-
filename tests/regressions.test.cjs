@@ -27,6 +27,16 @@ test('103 animais, auras e som preservados',()=>{
  assert(html.includes('GUAXINIM • PARTE 4'));
  assert(html.includes('const SNDSRC='));
 });
+test('anúncios automáticos aparecem só para Secret, Eternal, Divine e LIMITED',()=>{
+ const line=html.split('\n').find(s=>s.startsWith('const rareFx='));
+ assert(line,'Função de anúncio existe');
+ assert(html.includes("const announce=e=>{if(!e||(e.r<7&&e.s!==LIMITED_ID))return;"));
+ const run=new Function('const LIMITED_ID=999,SND={}; const messages=[],sounds=[]; const announce=e=>messages.push(e.r), playSnd=r=>sounds.push(r), setTimeout=f=>f(); '+line+';return {rareFx,messages,sounds}');
+ const {rareFx,messages,sounds}=run();
+ rareFx([{r:3,s:3},{r:4,s:4},{r:7,s:7},{r:8,s:8},{r:9,s:9},{r:10,s:999}]);
+ assert.deepEqual(messages,[7,8,9,10]);
+ assert.deepEqual(sounds,[7,8,9,10]);
+});
 test('admin distingue o dinheiro digitado do acumulado',()=>{
  assert(html.includes("const raw=String(AS[key]??'').trim()"));
  assert(html.includes('id="adCashPreview"'));
