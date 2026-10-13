@@ -42,7 +42,7 @@ function create(T,id,k,scene){
  const g=source.create(T,id,k,scene);if(!g)return null;
  const root=g.children[0],body=root.children.find(o=>o.isMesh);
  if(!body)return g;
- body.geometry=smooth(T,body.geometry,name);
+ if(!g.userData.realMesh)body.geometry=smooth(T,body.geometry,name);
  body.material=new T.MeshLambertMaterial({color:colors[name],side:T.DoubleSide,transparent:name==='fantasma',opacity:name==='fantasma'?.87:1,emissive:name==='fantasma'?0x364e82:0x000000,emissiveIntensity:name==='fantasma'?.28:0});
  body.castShadow=name!=='fantasma';body.receiveShadow=true;
  if(name==='escorpiao'){body.scale.y=3.0;body.position.y=.06}
