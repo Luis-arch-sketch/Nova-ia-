@@ -143,7 +143,7 @@ const httpServer=http.createServer((req,res)=>{
   if(u.pathname==='/api/halloween'){
    const serverNow=Date.now(),active=serverNow>=HALLOWEEN_START&&serverNow<HALLOWEEN_END;
    res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
-    .end(JSON.stringify({active,serverNow,startsAt:HALLOWEEN_START,endsAt:HALLOWEEN_END,musicUrl:HALLOWEEN_AUDIO,musicRequired:active,eggTypes:[{name:'Halloween Raro',chance:.15},{name:'Halloween Lendário',chance:.04},{name:'Halloween Mítico',chance:.008},{name:'Halloween Secreto',chance:.001}],newAnimals:16}));return;
+    .end(JSON.stringify({active,serverNow,startsAt:HALLOWEEN_START,endsAt:HALLOWEEN_END,musicUrl:HALLOWEEN_AUDIO,musicRequired:active,eggTypes:[{name:'Halloween Raro',chance:.15},{name:'Halloween Lendário',chance:.04},{name:'Halloween Mítico',chance:.008},{name:'Halloween Secreto',chance:.001},{name:'Halloween Eternal',chance:.00065},{name:'Halloween Divino',chance:.00018}],newAnimals:24}));return;
   }
  if(Object.prototype.hasOwnProperty.call(PWA_FILES,u.pathname)){const a=PWA_FILES[u.pathname],p=path.join(__dirname,a[0]);if(!fs.existsSync(p)){res.writeHead(404).end('Arquivo PWA ausente');return}res.writeHead(200,{'Content-Type':a[1],'Cache-Control':u.pathname==='/service-worker.js'?'no-cache':'public, max-age=1800','X-Content-Type-Options':'nosniff','Service-Worker-Allowed':'/'});fs.createReadStream(p).pipe(res);return}
  if(u.pathname==='/health'){
