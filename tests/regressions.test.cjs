@@ -34,6 +34,20 @@ test('cinco novos mobs derivados dos STL e 3MF carregam localmente e preservam s
  assert(html.includes("<button id=bm>Loja</button>"));
  assert(html.includes("['Esteira Astral',1000000000,1e21,0xa77bff]"));
 });
+test('mobs corrigidos usam malhas suavizadas e Kitsune é a guardiã visível',()=>{
+ const polished=fs.readFileSync('mobs-polished.js','utf8');
+ assert.doesNotThrow(()=>new Function(polished));
+ assert(polished.includes("const colors={galinha:0xffe1ac,escorpiao:0x8d4d30"));
+ assert(polished.includes('geo.computeVertexNormals()'));
+ assert(polished.includes('STL/3MF smoothed mobile v4'));
+ assert(server.includes("guardianSpecies=[6,5,6,6,6,5,5,5,4,7,6,6,6]"));
+ assert(server.includes("fs.readFileSync(path.join(__dirname,'mobs-polished.js'),'utf8')"));
+ assert(server.includes("'+polishedMobsSource+'"));
+ const animal=fs.readFileSync('animals3d.js','utf8');
+ assert(animal.includes('if(g?.userData?.customUpdate)'));
+ assert(html.includes("'Cerejeiras',0xf3a6c8,0xff7eb6,2.5e9,'Kitsune'"));
+ assert(html.includes("<button id=bm>Loja</button>"));
+});
 test('103 animais, auras e som preservados',()=>{
  assert(html.includes('const REMOVED_BIRDS=new Set([0,9])'));
  assert(html.includes('const AUR={3:'));
