@@ -171,6 +171,10 @@ ws.room=room;ws.name=name;ws.admin=false;ws.baseSlot=baseSlot;ws.x=spawn.x;ws.y=
 if(!rooms.has(room)){rooms.set(room,new Set());roomLimitedEggs.set(room,[])}rooms.get(room).add(ws);
 send(ws,{type:'joined',id:ws.id,room,baseSlot:ws.baseSlot,players:[...peers(room)].map(publicUser),limitedEggs:roomLimitedEggs.get(room)||[]});broadcastPresence(room);return}
 if(!ws.room)return;
+if(m.type==='stats'){
+ if(!Number.isFinite(m.money)||m.money<0||!Number.isFinite(m.speed)||m.speed<0)return;
+ ws.money=bound(m.money,0,1e100);ws.speed=bound(m.speed,0,1e100);return;
+}
 if(m.type==='limited-take'){
  // Respeita o ovo da sala e exige proximidade real do jogador.
  const eggs=roomLimitedEggs.get(ws.room)||[];
