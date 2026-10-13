@@ -151,7 +151,7 @@ const BI=[
 ].map(b=>({n:b[0],g:b[1],t:b[2],req:b[3],gd:b[4],sp:b[5].split(',')}));
 const SZ=[['Pequeno',.8,1,50],['Médio',1,1.5,35],['Enorme',1.4,3,12],['Gigante',1.9,6,3],['Colossal (12 unidades)',12/1.8,10,0]]; // nome, escala, mult. renda, peso do sorteio
 const MUT=[['Silver',1.2,.08,0xcfd8dc],['Golden',2.5,.04,0xffc400],['Rainbow',3.5,.015,0xff66cc],['Bloom',1.25,.06,0xffa6c9],['Parasite',3,.01,0x7a2fb0],['Fractured',2.75,.015,0x44ddff],['Scrambled',2.75,.015,0xaaff44],['Enchanted',2.8,.01,0x9d6bff]]; // chances são marcadores editáveis
-const TM=[['Treadmill',2,0,0x9aa5b1],['Sci-Fi',5,15e3,0x38e1ff],['Flame',12,25e4,0xff6a1a],['Celebrity',30,5e6,0xff4fd8],['Golden',80,12e7,0xffc400],['Freeze',100,3e9,0x9be8ff],['Lucky Block',200,75e9,0xffe83a],['Hacker',500,2e12,0x22ff66],['Demonic',1000,5e13,0xc4162a],['Angelic',2000,1e15,0xfff5b0]];
+const TM=[['Treadmill',2,0,0x9aa5b1],['Sci-Fi',5,15e3,0x38e1ff],['Flame',12,25e4,0xff6a1a],['Celebrity',30,5e6,0xff4fd8],['Golden',80,12e7,0xffc400],['Freeze',100,3e9,0x9be8ff],['Lucky Block',200,75e9,0xffe83a],['Hacker',500,2e12,0x22ff66],['Demonic',1000,5e13,0xc4162a],['Angelic',2000,1e15,0xfff5b0],['Esteira Astral',1000000000,1e21,0xa77bff]];
 const TR=[['Grey',1.5,2e3,0x9e9e9e],['Green',2,1e5,0x4caf50],['Blue',2.5,2e6,0x2196f3],['Purple',3,5e7,0x9c27b0],['Golden',3.5,1e9,0xffd700],['Red',4,2e10,0xf44336],['Galaxy',5,5e11,0x5b3bd8],['Secret',7,1e13,0x222222],['Eternal',10,2e14,0x66ddff],['Divine',14,5e15,0xfff3a0],['Moonbloom',20,1e17,0xffb8e1]];
 const CAP=[7,7,9,10,11,12,13,14,15,16,17,18],BC=[0,1e3,1e6,75e6,5e8,1e9,5e10,5e11,1e12,25e12,1e14,5e14];
 const SPC=[];BI.forEach((b,i)=>b.sp.forEach((n,j)=>SPC.push({id:SPC.length,n,b:i,r:j,inc:CFG.inc*4**i*(1+1.5*j)})));
