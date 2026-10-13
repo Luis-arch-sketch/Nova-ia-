@@ -234,7 +234,7 @@ const playSnd=r=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)
 const note=e=>{const a='<b>'+SPC[e.s].n+'</b>',b=BI[e.b].n;return e.s===LIMITED_ID?'🔥 Ovo LIMITED ∞ '+a+' apareceu em '+b:e.r===9?'Ovo Divino top global '+a+' de '+b:'Ovo '+RAR[e.r]+' de '+a+' spawnou em '+b};
 const announce=e=>{if(!e||(e.r<7&&e.s!==LIMITED_ID))return;const d=document.createElement('div');d.className='k'+e.r;d.innerHTML=note(e);$('an').appendChild(d);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),600)},9000)};
 const prev=r=>{const l=NS.filter(n=>RS[n.j]===r),n=l[Math.floor(Math.random()*l.length)];announce({r,s:n.b*8+n.j,b:n.b});playSnd(r)};
-const rareFx=l=>{l=l.filter(e=>e&&(e.r>=7||e.s===LIMITED_ID));if(!l.length)return;l.sort((a,b)=>a.r-b.r);let t=.6;l.forEach(e=>{setTimeout(()=>announce(e),600);setTimeout(()=>playSnd(e.r),t*1e3);t+=(SND[e.r]?SND[e.r].duration:2)+.2})};
+const rareFx=l=>{l=l.filter(e=>e&&(e.r>=7||e.s===LIMITED_ID));if(!l.length)return;l.sort((a,b)=>a.r-b.r);let t=.6;l.forEach(e=>{setTimeout(()=>announce(e),600);const soundR=e.r===15?8:e.r===16?9:e.r;setTimeout(()=>playSnd(soundR),t*1e3);t+=(SND[soundR]?SND[soundR].duration:2)+.2})};
 loadSnd();addEventListener('pointerdown',()=>{if(AC&&AC.state==='suspended')AC.resume()},true);
 /* ===== Renderer em tela cheia, DPR dinâmico ===== */
 const R=new T.WebGLRenderer({canvas:$('c'),antialias:true,powerPreference:'high-performance'});R.shadowMap.enabled=true;
@@ -321,7 +321,7 @@ const spawnHalloweenEgg=(tier=0,b=0,z=1,where='nest',species=null)=>{
  tier=Math.max(0,Math.min(HW.types.length-1,tier|0));
  b=Math.max(0,Math.min(BI.length-1,b|0));z=Math.max(0,Math.min(SZ.length-1,z|0));
  const d=HW.definition(species)||HW.draw(tier);if(!d||d.tier!==tier)return null;
- const e=newEgg(b,4+tier);e.s=d.id;e.r=HW.types[tier].r;e.halloween=true;
+ const e=newEgg(b,Math.min(7,4+tier));e.s=d.id;e.r=HW.types[tier].r;e.halloween=true;
  e.z=z;e.w=+((3+tier*2)*SZ[z][1]*2).toFixed(1);e.nest=null;e.st='caido';e.gr=1;
  e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();
  const x=where==='player'?P.x+(Math.random()-.5)*4:(Math.random()<.5?-1:1)*(31+Math.random()*5);
