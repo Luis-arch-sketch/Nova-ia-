@@ -64,11 +64,13 @@ const applyGraphicUpgrade=html=>{
  // Embutir os modelos para evitar falhas de carregamento de arquivos separados no Android.
  const loaderSource=fs.readFileSync(path.join(__dirname,'assets','vendor','GLTFLoader-r128.js'),'utf8');
  const animalsSource=fs.readFileSync(path.join(__dirname,'animals3d.js'),'utf8');
+  // Malhas dos cinco novos mobs convertidas de STL/3MF em voxels leves e locais.
+  const userMobsSource=require('node:zlib').gunzipSync(fs.readFileSync(path.join(__dirname,'assets','mobs-stl.js.gz'))).toString('utf8');
  const raccoonSource=fs.readFileSync(path.join(__dirname,'assets','models','Raccoon_Quaternius_CubeWorld.gltf'),'utf8');
  html=html.replace('</style>','@media(max-width:450px){#hud{top:calc(42px + env(safe-area-inset-top,0px));gap:2px;max-width:63vw}}\n</style>');
  // O glTF contém as próprias texturas e animações: nenhum download no Android.
  // GLTFLoader roda dentro do jogo; dependência remota extra removida.
- return html.replace('<script>\n','<script>\n'+loaderSource+'\nconst RACCOON_SOURCE_JSON='+JSON.stringify(raccoonSource)+';\n'+animalsSource+'\n</script>\n<script>\n');
+ return html.replace('<script>\n','<script>\n'+loaderSource+'\nconst RACCOON_SOURCE_JSON='+JSON.stringify(raccoonSource)+';\n'+userMobsSource+'\n'+animalsSource+'\n</script>\n<script>\n');
 };
 // Vendedor de frutas: integração sem alterar a cena original nem os patches de gráficos.
 const installFruitVendor=html=>{
