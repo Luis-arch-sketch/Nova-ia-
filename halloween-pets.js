@@ -7,7 +7,9 @@
   {name:'Halloween Raro',short:'Raro',r:11,chance:.15,color:0xff8b24,glow:0xa43d00,income:2e9},
   {name:'Halloween Lendário',short:'Lendário',r:12,chance:.04,color:0x9c55ed,glow:0x44146b,income:2e10},
   {name:'Halloween Mítico',short:'Mítico',r:13,chance:.008,color:0x4df7bf,glow:0x075a44,income:2e11},
-  {name:'Halloween Secreto',short:'Secreto',r:14,chance:.001,color:0xe83861,glow:0x650d22,income:2e12}
+  {name:'Halloween Secreto',short:'Secreto',r:14,chance:.001,color:0xe83861,glow:0x650d22,income:2e12},
+  {name:'Halloween Eternal',short:'Eternal',r:15,chance:.00065,color:0x4bdaff,glow:0x07517b,income:8e13},
+  {name:'Halloween Divino',short:'Divino',r:16,chance:.00018,color:0xffde75,glow:0x9e621c,income:9e15}
  ];
  const defs=[
   ['Gato Bruxo','cat',0x252139,0x934ceb,0x68ffbc],
@@ -25,7 +27,17 @@
   ['Cérbero Infernal','cerberus',0x34242c,0xe77a30,0xffda67],
   ['Fênix da Meia-Noite','phoenix',0x583c96,0xf28643,0xffd083],
   ['Quimera Maldita','chimera',0x73745d,0x54365e,0x83ffbc],
-  ['Dragão do Eclipse','dragon',0x222733,0xbb4866,0xfbdd9b]
+  ['Dragão do Eclipse','dragon',0x222733,0xbb4866,0xfbdd9b],
+  // ETERNAL: quatro criaturas inéditas com modelos e cores próprios.
+  ['Hidra da Meia-Noite','hydra',0x153d4d,0x3cdded,0xa9ffff],
+  ['Pantera do Vazio','panther',0x171b31,0x6457ed,0x7cf6ff],
+  ['Grifo do Abismo','griffin',0x354366,0x63b7e9,0xffd18b],
+  ['Leviatã Lunar','leviathan',0x234367,0x66ebed,0xe0a9ff],
+  // DIVINO: os quatro animais mais difíceis de encontrar no Halloween.
+  ['Dragão da Lua de Sangue','celestial_dragon',0x5d1638,0xffc04d,0xfff0bc],
+  ['Fênix do Sol Negro','celestial_phoenix',0x6a2248,0xffce5a,0xfff8c9],
+  ['Leão Astral Sagrado','celestial_lion',0xdbc3a4,0xffd44f,0xf6faff],
+  ['Kirín das Estrelas','kirin',0xa5deea,0xf8d674,0xffffff]
  ].map((d,i)=>({key:'halloween2026-'+i,name:d[0],kind:d[1],body:d[2],accent:d[3],eye:d[4],tier:Math.floor(i/4),rank:i%4,id:null}));
  const byId=new Map(),caches=new WeakMap();
  const active=()=>clock()>=START&&clock()<END;
@@ -139,6 +151,88 @@
    return h;
   }
   switch(d.kind){
+
+   case 'hydra':{
+    quadruped();const h1=head(-.68,2.18,.68,.78,false),h2=head(.68,2.18,.68,.78,false);
+    const h3=head(0,2.79,.91,.87,false);
+    for(const h of [h1,h2,h3])horns(h);
+    tail(true);batWings(1.95,-.38);
+    for(let j=0;j<7;j++)cone(mane,[0,1.97-j*.09,-.15-j*.24],[.16,.4,.16]);
+    break;
+   }
+   case 'panther':{
+    const h=quadruped();tail(true);
+    for(const side of [-1,1])for(let j=0;j<4;j++){
+     const stripe=cone(mane,[side*.69,1.66,-.72+j*.39],[.13,.43,.19]);
+     stripe.rotation.z=side*.90;
+    }
+    for(const side of [-1,1]){
+     cone(glow,[side*.37,.61,-.08],[.12,.47,.10],h).rotation.z=-side*.27;
+     for(let j=0;j<3;j++)cone(cream,[side*.52+j*.08,-.52,.74],[.035,.17,.04],h).rotation.z=Math.PI;
+    }
+    break;
+   }
+   case 'griffin':{
+    const h=bird();tail(true);
+    for(const side of [-1,1]){
+     orb(mane,[side*.48,1.37,.55],[.24,.50,.32]);
+     for(let j=0;j<3;j++)cone(glow,[side*.25,1.10,.68+j*.13],[.08,.33,.1]);
+    }
+    for(let j=0;j<5;j++)cone(mane,[(j-2)*.13,.84,0],[.11,.54,.11],h).rotation.z=(j-2)*-.18;
+    break;
+   }
+   case 'leviathan':{
+    for(let j=0;j<5;j++){
+     const seg=orb(j%2?accent:body,[0,.55+j*.24,.65-j*.40],[.70-j*.055,.42,.65]);
+     if(j%2)seg.rotation.y=.24;
+     for(const side of [-1,1])cone(mane,[side*(.57-j*.06),.73+j*.24,.61-j*.40],[.20,.55,.14]).rotation.z=-side*.46;
+    }
+    const h=head(0,2.22,.9,1.06,false);
+    horns(h,true);tail(true);
+    for(let j=0;j<5;j++)cone(glow,[0,1.32+j*.21,-1.15-j*.13],[.17,.50,.17]);
+    break;
+   }
+   case 'celestial_dragon':{
+    const h=quadruped();horns(h,true);tail(true);batWings(2.13,-.3);
+    for(let j=0;j<9;j++)cone(mane,[0,2.15-j*.13,.32-j*.23],[.18,.59,.20]);
+    for(const side of [-1,1]){
+     orb(glow,[side*.67,2.12,-.55],[.19,.24,.19]);
+     cone(cream,[side*.17,-.35,.70],[.055,.25,.05],h).rotation.z=Math.PI;
+    }
+    const halo=mesh('ring',glow,[0,3.77,.10],[.88,.88,1]);halo.rotation.x=Math.PI/3;
+    break;
+   }
+   case 'celestial_phoenix':{
+    const h=bird();
+    for(const side of [-1,1])for(let j=0;j<5;j++){
+     const feather=cone(j%2?mane:glow,[side*(.43+j*.19),1.88-j*.10,-.44-j*.12],[.16,.87+j*.09,.18]);
+     feather.rotation.z=side*.48;
+    }
+    for(let j=0;j<9;j++)cone(j%2?glow:mane,[(j-4)*.16,.94,-.65-Math.abs(j-4)*.12],[.13,1.08,.15]).rotation.x=-.48;
+    for(let j=0;j<5;j++)cone(glow,[(j-2)*.13,.75,-.06],[.09,.65,.09],h).rotation.z=(j-2)*-.16;
+    const halo=mesh('ring',glow,[0,3.84,0],[.82,.82,1]);halo.rotation.x=.30;
+    break;
+   }
+   case 'celestial_lion':{
+    const h=quadruped();tail(true);
+    orb(mane,[0,-.02,-.13],[.82,.77,.49],h);
+    for(let j=0;j<12;j++){
+     const a=j*Math.PI/6;
+     const spike=cone(j%2?accent:mane,[Math.sin(a)*.64,Math.cos(a)*.68,-.13],[.19,.46,.15],h);
+     spike.rotation.z=-a;
+    }
+    for(const side of [-1,1])for(let j=0;j<3;j++)cone(cream,[side*.55,.51,-.48+j*.30],[.08,.28,.10]).rotation.z=side*.4;
+    break;
+   }
+   case 'kirin':{
+    const h=quadruped();horns(h,true);tail(true);
+    cone(glow,[0,1.00,.10],[.16,1.24,.16],h).rotation.x=.17;
+    for(let j=0;j<7;j++)orb(j%2?mane:glow,[0,2.63-j*.19,.31-j*.22],[.23,.18,.21]);
+    for(const side of [-1,1])for(const z of [-.77,.65])
+     orb(glow,[side*.53,.17,z],[.18,.19,.25]);
+    const halo=mesh('ring',glow,[0,3.59,.17],[.66,.66,1]);halo.rotation.x=Math.PI/2.6;
+    break;
+   }
    case 'cat':{
     const h=quadruped();tail();
     mesh('ring',accent,[0,.47,0],[.70,.70,1],h).rotation.x=Math.PI/2;
@@ -281,7 +375,7 @@
   eggDecor(T,species,group);mesh.add(group);
  }
  function indexHtml(S){
-  return '<p><b>🎃 Coleção de Halloween • 16 animais</b></p>'+types.map((t,i)=>{
+  return '<p><b>🎃 Coleção de Halloween • 24 animais</b></p>'+types.map((t,i)=>{
    const group=defs.filter(d=>d.tier===i),found=group.filter(d=>S.idx[d.id]).length;
    return '<p><b>Ovo '+t.name+' ('+found+'/4)</b><br>'+group.map(d=>S.idx[d.id]?d.name:'???').join(' • ')+
     '<br><small>Chance de aparecer por renovação: '+Number((t.chance*100).toFixed(2))+'%.</small></p>';
@@ -289,7 +383,7 @@
  }
  window.RoubeOvoHalloweenPets={
   types,defs,register,active,endsAt:END,setClock(fn){clock=fn},has:id=>byId.has(id),
-  definition:id=>byId.get(id),draw:tier=>defs.filter(d=>d.tier===tier)[Math.floor(Math.random()*4)],
+  definition:id=>byId.get(id),draw:tier=>{const candidates=defs.filter(d=>d.tier===tier);return candidates[Math.floor(Math.random()*candidates.length)]},
   rarityName:s=>s?.hr!=null?types[s.halloweenTier].name:null,create,egg,styleIncubator,indexHtml,
   auras:Object.fromEntries(types.map((t,i)=>[t.r,[t.color,1.15+i*.16]]))
  };
