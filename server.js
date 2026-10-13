@@ -100,11 +100,47 @@ const PWA_FILES={'/three.min.js':['three.min.js','application/javascript; charse
 const PWA_HEAD="<meta name=\"theme-color\" content=\"#ffc933\"><meta name=\"apple-mobile-web-app-capable\" content=\"yes\"><meta name=\"mobile-web-app-capable\" content=\"yes\"><meta name=\"description\" content=\"Roube um Ovo 3D — capture ovos raros e escape dos guardiões.\"><meta property=\"og:title\" content=\"Roube um Ovo 3D\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://roube-um-ovo-3d-salas.onrender.com/capa-oficial-2026.jpg\"><link rel=\"manifest\" href=\"/manifest.webmanifest?v=3\"><link rel=\"apple-touch-icon\" href=\"/icone-capa-oficial-192.png\"><link rel=\"icon\" type=\"image/png\" href=\"/icone-capa-oficial-192.png\"><style>\n#roube-capa{position:fixed;inset:0;z-index:1500;display:flex;align-items:center;justify-content:center;overflow-y:auto;touch-action:pan-y;padding:20px;background:radial-gradient(circle at 50% 22%,#295080,#111b38 68%,#050b16);box-sizing:border-box;color:#fff;font:700 15px system-ui,sans-serif}\n#roube-capa .roube-capa-box{width:min(100%,470px);display:flex;flex-direction:column;align-items:stretch;gap:13px;text-align:center;margin:auto}\n#roube-capa img{display:block;width:min(100%,360px);max-height:min(52dvh,370px);object-fit:contain;aspect-ratio:1;border-radius:18px;margin:0 auto;border:3px solid #ffd266;box-shadow:0 12px 50px #000b}\n#roube-capa h1{margin:1px 0;font-size:clamp(20px,6vw,30px);color:#ffdb77;text-shadow:0 3px 8px #000}\n#roube-capa p{margin:0;color:#dce8ff;font-size:13px}\n#roube-capa button{position:static;border-radius:13px;min-height:49px;padding:12px 15px;font-size:17px;font-weight:900;background:#ffc933;color:#281800;cursor:pointer}\n#roube-capa #roube-install{background:#ffffff;color:#17253a}\n#roube-capa #roube-install-info{font-size:12px;min-height:18px;color:#dce8ff}\n\n@media (display-mode: standalone),(display-mode: fullscreen),(display-mode: minimal-ui){#roube-capa{display:none!important}}\n</style>";
 const PWA_BODY="<div id=\"roube-capa\" role=\"dialog\" aria-label=\"Capa de Roube um Ovo 3D\"><div class=\"roube-capa-box\"><img src=\"/capa-oficial-2026.jpg\" width=\"256\" height=\"256\" alt=\"Capa de Roube um Ovo 3D com personagem carregando ovo raro e guaxinim perseguindo\"><h1>ROUBE UM OVO 3D</h1><p>Ovos raros • Guardiões • Multiplayer</p><button id=\"roube-play\" type=\"button\">🎮 JOGAR AGORA</button><button id=\"roube-install\" type=\"button\">📲 INSTALAR NO CELULAR</button><p id=\"roube-install-info\" aria-live=\"polite\"></p></div></div>\n<script>\n(()=>{const layer=document.getElementById('roube-capa'),play=document.getElementById('roube-play'),install=document.getElementById('roube-install'),status=document.getElementById('roube-install-info');let prompt=null;\nfunction enter(){layer.remove();try{sessionStorage.setItem('roube-capa-2026-v3-visitada','sim')}catch(e){}}\ntry{const installed=(window.matchMedia&&(['standalone','fullscreen','minimal-ui'].some(mode=>matchMedia('(display-mode: '+mode+')').matches)))||navigator.standalone===true||new URLSearchParams(location.search).get('instalado')==='1';if(installed||sessionStorage.getItem('roube-capa-2026-v3-visitada')==='sim')layer.remove()}catch(e){if(location.search.includes('instalado=1'))layer.remove()}\nplay.addEventListener('click',enter);\nwindow.addEventListener('beforeinstallprompt',e=>{e.preventDefault();prompt=e;status.textContent='Pronto para instalar pelo Chrome.'});\ninstall.addEventListener('click',async()=>{if(prompt){const p=prompt;prompt=null;p.prompt();try{const r=await p.userChoice;status.textContent=r.outcome==='accepted'?'Instalação solicitada.':'Você pode instalar pelo menu ⋮ do Chrome.'}catch(e){status.textContent='Abra o menu ⋮ do Chrome para instalar.'}}else{status.textContent='No Chrome, toque em ⋮ e em Instalar aplicativo ou Adicionar à tela inicial.'}});\nif('serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('/service-worker.js',{scope:'/'}).catch(()=>{})});\n})();\n</script>";
 const addPwa=html=>{if(html.split('</head>').length!==2||html.split('</body>').length!==2)throw new Error('HTML do jogo alterado inesperadamente');return html.replace('</head>',PWA_HEAD+'</head>').replace('</body>',PWA_BODY+'</body>')};
-const gameHtml=addPwa(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))));
+// Evento sazonal integrado ao mapa e ao mesmo link, sem alterar saves ou salas.
+const HALLOWEEN_START=Date.parse('2026-10-13T00:00:00-03:00');
+const HALLOWEEN_END=Date.parse('2026-11-01T00:00:00-03:00');
+const HALLOWEEN_AUDIO='/audio/halloween-spooky-scary-skeletons.mp3';
+const installHalloween=html=>{
+ const render='R.render(sc,cam);';
+ if(html.split(render).length!==2||html.split('</body>').length!==2)throw new Error('Integração Halloween: HTML inesperado');
+ return html.replace(render,'if(window.RoubeOvoHalloween)window.RoubeOvoHalloween.update();'+render)
+  .replace('</body>','<script src="/halloween-event.js?v=20261013"></script></body>');
+};
+PWA_FILES['/halloween-event.js']=['halloween-event.js','application/javascript; charset=utf-8'];
+const gameHtml=addPwa(installHalloween(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))))));
+const serveHalloweenMusic=(req,res)=>{
+ if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405).end('Method not allowed');return}
+ const file=path.join(__dirname,'audio','halloween-spooky-scary-skeletons.mp3');
+ if(!fs.existsSync(file)){res.writeHead(404).end('Música indisponível');return}
+ const size=fs.statSync(file).size,range=req.headers.range;
+ let start=0,end=size-1,status=200;
+ const headers={'Content-Type':'audio/mpeg','Accept-Ranges':'bytes','Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'};
+ if(range){
+  const match=/^bytes=(\d*)-(\d*)$/.exec(range);
+  if(!match||(!match[1]&&!match[2])){res.writeHead(416,{'Content-Range':'bytes */'+size}).end();return}
+  if(match[1]){start=Number(match[1]);end=match[2]?Math.min(Number(match[2]),size-1):size-1}
+  else{const suffix=Number(match[2]);start=Math.max(0,size-suffix)}
+  if(!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start> end||start>=size){res.writeHead(416,{'Content-Range':'bytes */'+size}).end();return}
+  status=206;headers['Content-Range']='bytes '+start+'-'+end+'/'+size;
+ }
+ headers['Content-Length']=end-start+1;res.writeHead(status,headers);
+ if(req.method==='HEAD'){res.end();return}
+ const stream=fs.createReadStream(file,{start,end});stream.on('error',()=>res.destroy());stream.pipe(res);
+};
 
 const httpServer=http.createServer((req,res)=>{
  let u;try{u=new URL(req.url,'http://localhost')}catch{res.writeHead(400).end();return}
+  if(u.pathname===HALLOWEEN_AUDIO){serveHalloweenMusic(req,res);return}
  if(req.method!=='GET'){res.writeHead(405).end('Method not allowed');return}
+  if(u.pathname==='/api/halloween'){
+   const serverNow=Date.now(),active=serverNow>=HALLOWEEN_START&&serverNow<HALLOWEEN_END;
+   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
+    .end(JSON.stringify({active,serverNow,startsAt:HALLOWEEN_START,endsAt:HALLOWEEN_END,musicUrl:HALLOWEEN_AUDIO,musicRequired:active}));return;
+  }
  if(Object.prototype.hasOwnProperty.call(PWA_FILES,u.pathname)){const a=PWA_FILES[u.pathname],p=path.join(__dirname,a[0]);if(!fs.existsSync(p)){res.writeHead(404).end('Arquivo PWA ausente');return}res.writeHead(200,{'Content-Type':a[1],'Cache-Control':u.pathname==='/service-worker.js'?'no-cache':'public, max-age=1800','X-Content-Type-Options':'nosniff','Service-Worker-Allowed':'/'});fs.createReadStream(p).pipe(res);return}
  if(u.pathname==='/health'){
   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'})
