@@ -21,6 +21,19 @@ test('backup antigo não reativa corrida 10x',()=>{
  assert(html.includes('const runMultiplier=A.moveMult;'));
  assert(!html.includes('ownerVerified&&A.personalFast===true?10'));
 });
+test('cinco novos mobs derivados dos STL e 3MF carregam localmente e preservam saves',()=>{
+ const zlib=require('node:zlib');
+ const source=zlib.gunzipSync(fs.readFileSync('assets/mobs-stl.js.gz')).toString('utf8');
+ assert.doesNotThrow(()=>new Function(source));
+ for(const name of ['escorpiao','galinha','fantasma','kitsune','trex'])assert(source.includes(name));
+ for(const id of ['2','22','61','68','79'])assert(source.includes(id+':'));
+ assert(server.includes('mobs-stl.js.gz'));
+ assert(server.includes("'+userMobsSource+'"));
+ const animals=fs.readFileSync('animals3d.js','utf8');
+ assert(animals.includes('RoubeOvoUserMobs?.has(id)'));
+ assert(html.includes("<button id=bm>Loja</button>"));
+ assert(html.includes("['Esteira Astral',1000000000,1e21,0xa77bff]"));
+});
 test('103 animais, auras e som preservados',()=>{
  assert(html.includes('const REMOVED_BIRDS=new Set([0,9])'));
  assert(html.includes('const AUR={3:'));
