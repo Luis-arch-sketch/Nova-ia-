@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#101c30">
+  <meta name="theme-color" content="#f6ead4">
   <meta name="description" content="Mr. Bean: Mini Rush — pule sobre os carros, colete moedas, cumpra missões e melhore seu Mini verde neste jogo de corrida 2D.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
   <title>Mr. Bean — Mini Rush 🚗</title>
 </head>
 <body>
@@ -17,9 +17,22 @@
       <div class="top-actions"><button class="iconbtn" id="soundBtn" aria-label="Ativar ou desativar sons" title="Som ligado/desligado">🔊</button><button class="iconbtn" id="helpBtn" aria-label="Como jogar" title="Como jogar">❔</button></div>
     </header>
 
-    <nav class="main-nav" aria-label="Menu do jogo"><button class="nav-btn active" data-tab="jogar">🎮 Jogar</button><button class="nav-btn" data-tab="garagem">🔧 Garagem <span class="nav-dot" id="garageDot"></span></button><button class="nav-btn" data-tab="missoes">🎯 Missões <span class="nav-count" id="claimCount" hidden>0</span></button><button class="nav-btn" data-tab="recordes">🏆 Recordes</button></nav>
+    <nav class="main-nav" aria-label="Menu do jogo"><button class="nav-btn nav-home" id="navHomeBtn">🏠 Início</button><button class="nav-btn active" data-tab="jogar">🎮 Jogar</button><button class="nav-btn" data-tab="garagem">🔧 Garagem <span class="nav-dot" id="garageDot"></span></button><button class="nav-btn" data-tab="missoes">🎯 Missões <span class="nav-count" id="claimCount" hidden>0</span></button><button class="nav-btn" data-tab="recordes">🏆 Recordes</button></nav>
 
     <main>
+    <section class="home-screen" id="homePane" aria-label="Menu principal">
+      <div class="home-head"><div class="home-tag">🎬 AVENTURA DE MR. BEAN · JOGO 2D</div><h1>MR. BEAN <span>MINI RUSH!</span></h1><p>Entre no Mini, pule os carros e sobreviva ao trânsito de Londres!</p></div>
+      <div class="home-menu">
+        <button class="home-action home-play" id="homePlayBtn">🚗 <span>JOGAR AGORA<small>Começar a corrida</small></span> <b>▶</b></button>
+        <button class="home-action" data-home-tab="garagem">🔧 <span>GARAGEM<small>Melhorar o carro</small></span> <b>›</b></button>
+        <button class="home-action" data-home-tab="missoes">🎯 <span>MISSÕES<small>Ganhar moedas e diamantes</small></span> <b>›</b></button>
+        <button class="home-action" data-home-tab="recordes">🏆 <span>RECORDES<small>Ver seus resultados</small></span> <b>›</b></button>
+        <button class="home-action" id="homeHelpBtn">❔ <span>COMO JOGAR<small>Controles e regras</small></span> <b>›</b></button>
+        <button class="home-action" id="homeSoundBtn">🔊 <span>ATIVAR / DESATIVAR SOM<small>Motor, pneus e explosões</small></span> <b>›</b></button>
+        <button class="home-action" id="homeFullscreenBtn">⛶ <span>TELA CHEIA<small>Mais espaço no celular</small></span> <b>›</b></button>
+      </div><div class="home-bottom">🧸 Mr. Bean • 🪙 Moedas • 💎 Diamantes • 🚙 Corrida infinita</div>
+    </section>
+
       <section class="play-pane" id="playPane">
         <div class="hud">
           <div class="stat"><small>📍 DISTÂNCIA</small><strong id="distance">0 <small>m</small></strong></div>
@@ -45,7 +58,7 @@
           </div>
           <div class="overlay" id="pauseOverlay"><div class="modal"><div class="modal-emoji">☕</div><h2>Pausa para o chá!</h2><p>Seu Mini está esperando, Bean.</p><button class="primary-btn" id="resumeBtn">▶ CONTINUAR</button><button class="ghost-btn" id="quitBtn">⌂ Voltar ao menu</button></div></div>
           <div class="overlay" id="overOverlay"><div class="modal gameover"><div class="modal-emoji">💥</div><div class="finish-tag">FIM DE CORRIDA</div><h2>Que confusão,<br>Mr. Bean!</h2><p>O Mini não resistiu ao trânsito!</p><div class="result-grid"><div><small>DISTÂNCIA</small><strong id="endDistance">0 m</strong></div><div><small>CARROS EVITADOS</small><strong id="endDodged">0</strong></div><div><small>MOEDAS GANHAS</small><strong id="endCoins">+0 🪙</strong></div><div><small>DIAMANTES GANHOS</small><strong id="endGems">+0 💎</strong></div></div><p class="record-banner" id="newRecord" hidden>🏆 NOVO RECORDE PESSOAL!</p><button class="primary-btn" id="retryBtn">↻ TENTAR DE NOVO</button><button class="ghost-btn" id="homeBtn">⌂ Voltar ao menu</button></div></div>
-          <div class="mini-controls"><button id="pauseBtn" aria-label="Pausar">⏸</button></div>
+          <div class="mini-controls"><button id="pauseBtn" aria-label="Pausar">⏸</button><button id="stageHomeBtn" aria-label="Voltar ao menu principal">🏠</button><button id="stageFullscreenBtn" aria-label="Tela cheia">⛶</button></div>
         </div>
         <div class="below-stage"><div class="tips"><span><kbd>ESPAÇO</kbd> ou <kbd>↑</kbd> PULAR</span><span><kbd>X</kbd> TURBO</span><span><kbd>P</kbd> PAUSAR</span></div><div class="touch-controls"><button id="jumpBtn" class="touch-jump">⬆️ PULAR!</button><button id="turboBtn" class="touch-turbo">⚡ TURBO <small id="turboTimer">PRONTO</small></button></div></div>
         <div class="feature-grid"><div class="feature"><span>🪙</span><div><b>RECOMPENSAS DE TEMPO</b><small>Moedas a cada 5 segundos; diamantes a cada 40!</small></div></div><div class="feature"><span>💥</span><div><b>SEM BATER!</b><small>Pule sobre os carros. Encostou sem escudo? Explosão!</small></div></div><div class="feature"><span>🛠️</span><div><b>TUNE SEU MINI</b><small>Motor, suspensão, ímã, proteção e turbo.</small></div></div></div>
@@ -62,6 +75,6 @@
   <script src="art-maps-01.js" defer></script>
   <script src="art-maps-02.js" defer></script>
   <script src="art-rest.js" defer></script>
-  <script src="game.js" defer></script>
+  <script src="game.js?v=2" defer></script>
 </body>
 </html>
