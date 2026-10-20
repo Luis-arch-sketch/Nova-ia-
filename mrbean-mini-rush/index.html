@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101c30">
+  <meta name="description" content="Mr. Bean: Mini Rush — pule sobre os carros, colete moedas, cumpra missões e melhore seu Mini verde neste jogo de corrida 2D.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <title>Mr. Bean — Mini Rush 🚗</title>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a href="#" class="logo" aria-label="Mr. Bean Mini Rush"><span class="logo-bear">🧸</span><span><b>MR. BEAN <em>MINI RUSH</em></b><small>A CORRIDA MAIS MALUCA DE LONDRES!</small></span></a>
+      <div class="wallet" aria-label="Carteira do jogo"><div class="money"><span>🪙</span><div><small>MOEDAS</small><strong id="walletCoins">0</strong></div></div><div class="money"><span>💎</span><div><small>DIAMANTES</small><strong id="walletGems">0</strong></div></div></div>
+      <div class="top-actions"><button class="iconbtn" id="soundBtn" aria-label="Ativar ou desativar sons" title="Som ligado/desligado">🔊</button><button class="iconbtn" id="helpBtn" aria-label="Como jogar" title="Como jogar">❔</button></div>
+    </header>
+
+    <nav class="main-nav" aria-label="Menu do jogo"><button class="nav-btn active" data-tab="jogar">🎮 Jogar</button><button class="nav-btn" data-tab="garagem">🔧 Garagem <span class="nav-dot" id="garageDot"></span></button><button class="nav-btn" data-tab="missoes">🎯 Missões <span class="nav-count" id="claimCount" hidden>0</span></button><button class="nav-btn" data-tab="recordes">🏆 Recordes</button></nav>
+
+    <main>
+      <section class="play-pane" id="playPane">
+        <div class="hud">
+          <div class="stat"><small>📍 DISTÂNCIA</small><strong id="distance">0 <small>m</small></strong></div>
+          <div class="stat"><small>⏱️ TEMPO</small><strong id="time">00:00</strong></div>
+          <div class="stat"><small>🚘 CARROS EVITADOS</small><strong id="dodged">0</strong></div>
+          <div class="stat"><small>⚡ COMBO</small><strong id="combo">x1</strong></div>
+          <div class="stat stat-best"><small>🏆 RECORDE</small><strong id="best">0 <small>m</small></strong></div>
+        </div>
+        <div class="stage" id="stage">
+          <canvas id="game" width="960" height="540" aria-label="Jogo de corrida: Mr. Bean pula carros e coleta moedas" tabindex="0"></canvas>
+          <div class="stage-grain" aria-hidden="true"></div>
+          <div class="stage-top"><span class="stage-chip">🇬🇧 LONDRES · 13 CENÁRIOS INFINITOS</span><span class="stage-chip" id="stageStatus">🚗 PRONTO PARA PARTIR</span></div>
+          <div id="banner" class="game-banner" role="status" aria-live="polite"></div>
+          <div class="overlay show" id="menuOverlay">
+            <div class="hero-card">
+              <div class="hero-badge">🏁 CORRIDA INFINITA 2D</div>
+              <h1>MR. BEAN<br><span>MINI RUSH!</span></h1>
+              <p>O Mr. Bean aprontou mais uma! Entre no Mini verde, <b>pule por cima do trânsito</b> e sobreviva o máximo que conseguir.</p>
+              <div class="hero-perks"><span>🪙 Moedas</span><span>💎 Diamantes</span><span>🎯 Missões</span></div>
+              <button class="primary-btn big" id="startBtn">▶ COMEÇAR CORRIDA <span>→</span></button>
+              <small class="mini-caption">ESPAÇO / ↑ para pular · X para turbo · P para pausar</small>
+            </div>
+          </div>
+          <div class="overlay" id="pauseOverlay"><div class="modal"><div class="modal-emoji">☕</div><h2>Pausa para o chá!</h2><p>Seu Mini está esperando, Bean.</p><button class="primary-btn" id="resumeBtn">▶ CONTINUAR</button><button class="ghost-btn" id="quitBtn">⌂ Voltar ao menu</button></div></div>
+          <div class="overlay" id="overOverlay"><div class="modal gameover"><div class="modal-emoji">💥</div><div class="finish-tag">FIM DE CORRIDA</div><h2>Que confusão,<br>Mr. Bean!</h2><p>O Mini não resistiu ao trânsito!</p><div class="result-grid"><div><small>DISTÂNCIA</small><strong id="endDistance">0 m</strong></div><div><small>CARROS EVITADOS</small><strong id="endDodged">0</strong></div><div><small>MOEDAS GANHAS</small><strong id="endCoins">+0 🪙</strong></div><div><small>DIAMANTES GANHOS</small><strong id="endGems">+0 💎</strong></div></div><p class="record-banner" id="newRecord" hidden>🏆 NOVO RECORDE PESSOAL!</p><button class="primary-btn" id="retryBtn">↻ TENTAR DE NOVO</button><button class="ghost-btn" id="homeBtn">⌂ Voltar ao menu</button></div></div>
+          <div class="mini-controls"><button id="pauseBtn" aria-label="Pausar">⏸</button></div>
+        </div>
+        <div class="below-stage"><div class="tips"><span><kbd>ESPAÇO</kbd> ou <kbd>↑</kbd> PULAR</span><span><kbd>X</kbd> TURBO</span><span><kbd>P</kbd> PAUSAR</span></div><div class="touch-controls"><button id="jumpBtn" class="touch-jump">⬆️ PULAR!</button><button id="turboBtn" class="touch-turbo">⚡ TURBO <small id="turboTimer">PRONTO</small></button></div></div>
+        <div class="feature-grid"><div class="feature"><span>🪙</span><div><b>RECOMPENSAS DE TEMPO</b><small>Moedas a cada 5 segundos; diamantes a cada 40!</small></div></div><div class="feature"><span>💥</span><div><b>SEM BATER!</b><small>Pule sobre os carros. Encostou sem escudo? Explosão!</small></div></div><div class="feature"><span>🛠️</span><div><b>TUNE SEU MINI</b><small>Motor, suspensão, ímã, proteção e turbo.</small></div></div></div>
+      </section>
+
+      <section class="panel-page" id="garagePane" hidden><div class="section-heading"><span class="head-icon">🔧</span><div><h2>Garagem do Mr. Bean</h2><p>Transforme o Mini verde num verdadeiro foguete... mais ou menos! 🚗</p></div></div><div class="garage-intro"><div class="garage-car">🚗 <span>MINI VERDE</span></div><div><strong>Seu Mini, suas regras!</strong><p>Os upgrades são permanentes, salvos automaticamente neste navegador. Cada nível dá vantagens nas próximas corridas.</p></div></div><div class="shop-grid" id="shopGrid"></div></section>
+      <section class="panel-page" id="missionsPane" hidden><div class="section-heading"><span class="head-icon">🎯</span><div><h2>Missões e recompensas</h2><p>Desafios permanentes. Complete, resgate e encha sua garagem de melhorias!</p></div></div><div class="missions-summary"><div><small>MISSÕES CONCLUÍDAS</small><strong id="missionsDone">0/0</strong></div><div><small>PRÊMIOS DISPONÍVEIS</small><strong id="missionsReady">0</strong></div><div><small>RECOMPENSA TOTAL</small><strong>🪙 3.900+ · 💎 30+</strong></div></div><div class="mission-list" id="missionList"></div></section>
+      <section class="panel-page" id="recordsPane" hidden><div class="section-heading"><span class="head-icon">🏆</span><div><h2>Seus recordes</h2><p>As aventuras de Mr. Bean ficam registradas neste dispositivo.</p></div></div><div class="records-grid" id="recordsGrid"></div><div class="record-note">💾 Salvamento automático no armazenamento local do navegador. Se limpar os dados do site, os recordes e as moedas serão perdidos. Não há compras com dinheiro real.</div></section>
+    </main>
+    <footer><span>Projeto de fã não oficial · Mr. Bean Mini Rush · HTML5 + JavaScript · 13 mapas em loop</span><span>🧸 Teddy aprova... provavelmente!</span></footer>
+  </div>
+  <div id="toastArea" class="toast-area" aria-live="polite"></div>
+  <div class="help-dialog" id="helpDialog" hidden><div class="help-backdrop" id="helpBackdrop"></div><div class="help-content" role="dialog" aria-modal="true" aria-labelledby="helpTitle"><button class="help-close" id="helpClose" aria-label="Fechar">✕</button><h2 id="helpTitle">🚘 Como jogar</h2><p><b>Objetivo:</b> fique vivo o maior tempo possível pulando por cima de outros carros. Quando você bate sem proteção, o Mini explode!</p><p><b>Controles:</b> Espaço, ↑ ou botão PULAR no celular. Pressione X ou TURBO para acelerar e ficar invulnerável por alguns segundos (ao comprar o upgrade de turbo).</p><p><b>Ganhos:</b> moedas pelo tempo, itens da rua, combos e missões; diamantes pelo tempo, itens raros e missões.</p><p><b>Melhorias:</b> entre na Garagem e compre motor, suspensão, ímã, escudo e turbo com as moedas e diamantes adquiridos jogando.</p><p><b>Som:</b> motor, pneus, pulo, coleta, batida e explosão sintetizados pelo navegador. Toque em Jogar para ativar o áudio.</p><button class="primary-btn" id="helpOK">ENTENDI! ✅</button></div></div>
+  <script src="art-maps-01.js" defer></script>
+  <script src="art-maps-02.js" defer></script>
+  <script src="art-maps-03.js" defer></script>
+  <script src="art-maps-04.js" defer></script>
+  <script src="art-maps-05.js" defer></script>
+  <script src="art-characters-01.js" defer></script>
+  <script src="art-characters-02.js" defer></script>
+  <script src="art-characters-03.js" defer></script>
+  <script src="game.js" defer></script>
+</body>
+</html>
