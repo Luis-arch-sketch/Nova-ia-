@@ -5,3 +5,73 @@
 @media(max-width:600px){.app{padding:9px 8px 25px}.topbar{gap:8px;flex-wrap:wrap;margin-bottom:10px}.logo-bear{width:41px;height:41px;font-size:22px;border-radius:12px}.logo b{font-size:18px}.logo small{letter-spacing:.6px;font-size:7px}.wallet{order:3;width:100%;gap:7px;justify-content:space-between}.money{flex:1;padding:6px 11px}.money small{font-size:9px}.money strong{font-size:18px}.top-actions{margin-left:auto}.iconbtn{width:38px;height:38px;font-size:18px}.main-nav{gap:3px;margin-bottom:9px;padding:4px}.nav-btn{flex:1;text-align:center;padding:10px 4px;font-size:12px}.hud{padding:8px 7px;gap:3px}.stat>strong{font-size:14px}.stat>strong small{font-size:10px}.stat>small{font-size:7px;letter-spacing:.1px}.stat-best{display:none}.stage{border-width:2px;border-top:0;border-radius:0 0 12px 12px;aspect-ratio:4/3}.stage canvas{height:100%}.stage-top{top:5px;left:5px;right:5px}.stage-chip{font-size:7px;padding:5px 7px}.hero-card{padding:14px 15px;width:92%;border-radius:15px}.hero-badge{font-size:8px;padding:4px 10px}.hero-card h1{font-size:clamp(31px,9vw,48px);margin:9px 0;letter-spacing:-.8px}.hero-card p{font-size:10px;line-height:1.4;margin:8px auto}.hero-perks{font-size:9px;gap:4px;margin:6px auto 9px}.hero-perks span{padding:3px 7px}.primary-btn.big{font-size:16px;min-height:40px}.mini-caption{font-size:8px;margin-top:6px}.modal{padding:13px 18px}.modal-emoji{font-size:28px}.modal h2{font-size:24px;margin-top:6px}.modal p{font-size:12px;margin:5px auto}.result-grid{gap:5px;margin-bottom:6px}.result-grid>div{padding:5px}.result-grid strong{font-size:14px}.result-grid small{font-size:8px}.finish-tag{font-size:8px}.game-banner{font-size:13px;padding:6px 13px}.mini-controls{bottom:6px;right:7px}.mini-controls button{height:32px;width:33px;font-size:15px}.tips{gap:8px;font-size:10px;flex-wrap:wrap;justify-content:center}.tips span{white-space:normal}.below-stage{justify-content:center;gap:9px}.touch-controls{width:100%}.touch-controls button{min-height:52px;font-size:16px;flex:1}.feature-grid{grid-template-columns:1fr;gap:7px}.feature{padding:10px}.shop-grid,.mission-list{grid-template-columns:1fr}.shop-card{min-height:145px}.missions-summary{grid-template-columns:1fr 1fr}.missions-summary>div:last-child{grid-column:span 2}.records-grid{grid-template-columns:1fr 1fr}.garage-intro{flex-direction:column;gap:10px;text-align:center}.section-heading h2{font-size:25px}.section-heading p{font-size:12px}.section-heading{gap:10px}.head-icon{width:52px;height:52px;font-size:24px}.help-content{padding:18px 20px}.help-content p{font-size:12px}footer{font-size:10px}}
 @media(max-width:390px){.hero-card p{font-size:9px}.stage-chip{font-size:6.5px}.nav-btn{font-size:11px}.stat>strong{font-size:13px}.hero-card h1{font-size:32px}.mini-caption{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* V2: Mr Bean cartoon cream / burgundy / red — green only on the classic Mini. */
+:root{color-scheme:light;--bg:#f6ead4;--panel:#fff9ee;--line:#ddc9ab;--muted:#725d4d;--text:#30221f;--lime:#e3aa39;--yellow:#f4c64d;--green:#9ab45b;--blue:#8abed7;--pink:#d96d5b}
+html,body{background:#f6ead4!important;color:#30221f!important}
+body{background:linear-gradient(145deg,#f8efd9,#ead2af)!important}
+.topbar,.main-nav,.hud{background:#fff7e9!important;color:#30221f!important;border-color:#ddc9ab!important}
+.logo em,.garage-car span{color:#a72d32!important}
+.logo small,.money small,.stat>small,.tips,.section-heading p{color:#745f4d!important}
+.logo-bear,.money,.iconbtn{background:#f4e3c7!important;border-color:#dfc8a4!important;color:#382921!important}
+.nav-btn{color:#49382c!important}
+.nav-btn.active,.primary-btn,.touch-controls .touch-jump{background:#d94a40!important;color:#fff!important;box-shadow:inset 0 -3px #9d2c28,0 4px 14px #6e33202a!important}
+.stage{border-color:#b58c63!important}
+.stage-chip{background:#51352cd9!important}
+.hero-card,.modal,.help-content{background:#fff5e2!important;color:#35271f!important;border-color:#a87e5e!important}
+.hero-card h1,.modal h2{color:#402b26!important;text-shadow:none!important}
+.hero-card h1 span,.hero-badge{color:#b92f33!important}
+.hero-card p,.modal p,.help-content p{color:#624b3e!important}
+.hero-perks span,.result-grid>div{background:#ecd6b6!important;color:#402b26!important}
+.hero-badge,.finish-tag{background:#f6e1c5!important;border-color:#b58c63!important}
+.mini-caption,.ghost-btn{color:#6b4534!important}
+.shop-card,.mission,.feature,.garage-intro,.record-note,.records-grid>div,.missions-summary>div{background:#fff8ed!important;color:#35271f!important;border-color:#d7bc99!important}
+.shop-info p,.feature small{color:#715847!important}
+.home-screen{min-height:calc(100dvh - 145px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 0,#fffaf0 0,#f4dfbb 68%,#e7c89b 100%);border:3px solid #c99d69;border-radius:24px;padding:26px 16px 30px;box-shadow:0 12px 30px #8b5e3224}
+.home-head{text-align:center;max-width:700px}
+.home-tag{font-size:12px;letter-spacing:1.5px;font-weight:900;color:#9a3a31}
+.home-head h1{font-family:'Baloo 2',system-ui;font-size:clamp(34px,6vw,70px);line-height:1;margin:12px 0 8px;color:#35261f}
+.home-head h1 span{color:#bf3335}
+.home-head p{font-size:clamp(13px,2vw,18px);color:#624a39;margin:6px auto 10px}
+.home-menu{width:min(660px,100%);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.home-action{display:flex;align-items:center;gap:12px;text-align:left;border:2px solid #d9b88c;border-radius:17px;padding:16px;background:#fff9ee;color:#34271e;font-size:27px;box-shadow:0 5px 0 #cda877;font-weight:900;transition:transform .1s}
+.home-action:active{transform:translateY(4px);box-shadow:0 1px 0 #cda877}
+.home-action span{flex:1;font-size:16px;line-height:1.1}
+.home-action small{display:block;font-size:11px;font-weight:700;color:#816754;margin-top:6px}
+.home-action b{font-size:25px}
+.home-play{grid-column:1/-1;background:#c83c37;color:white;border-color:#a82f2d;box-shadow:0 6px 0 #902824;padding:22px;font-size:36px}
+.home-play span{font-size:25px}.home-play small{color:#ffe1cf;font-size:12px}
+.home-bottom{color:#805d40;font-size:12px;font-weight:900;text-align:center}
+.home-mode .main-nav,.home-mode .feature-grid,.home-mode footer{display:none!important}
+.home-mode .home-screen{display:flex!important}
+.playing-mode .app{max-width:none;padding:8px 12px 10px}
+.playing-mode .topbar{margin-bottom:6px}
+.playing-mode .main-nav{margin-bottom:6px}
+.playing-mode .feature-grid,.playing-mode footer{display:none}
+.playing-mode .stage{height:min(72dvh,calc(100dvw * .65));aspect-ratio:auto}
+.playing-mode .stage canvas{height:100%;width:100%}
+.playing-mode .below-stage{padding:6px 4px}
+.mini-controls{display:flex;gap:7px}
+.mini-controls button{width:46px;height:43px}
+.stage:fullscreen{width:100vw!important;height:100dvh!important;border:0!important;border-radius:0!important;background:#8ccce3}
+.stage:fullscreen canvas{width:100%;height:100%}
+.stage:fullscreen .mini-controls{z-index:15}
+@media(max-width:600px){
+ .home-screen{min-height:calc(100dvh - 92px);padding:12px 10px 22px;gap:10px;border-radius:14px}
+ .home-tag{font-size:9px}.home-head h1{font-size:clamp(32px,9vw,47px);margin:7px 0}
+ .home-head p{font-size:12px;margin:4px}
+ .home-menu{gap:8px}
+ .home-action{padding:12px 9px;gap:7px;border-radius:12px;font-size:21px;box-shadow:0 3px 0 #cda877}
+ .home-action span{font-size:12px}.home-action small{font-size:9px;margin-top:4px}.home-action b{font-size:17px}
+ .home-play{padding:15px;font-size:27px}.home-play span{font-size:19px}
+ .home-bottom{font-size:10px}
+ .playing-mode .app{padding:3px}
+ .playing-mode .topbar{display:none}
+ .playing-mode .main-nav{display:none}
+ .playing-mode .hud{padding:6px 8px}
+ .playing-mode .stage{height:62dvh;aspect-ratio:auto}
+ .playing-mode .touch-controls{width:100%;gap:8px}
+ .playing-mode .touch-controls button{min-height:56px;font-size:17px}
+ .playing-mode .tips{display:none}
+ .stage-top .stage-chip:first-child{display:none}
+ .mini-controls{bottom:7px;right:7px}
+}
