@@ -76,7 +76,7 @@
   const images = {bean:null, bg:[]};
   const loadImage = src => new Promise(resolve => {const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(null);im.src=src;});
   Promise.all([loadImage(window.MINI_RUSH_ART?.characters?.bean || 'assets/sprites/bean.png'),...Array.from({length:13},(_,i)=>loadImage(window.MINI_RUSH_ART?.maps?.[i] || `assets/mapas/cenario_${String(i+1).padStart(2,'0')}.png`))]).then(all=>{images.bean=all[0];images.bg=all.slice(1);});
-  let state='menu', activeTab='jogar', elapsed=0, wall=0, camera=0, last=0, introT=0, crashT=0, particles=[], shake=0, bannerTimeout=0, bannerText='', roadStreaks=[];
+  let state='menu', activeTab='inicio', elapsed=0, wall=0, camera=0, last=0, introT=0, crashT=0, particles=[], shake=0, bannerTimeout=0, bannerText='', roadStreaks=[];
   const player = {x:195,w:147,h:79,z:0,vz:0,onGround:true,wheels:0,shields:0,invuln:0,turbo:0,turboCd:0,tilt:0};
   let run = newRun();
   function newRun() { return {time:0,distance:0,dodged:0,jumps:0,combo:0,bestCombo:0,coins:0,gems:0,pickedCoins:0,pickedGems:0,obstacles:[],pickups:[],spawnTimer:2.4,coinTimer:0,gemTimer:0,milestone:0,finalized:false}; }
@@ -129,12 +129,13 @@
   function showBanner(text,seconds=1.35){bannerText=text;bannerTimeout=seconds;$('banner').textContent=text;$('banner').classList.add('active');}
   function tabSwitch(tab) {
     activeTab=tab;
-    ['jogar','garagem','missoes','recordes'].forEach(t=>{$(t==='jogar'?'playPane':t==='garagem'?'garagePane':t==='missoes'?'missionsPane':'recordsPane').hidden=t!==tab;});
+    ['inicio','jogar','garagem','missoes','recordes'].forEach(t=>{$(t==='inicio'?'homePane':t==='jogar'?'playPane':t==='garagem'?'garagePane':t==='missoes'?'missionsPane':'recordsPane').hidden=t!==tab;});
+    document.body.classList.toggle('home-mode',tab==='inicio');document.body.classList.toggle('playing-mode',tab==='jogar');
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
     if(tab==='garagem')renderShop();
     if(tab==='missoes')renderMissions();
     if(tab==='recordes')renderRecords();
-    if(tab!=='jogar'&&state==='running') pause();
+    if(tab!=='jogar'&&(state==='running'||state==='intro')) pause();
   }
   function upgradeCost(u) {return u.base+save.upgrades[u.id]*u.step;}
   function renderShop(){ $('shopGrid').innerHTML=UPGRADES.map(u=>{
@@ -170,7 +171,7 @@
     $('turboTimer').textContent=!save.upgrades.turbo?'BLOQUEADO':player.turbo>0?'ATIVO':player.turboCd>0?`${Math.ceil(player.turboCd)}s`:'PRONTO';
     $('turboBtn').disabled=!save.upgrades.turbo||state!=='running'||player.turboCd>0||player.turbo>0;
   }
-  function overlays(){ $('menuOverlay').classList.toggle('show',state==='menu');$('pauseOverlay').classList.toggle('show',state==='paused');$('overOverlay').classList.toggle('show',state==='gameover'); }
+  function overlays(){ $('menuOverlay').classList.toggle('show',state==='menu'&&activeTab==='jogar');$('pauseOverlay').classList.toggle('show',state==='paused');$('overOverlay').classList.toggle('show',state==='gameover'); }
   function resetPlayer(){player.z=0;player.vz=0;player.onGround=true;player.invuln=0;player.turbo=0;player.turboCd=0;player.shields=save.upgrades.escudo;player.tilt=0;player.wheels=0;}
   function startGame(){
     if(activeTab!=='jogar')tabSwitch('jogar');initAudio();run=newRun();resetPlayer();elapsed=0;introT=0;shake=0;particles=[];roadStreaks=[];camera=0;
@@ -193,7 +194,7 @@
   }
   function pause(){if(state!=='running'&&state!=='intro')return;state='paused';$('stageStatus').textContent='⏸ PAUSADO';overlays();}
   function resume(){if(state!=='paused')return;state=run.time===0&&introT<1.85?'intro':'running';$('stageStatus').textContent='🚗 EM CORRIDA';overlays();canvas.focus({preventScroll:true});}
-  function goHome(){if(state==='running'||state==='paused'||state==='intro')finishRun(false);state='menu';overlays();$('stageStatus').textContent='🚗 PRONTO PARA PARTIR';tabSwitch('jogar');}
+  function goHome(){if(state==='running'||state==='paused'||state==='intro')finishRun(false);state='menu';overlays();$('stageStatus').textContent='🚗 PRONTO PARA PARTIR';tabSwitch('inicio');}
   function bump(){
     if(state!=='running'||player.invuln>0)return;
     if(player.turbo>0){player.invuln=.2;return;}
@@ -439,6 +440,16 @@
     else if(code==='KeyM'){$('soundBtn').click();}
   }
   function setupUI(){
+    $('homePlayBtn').addEventListener('click',startGame);
+    document.querySelectorAll('[data-home-tab]').forEach(b=>b.addEventListener('click',()=>tabSwitch(b.dataset.homeTab)));
+    $('navHomeBtn').addEventListener('click',goHome);
+    $('stageHomeBtn').addEventListener('click',goHome);
+    $('homeHelpBtn').addEventListener('click',()=>{$('helpDialog').hidden=false;});
+    $('homeSoundBtn').addEventListener('click',()=>{$('soundBtn').click();});
+    const enterFullscreen=async()=>{const el=$('stage');try{if(document.fullscreenElement){await document.exitFullscreen();}else if(el.requestFullscreen){await el.requestFullscreen();if(screen.orientation&&screen.orientation.lock)try{await screen.orientation.lock('landscape');}catch{}}else notification('Gire o celular para ver maior!');}catch{notification('Gire o celular para ver maior!');}};
+    $('homeFullscreenBtn').addEventListener('click',()=>{tabSwitch('jogar');enterFullscreen();});
+    $('stageFullscreenBtn').addEventListener('click',enterFullscreen);
+
     document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>tabSwitch(b.dataset.tab)));
     $('shopGrid').addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)buyUpgrade(b.dataset.upgrade);});
     $('missionList').addEventListener('click',e=>{const b=e.target.closest('[data-mission]');if(b)claimMission(b.dataset.mission);});
@@ -457,7 +468,7 @@
     // Do not navigate when clicking the decorative brand.
     document.querySelector('.logo').addEventListener('click',e=>{e.preventDefault();goHome();});
     $('soundBtn').textContent=save.sound?'🔊':'🔇';
-    syncWallet();syncMissionNotices();updateHUD();overlays();
+    syncWallet();syncMissionNotices();updateHUD();tabSwitch('inicio');overlays();
   }
   setupUI();requestAnimationFrame(loop);
   // Read-only diagnostics for smoke tests; not a gameplay cheat API.
