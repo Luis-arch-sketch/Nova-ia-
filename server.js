@@ -113,6 +113,7 @@ PWA_FILES['/halloween-clowns.js']=['halloween-clowns.js','application/javascript
 // Arquivos locais da sequência de chocagem e os dois áudios enviados.
 for(const file of ['egg-hatching.js','egg-hatching.css'])PWA_FILES['/'+file]=[file,file.endsWith('.css')?'text/css; charset=utf-8':'application/javascript; charset=utf-8'];
 PWA_FILES['/multiplayer-client.js']=['multiplayer-client.js','application/javascript; charset=utf-8'];
+PWA_FILES['/entrance-cinematic.js']=['entrance-cinematic.js','application/javascript; charset=utf-8'];
 for(const file of ['egg-crack.mp3','egg-suspense.mp3'])PWA_FILES['/audio/'+file]=['audio/'+file,'audio/mpeg'];
 const gameHtml=addPwa(installHalloween(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))))));
 const AMBIENT_AUDIO={
