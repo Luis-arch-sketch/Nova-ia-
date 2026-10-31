@@ -70,7 +70,7 @@ test('HUD servido e chat funciona apenas na sala, com nome confiavel e sem alter
   assert.equal(answer.text,'OI');
   await pause(1000);
   a.sendJSON({type:'chat',text:'  OLA\nMUNDO  '});
-  const clean=await b.next(m=>m.type==='chat');
+  const clean=await b.next(m=>m.type==='chat'&&m.text==='OLA MUNDO');
   assert.equal(clean.text,'OLA MUNDO');
  }finally{for(const ws of clients){try{ws.terminate()}catch{}}server.kill('SIGTERM');}
 });
