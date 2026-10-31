@@ -3,8 +3,16 @@
 const mpInvitation=(new URLSearchParams(location.search).get('sala')||'').trim().toUpperCase();
 if(/^[A-Z0-9-]{3,12}$/.test(mpInvitation))$('roomCode').value=mpInvitation;
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
-const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:new URLSearchParams(location.search).has('sala')||$('roomCode').value?'join':'quick-join'};
+const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:mpInvitation?'join':'quick-join'};
 const mpStatus=s=>{$('roomStatus').textContent=s;const h=$('mpPresence');if(h&&!MP.connected)h.textContent=s.startsWith('⚠')?'⚠ Multiplayer: '+s:'🌍 '+s};
+const mpEntrance=(show,immediate=false)=>{
+ const layer=$('mpEntrance');if(!layer||!layer.style)return;
+ clearTimeout(MP.entranceTimer);
+ if(show){if(layer.style.display!=='grid')MP.entranceAt=Date.now();layer.style.display='grid';return;}
+ const delay=immediate?0:Math.max(0,1200-(Date.now()-(MP.entranceAt||0)));
+ if(delay)MP.entranceTimer=setTimeout(()=>{layer.style.display='none';MP.entranceTimer=null;},delay);
+ else layer.style.display='none';
+};
 const mpEndpoint=()=>{
  const host=location.host;
  if(location.protocol==='file:')return 'ws://localhost:3000/ws';
@@ -190,6 +198,7 @@ const mpReconnect=()=>{
  MP.retryTimer=setTimeout(()=>{MP.retryTimer=null;mpJoin('join',true)},delay);
 };
 const mpDisconnect=(offline=true)=>{
+ mpEntrance(false,true);
  MP.stopped=true;clearTimeout(MP.retryTimer);clearTimeout(MP.connectTimer);MP.retryTimer=null;
  const ws=MP.socket;MP.socket=null;try{ws?.close()}catch(e){}mpClear();
  if(offline){setHomeBaseSlot(0);EGG_NIGHT.phase='day';EGG_NIGHT.until=0;nextReset=Date.now()/1000+CFG.reset;refreshEggNightUI();regrow(true);}
@@ -201,10 +210,11 @@ const mpJoin=(mode='join',retrying=false)=>{
  if(!retrying&&MP.pending?.type==='egg-deposit'&&room!==MP.room){mpStatus('⏳ Aguarde a confirmação do ovo antes de trocar de sala.');return;}
  if(!retrying&&MP.connected){
   let token=MP.tokens.get(room)||'';try{token=token||sessionStorage.getItem('rue3d_mp_token_'+room)||''}catch(e){}
-  MP.joining={room,name};mpStatus('Entrando na sala…');mpSend({type:mode,room,name,token});return;
+  MP.joining={room,name};mpEntrance(true);mpStatus('Entrando na sala…');mpSend({type:mode,room,name,token});return;
  }
  const pending=MP.pending;mpDisconnect(false);MP.pending=pending?.type==='egg-deposit'?pending:null;
  MP.stopped=false;MP.name=name;MP.room=room;if(!retrying)MP.retry=0;
+ mpEntrance(true);
  try{localStorage.setItem('rue3d_mp_name',name)}catch(e){}
  let token=MP.tokens.get(room)||'';try{token=token||sessionStorage.getItem('rue3d_mp_token_'+room)||'';}catch(e){}
  let ws;try{ws=new WebSocket(mpEndpoint())}catch(e){mpReconnect();return;}
@@ -214,7 +224,7 @@ const mpJoin=(mode='join',retrying=false)=>{
  ws.onmessage=e=>{if(MP.socket!==ws)return;MP.lastRx=performance.now();let msg;try{msg=JSON.parse(e.data)}catch{return;}
   if(msg.type==='joined'){
    if(MP.connected)mpClear();if(MP.joining){MP.name=MP.joining.name;MP.joining=null;}
-   clearTimeout(MP.connectTimer);MP.connected=true;MP.protocol=msg.protocol||1;MP.self=msg.id;MP.room=msg.room;MP.retry=0;MP.lastTx=MP.lastRankTx=0;
+   clearTimeout(MP.connectTimer);mpEntrance(false);MP.connected=true;MP.protocol=msg.protocol||1;MP.self=msg.id;MP.room=msg.room;MP.retry=0;MP.lastTx=MP.lastRankTx=0;
    $('roomCode').value=msg.room;MP.tokens.set(msg.room,msg.token);try{localStorage.setItem('rue3d_mp_room',msg.room);sessionStorage.setItem('rue3d_mp_token_'+msg.room,msg.token)}catch(e){}
    setHomeBaseSlot(msg.baseSlot);mpPlace(msg.spawn||{x:BASE_HOME.x,z:BASE_HOME.z+8});
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
@@ -239,7 +249,7 @@ const mpJoin=(mode='join',retrying=false)=>{
   else if(msg.type==='event-state'){MP.roomEvent=msg.event;if(!msg.event&&ABUSE.active)abuseStop(true);}
   else if(msg.type==='limited-sync'&&MP.protocol<2)syncRoomLimitedEggs(msg.eggs||[]);
   else if(msg.type==='admin-ok'){MP.owner=true;ownerVerified=true;adminBadge.visible=true;mpStatus('👑 ADMIN autenticado na sala '+MP.room);}
-  else if(msg.type==='error'){MP.joining=null;mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);if(!MP.connected){MP.stopped=true;clearTimeout(MP.connectTimer);ws.close();}}
+  else if(msg.type==='error'){MP.joining=null;mpEntrance(false,true);mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);if(!MP.connected){MP.stopped=true;clearTimeout(MP.connectTimer);ws.close();}}
  };
  ws.onerror=()=>{if(MP.socket===ws)mpStatus('⚠ Conexão interrompida. Tentando novamente…');};
  ws.onclose=()=>{if(MP.socket===ws){MP.socket=null;clearTimeout(MP.connectTimer);mpClear();mpReconnect();}};
