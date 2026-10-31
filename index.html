@@ -856,7 +856,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  sec+=dt;if(sec>=1){sec=0;upGates();S.inc.forEach((s,k2)=>{IV[k2].l.set(!s?'vazio':Date.now()>=s.b?'🐣 Pronto! Chocar ovo':'🥚 Incubando '+ft((s.b-Date.now())/1e3))});if(open)ui();const ac=$('abPanelClock');if(ac&&ABUSE.active)ac.textContent='Faltam '+Math.ceil(ABUSE.active.left)+'s • '+ABUSE.active.details}
  hq+=dt;if(hq>.25){hq=0;upHud();if(window.RoubeOvoHatching)window.RoubeOvoHatching.updateButtons()}
  sv+=dt;if(sv>2){sv=0;save()}};
-const loop=now=>{requestAnimationFrame(loop);const dt=Math.min(.05,(now-lt)/1e3);lt=now;step(dt);mpUpdate(dt);if(window.RoubeOvoClowns)window.RoubeOvoClowns.update();if(window.RoubeOvoEntrance?.active)window.RoubeOvoEntrance.update(dt);R.render(sc,cam);
+const loop=now=>{requestAnimationFrame(loop);const dt=Math.min(.05,(now-lt)/1e3);lt=now;step(dt);mpUpdate(dt);if(window.RoubeOvoClowns)window.RoubeOvoClowns.update();R.render(sc,cam);
  if(window.RoubeOvoHatching?.active)window.RoubeOvoHatching.render(dt);
  fa+=dt;if(++fn===60){const a=fa/60,mx=Math.min(devicePixelRatio||1,2);if(a>.03&&q>.75){q=Math.max(.75,q-.2);rs()}else if(a<.0185&&q<mx){q=Math.min(mx,q+.15);rs()}fa=fn=0}};
 addEventListener('pagehide',save);addEventListener('beforeunload',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
