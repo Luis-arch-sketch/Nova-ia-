@@ -114,8 +114,10 @@ PWA_FILES['/halloween-clowns.js']=['halloween-clowns.js','application/javascript
 for(const file of ['egg-hatching.js','egg-hatching.css'])PWA_FILES['/'+file]=[file,file.endsWith('.css')?'text/css; charset=utf-8':'application/javascript; charset=utf-8'];
 PWA_FILES['/multiplayer-client.js']=['multiplayer-client.js','application/javascript; charset=utf-8'];
 PWA_FILES['/entrance-cinematic.js']=['entrance-cinematic.js','application/javascript; charset=utf-8'];
+PWA_FILES['/hud-chat.js']=['hud-chat.js','application/javascript; charset=utf-8'];
 for(const file of ['egg-crack.mp3','egg-suspense.mp3'])PWA_FILES['/audio/'+file]=['audio/'+file,'audio/mpeg'];
-const gameHtml=addPwa(installHalloween(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))))));
+const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261031-chat1"></script></body>')};
+const gameHtml=installChatHud(addPwa(installHalloween(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))));
 const AMBIENT_AUDIO={
  [HALLOWEEN_AUDIO]:['audio/halloween-spooky-scary-skeletons.mp3','audio/mpeg'],
  '/audio/clown-dance.webm':['audio/clown-dance.webm','audio/webm'],
