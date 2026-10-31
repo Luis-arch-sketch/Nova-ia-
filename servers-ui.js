@@ -8,7 +8,9 @@
 
   const style=document.createElement('style');
   style.textContent=`
-  #serverDirectory{margin:12px 0;padding:12px;border:1px solid #497ab7;border-radius:12px;background:#152c4a;color:#f5f9ff}
+  /* Encontro automático: sem botões de buscar amigo ou criar sala vazia. */
+   #svFindFriend,#svCreate{display:none!important}
+   #serverDirectory{margin:12px 0;padding:12px;border:1px solid #497ab7;border-radius:12px;background:#152c4a;color:#f5f9ff}
   #serverDirectory h3{margin:3px 0 6px;font-size:16px}
   #serverDirectory .sv-note{font-size:12px;color:#c6dcfc;line-height:1.4;margin:5px 0 10px}
   #serverDirectory .sv-actions{display:flex;gap:5px;flex-wrap:wrap}
@@ -25,9 +27,9 @@
   wrapper.id='serverDirectory';
   wrapper.innerHTML=`
     <h3>🌐 Servidores sem número fixo de salas</h3>
-    <p class="sv-note">Crie um servidor público ou entre em um disponível. Até 16 jogadores por sala; novas salas aparecem conforme a necessidade. Salas vazias saem da lista.</p>
+    <p class="sv-note">A entrada automática prioriza o servidor com mais jogadores e vagas disponíveis. Se todos estiverem cheios, um novo servidor aparece. Até 16 jogadores por sala.</p>
     <div class="sv-actions">
-      <button type="button" id="svQuick">⚡ Entrar em um servidor</button>
+      <button type="button" id="svQuick">⚡ Entrar automaticamente</button>
       <button type="button" id="svCreate">➕ Criar servidor</button>
     </div>
     <div class="sv-actions"><button type="button" id="svRefresh">🔄 Ver servidores ativos</button></div>
