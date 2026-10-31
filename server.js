@@ -116,7 +116,7 @@ PWA_FILES['/multiplayer-client.js']=['multiplayer-client.js','application/javasc
 PWA_FILES['/entrance-cinematic.js']=['entrance-cinematic.js','application/javascript; charset=utf-8'];
 PWA_FILES['/hud-chat.js']=['hud-chat.js','application/javascript; charset=utf-8'];
 for(const file of ['egg-crack.mp3','egg-suspense.mp3'])PWA_FILES['/audio/'+file]=['audio/'+file,'audio/mpeg'];
-const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261031-chat1"></script></body>')};
+const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261031-bottomleft2"></script></body>')};
 const gameHtml=installChatHud(addPwa(installHalloween(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))));
 const AMBIENT_AUDIO={
  [HALLOWEEN_AUDIO]:['audio/halloween-spooky-scary-skeletons.mp3','audio/mpeg'],
@@ -152,7 +152,7 @@ const httpServer=http.createServer((req,res)=>{
    res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
     .end(JSON.stringify({active,serverNow,startsAt:HALLOWEEN_START,endsAt:HALLOWEEN_END,musicUrl:HALLOWEEN_AUDIO,musicRequired:active,eggTypes:[{name:'Halloween Raro',chance:.15},{name:'Halloween Lendário',chance:.04},{name:'Halloween Mítico',chance:.008},{name:'Halloween Secreto',chance:.001},{name:'Halloween Eternal',chance:.00065},{name:'Halloween Divino',chance:.00018}],newAnimals:24}));return;
   }
- if(Object.prototype.hasOwnProperty.call(PWA_FILES,u.pathname)){const a=PWA_FILES[u.pathname],p=path.join(__dirname,a[0]);if(!fs.existsSync(p)){res.writeHead(404).end('Arquivo PWA ausente');return}res.writeHead(200,{'Content-Type':a[1],'Cache-Control':u.pathname==='/service-worker.js'?'no-cache':'public, max-age=1800','X-Content-Type-Options':'nosniff','Service-Worker-Allowed':'/'});fs.createReadStream(p).pipe(res);return}
+ if(Object.prototype.hasOwnProperty.call(PWA_FILES,u.pathname)){const a=PWA_FILES[u.pathname],p=path.join(__dirname,a[0]);if(!fs.existsSync(p)){res.writeHead(404).end('Arquivo PWA ausente');return}res.writeHead(200,{'Content-Type':a[1],'Cache-Control':u.pathname==='/hud-chat.js'?'no-store':u.pathname==='/service-worker.js'?'no-cache':'public, max-age=1800','X-Content-Type-Options':'nosniff','Service-Worker-Allowed':'/'});fs.createReadStream(p).pipe(res);return}
  if(u.pathname==='/health'){
   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'})
     .end(JSON.stringify({ok:true,rooms:rooms.size,multiplayerProtocol:2,revision:process.env.RENDER_GIT_COMMIT||null}));return;
