@@ -12,18 +12,18 @@ function catalog(time=START+1000){
  const RAR=Array(11).fill('original');const original=JSON.stringify(SPC);
  HW.register(SPC,RAR);return {HW,SPC,RAR,clock,FakeDate,original};
 }
-test('16 espécies têm IDs estáveis depois de LIMITED, quatro ovos e raridades progressivas',()=>{
- const c=catalog();assert.equal(c.HW.defs.length,16);assert.equal(c.SPC.length,121);
+test('24 espécies têm IDs estáveis depois de LIMITED, seis ovos e raridades progressivas',()=>{
+ const c=catalog();assert.equal(c.HW.defs.length,24);assert.equal(c.SPC.length,129);
  assert.equal(JSON.stringify(c.SPC.slice(0,105)),c.original);
- assert.deepEqual(Array.from(c.HW.defs,d=>d.id),Array.from({length:16},(_,i)=>105+i));
- assert.equal(new Set(c.HW.defs.map(d=>d.name)).size,16);assert.equal(new Set(c.HW.defs.map(d=>d.kind)).size,16);
- for(let i=0;i<4;i++){
+ assert.deepEqual(Array.from(c.HW.defs,d=>d.id),Array.from({length:24},(_,i)=>105+i));
+ assert.equal(new Set(c.HW.defs.map(d=>d.name)).size,24);assert.equal(new Set(c.HW.defs.map(d=>d.kind)).size,24);
+ for(let i=0;i<6;i++){
   assert.equal(c.HW.defs.filter(d=>d.tier===i).length,4);
   assert.equal(c.RAR[c.HW.types[i].r],c.HW.types[i].name);
   if(i){assert(c.HW.types[i].chance<c.HW.types[i-1].chance);assert(c.HW.types[i].income>c.HW.types[i-1].income);}
  }
- assert.equal(Math.max(...c.SPC.slice(105).map(s=>s.inc)),c.SPC[120].inc);
- c.HW.register(c.SPC,c.RAR);assert.equal(c.SPC.length,121);
+ assert.equal(Math.max(...c.SPC.slice(105).map(s=>s.inc)),c.SPC[128].inc);
+ c.HW.register(c.SPC,c.RAR);assert.equal(c.SPC.length,129);
  c.clock.time=END;assert.equal(c.HW.active(),false);
  assert(c.HW.has(120),'animais obtidos continuam disponíveis após terminar o evento');
 });
@@ -52,7 +52,7 @@ test('todos os modelos e ovos são malhas 3D completas, animadas e sem valores i
   }
   scene.remove(g);
  }
- assert.equal(signatures.size,16);
+ assert.equal(signatures.size,24);
 });
 function game(){
  const c=catalog(),storage=new Map(),messages=[],scene=new THREE.Scene();
@@ -77,14 +77,14 @@ function game(){
   '\nglobalThis.api={spawn:spawnHalloweenEgg,renew:spawnHalloweenNestEggs,deposit:dep,hatch,restore:adminRestore,income:pinc,get state(){return S}};';
  vm.runInNewContext(code,ctx);return {...c,ctx,api:ctx.api,storage,messages};
 }
-test('ovo de boas-vindas não duplica e os 16 animais passam por incubação, save e restauração',()=>{
+test('ovo de boas-vindas não duplica e os 24 animais passam por incubação, save e restauração',()=>{
  const g=game();g.api.renew(true);assert.equal(g.ctx.eggs.length,1);
  const welcome=g.ctx.eggs[0];assert.equal(welcome.mesh.position.x,12);assert.equal(welcome.mesh.position.z,-47);
  assert.equal(welcome.halloweenWelcome,true);g.api.renew(true);assert.equal(g.ctx.eggs.length,1);
  g.ctx.eggs.splice(0);g.ctx.carry=welcome;g.ctx.P.g.add(welcome.mesh);
  g.api.renew(true);assert.equal(g.ctx.eggs.length,0,'renovar carregando o presente não cria outro');
  g.api.deposit(0);assert.equal(g.ctx.S.halloween2026.welcomeDelivered,true);
- assert.equal(g.ctx.S.inc[0].s,welcome.s);g.api.hatch(0);
+ assert.equal(g.ctx.S.inc[0].s,welcome.s);g.api.hatch(0,true);
  g.api.renew(true);assert.equal(g.ctx.eggs.length,0,'presente não reaparece após ser depositado');
  for(const d of g.HW.defs){
   const e=g.api.spawn(d.tier,3,4,'player',d.id);assert(e&&e.s===d.id&&e.b===3&&e.r===g.HW.types[d.tier].r);
@@ -92,16 +92,16 @@ test('ovo de boas-vindas não duplica e os 16 animais passam por incubação, sa
   g.ctx.eggs.splice(g.ctx.eggs.indexOf(e),1);g.ctx.carry=e;g.ctx.P.g.add(e.mesh);g.api.deposit(0);
   const s=g.ctx.S.inc[0];assert.deepEqual(Array.from(s.initialScale),e.base.toArray());
   assert(s.b>s.a);assert.equal(s.maxGrowth,16);
-  g.api.hatch(0);assert.equal(g.ctx.S.inc[0],null);
+  g.api.hatch(0,true);assert.equal(g.ctx.S.inc[0],null);
   const p=g.ctx.S.pets.at(-1);assert.equal(p.s,d.id);assert.equal(g.ctx.S.idx[d.id],1);
   assert(g.api.income(p)>0);assert(g.messages.at(-1).includes(d.name));
  }
  const snapshot=JSON.parse(g.storage.get('rue3d_v1'));
- assert.equal(snapshot.pets.length,17);assert.equal(snapshot.halloween2026.welcomeDelivered,true);
- g.api.restore({game:snapshot});assert.equal(g.api.state.pets.length,17,'backup aceita IDs novos e ovos colossais');
- assert.equal(g.HW.indexHtml(g.api.state).match(/\(4\/4\)/g).length,4);
+ assert.equal(snapshot.pets.length,25);assert.equal(snapshot.halloween2026.welcomeDelivered,true);
+ g.api.restore({game:snapshot});assert.equal(g.api.state.pets.length,25,'backup aceita IDs novos e ovos colossais');
+ assert.equal(g.HW.indexHtml(g.api.state).match(/\(4\/4\)/g).length,6);
  g.clock.time=END;assert.equal(g.api.spawn(0,0),null,'spawn cessa depois de 31/10');
- assert.equal(g.api.state.pets.length,17,'pets ganhos permanecem após o evento');
+ assert.equal(g.api.state.pets.length,25,'pets ganhos permanecem após o evento');
 });
 test('incubadora mantém a aparência de Halloween e limpa o estilo para ovos normais',()=>{
  const {HW}=catalog();const mesh=new THREE.Mesh(new THREE.SphereGeometry(1),new THREE.MeshLambertMaterial());

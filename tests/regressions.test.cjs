@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
-const html=fs.readFileSync('index.html','utf8'),server=fs.readFileSync('server.js','utf8');
+const html=fs.readFileSync('index.html','utf8')+'\n'+fs.readFileSync('multiplayer-client.js','utf8'),server=fs.readFileSync('server.js','utf8')+'\n'+fs.readFileSync('multiplayer-network.cjs','utf8');
 test('scripts HTML continuam válidos',()=>{
  const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
  assert(scripts.length>0);
@@ -80,12 +80,12 @@ test('admin distingue o dinheiro digitado do acumulado',()=>{
 });
 test('mensagens de salas antigas são ignoradas',()=>{
  assert(html.includes('ws.onmessage=e=>{if(MP.socket!==ws)return;'));
- assert(server.includes('if(MP.socket===ws)mpSend({type:mode,room,name})'));
+ assert(html.includes('if(MP.socket===ws)mpSend({type:mode,room,name,token})'));
  assert(html.includes("msg.type==='limited-sync'"));
 });
 test('retirar LIMITED inválido sincroniza e limpar apaga os carregados',()=>{
- assert(server.includes("const resync=()=>send(ws,{type:'limited-sync',eggs});"));
- assert(server.includes('for(const player of peers(ws.room))player.heldLimited=null;'));
+ assert(server.includes("send(ws,{type:'limited-sync',eggs})"));
+ assert(server.includes('player.heldEgg=null;'));
 });
 test('salas, guardião, esteira e Admin Abuse preservados',()=>{
  assert(html.includes('adminSpawnLimited'));assert(html.includes('const ABUSE_NAMES='));
@@ -117,7 +117,7 @@ test('13 paredes brancas com relógios bloqueiam áreas e coleta noturna',()=>{
  assert(html.includes("GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false})"));
  assert(html.includes("if(EGG_NIGHT.phase==='day')return;"));
  assert(html.includes("if(EGG_NIGHT.phase!=='day')return null"));
- assert(html.includes("if(EGG_NIGHT.phase!=='day'){toast('🔒 Aguarde renovar os ovos"));
+ assert(html.includes("toast('🔒 Aguarde renovar os ovos"));
  assert(html.includes('id="eggNightClock"'));
  assert(html.includes("EGG_NIGHT.phase==='night'?30:1"));
 });
@@ -205,8 +205,8 @@ test('trail aumenta a Speed efetiva da Selva e a corrida usa o peso real do ovo'
 });
 test('mob da parte de trás segue quem roubou até a base e volta após o depósito',()=>{
  assert(html.includes('const guardPath=(p,x,z)=>{'));
- assert(html.includes('return [0,-4]'));
- assert(html.includes('return [0,-16]'));
+ assert(html.includes('return [home.x,home.z-4]'));
+ assert(html.includes('return [home.x,home.z-16]'));
  assert(!html.includes("p.z=Math.min(p.z,-14)"));
  assert(!html.includes('dist>95||frozen'));
  assert(!html.includes('Math.hypot(P.x-g.home.x,P.z-g.home.z)>CFG.leash'));
@@ -215,7 +215,7 @@ test('mob da parte de trás segue quem roubou até a base e volta após o depós
  assert(html.includes("aim(g,P.x,P.z,speed,dt)"));
  assert(html.includes("ownsEgg?guardianChaseSpeed(i):gs(i)"));
  assert(html.includes("GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});"));
- assert(html.includes("if(carry&&near(0,-4,3.6))"));
+ assert(html.includes("if(carry&&near(BASE_HOME.x,BASE_HOME.z-4,3.6))"));
 });
 test('apenas a base tem cerca original, física e permanente dia/noite',()=>{
  assert(html.includes("const PART_BORDERS=BI.map((b,i)=>gz(i));"));
@@ -225,8 +225,8 @@ test('apenas a base tem cerca original, física e permanente dia/noite',()=>{
  assert(html.includes("/* ===== Cerca original da BASE: permanente de dia e à noite ===== */"));
  assert(html.includes("f(-20,10,.6,40);f(20,10,.6,40);f(0,30,40,.6);"));
  assert(html.includes("f(-12.5,-10,15,.6);f(12.5,-10,15,.6);"));
- assert(html.includes("for(let k=-20;k<=20;k+=2){OB.push"));
- assert(html.includes("for(let k=-10;k<=30;k+=2)OB.push"));
+ assert(html.includes("for(let k=-20;k<=20;k+=2){baseObstacle"));
+ assert(html.includes("for(let k=-10;k<=30;k+=2){baseObstacle"));
  assert(html.includes("if(EGG_NIGHT.phase==='day')return;"));
  assert(html.includes("const guardPath=(p,x,z)=>{"));
  assert(html.includes("const oldPartX=P.x,oldPartZ=P.z;"));

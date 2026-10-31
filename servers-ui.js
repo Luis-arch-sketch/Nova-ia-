@@ -47,13 +47,15 @@
   `;
   joinButton.parentNode.insertBefore(wrapper,joinButton);
   const el=id=>document.getElementById(id);
-  let page=0,lastPages=1,fetchId=0;
+  let page=0,lastPages=1,fetchId=0,activeRequest=null;
 
   async function refresh(wantedPage=page){
     const request=++fetchId;
+    activeRequest?.abort();const controller=new AbortController();activeRequest=controller;
+    const timeout=setTimeout(()=>controller.abort(),10000);
     el('svCount').textContent='Consultando servidores…';
     try{
-      const response=await fetch('/api/servers?page='+Math.max(0,wantedPage),{cache:'no-store'});
+      const response=await fetch('/api/servers?page='+Math.max(0,wantedPage),{cache:'no-store',signal:controller.signal});
       if(!response.ok)throw new Error('Servidor não respondeu');
       const result=await response.json();
       if(request!==fetchId)return;
@@ -70,6 +72,7 @@
         const caption=document.createElement('span');
         caption.textContent='🌍 '+server.room+' • '+server.count+'/'+server.capacity+' jogadores';
         const join=document.createElement('button');join.type='button';join.textContent='🚪 Entrar';
+        join.disabled=server.count>=server.capacity;if(join.disabled)join.textContent='Sala cheia';
         join.addEventListener('click',()=>{roomInput.value=server.room;mpJoin('join')});
         entry.append(caption,join);list.appendChild(entry);
       }
@@ -79,7 +82,7 @@
       if(request!==fetchId)return;
       el('svCount').textContent='⚠ Falha ao consultar servidores. Tente atualizar.';
       el('svList').replaceChildren();
-    }
+    }finally{clearTimeout(timeout);if(activeRequest===controller)activeRequest=null;}
   }
 
   // O convite inclui a sala exata e funciona mesmo quando existirem várias salas públicas.
@@ -125,5 +128,6 @@
   el('svPrev').addEventListener('click',()=>refresh(page-1));
   el('svNext').addEventListener('click',()=>refresh(page+1));
   document.getElementById('roomButton')?.addEventListener('click',()=>refresh(0));
+  setInterval(()=>{if(!document.hidden&&roomPanel.style.display==='block')refresh(page)},5000);
   refresh(0);
 })();
