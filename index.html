@@ -1,6 +1,7 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Roube um Ovo 3D — Admin Abuse Livre</title>
+<link rel="stylesheet" href="/egg-hatching.css?v=20261031-1">
 <style>
 :root{--bg:#9fd3ff;--pn:#eefaf4;--tx:#16302b;--ac:#ffc933;--hd:rgba(14,32,40,.74);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--pn:#1d2a2f;--tx:#e8f6f0}}
@@ -536,14 +537,17 @@ const hit=g=>{
  beep(120,.2,'sawtooth');
  toast('O guardião recuperou o ovo. Você está de mãos livres!');
 };
-const doAct=()=>{if(carry){drop();return}if(P.stun>0)return;if(P.train){P.train=false;return}if(EGG_NIGHT.phase!=='day'){toast('🌙 Ovos bloqueados até abrir os portões!');return;}const e=findEgg();if(e){take(e);return}if(near(BASE_HOME.x-14,BASE_HOME.z+4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
-const jump=()=>{if(P.y<=.01&&!P.stun){P.vy=11*A.jumpMult*abuseJumpMult();P.train=false;beep(520,.08)}};
+const doAct=()=>{if(window.RoubeOvoHatching?.active)return;if(carry){drop();return}if(P.stun>0)return;if(P.train){P.train=false;return}if(EGG_NIGHT.phase!=='day'){toast('🌙 Ovos bloqueados até abrir os portões!');return;}const e=findEgg();if(e){take(e);return}if(near(BASE_HOME.x-14,BASE_HOME.z+4,4)){P.train=true;P.vx=P.vz=0;beep(440,.1)}};
+const jump=()=>{if(window.RoubeOvoHatching?.active)return false;if(P.y<=.01&&P.vy<=0&&!(P.stun>0)){const mult=Number(A.jumpMult);P.vy=11*(Number.isFinite(mult)&&mult>0?Math.max(.5,Math.min(8,mult)):1)*abuseJumpMult();P.train=false;beep(520,.08);return true}return false};
 const INCUBATOR_MAX_GROWTH=16; // cada ovo pode atingir 16 vezes seu tamanho ao ser colocado na incubadora
 const dep=k=>{const e=carry;carry=null;
  if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}
  P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}if(e.halloweenWelcome){S.halloween2026=S.halloween2026||{};S.halloween2026.welcomeDelivered=true;}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.base.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(e.s===LIMITED_ID)persistLimitedWorld();save()};
-const hatch=k=>{const s=S.inc[k];S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();beep(990,.3,'triangle');
- toast(s.s===LIMITED_ID?'🔥 LIMITED ∞ CHOCADO! Renda de $'+fm(LIMITED_RATE)+' por segundo!':'Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+(m.length?' ('+m.map(j=>MUT[j][0]).join('+')+')':'')+'. Renda $'+fm(SPC[s.s].inc)+' x '+SZ[s.z][2]+' x (1'+m.map(j=>'+'+(MUT[j][1]-1).toFixed(2)).join('')+') = $'+fm(pinc(p))+'/s')};
+// O tempo prepara o ovo; somente o botão o abre. Admin e eventos podem antecipar.
+// Consumir a incubadora e salvar antes da animação impede duplicação e perda ao sair.
+const hatch=(k,force=false)=>{const s=S.inc[k];if(!Number.isInteger(k)||!s||(!force&&Date.now()<s.b))return false;S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();
+ if(window.RoubeOvoHatching)window.RoubeOvoHatching.play(p,s);
+ else toast('Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+'. Renda $'+fm(pinc(p))+'/s');return p};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
  const z=Math.min(3,Math.max(...l.map(p=>p.z))+(Math.random()<.5?1:0)),m=[...new Set(l.flatMap(p=>p.m))].filter(()=>Math.random()<.6);
  S.pets.push({id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m});recalc();save();beep(740,.3,'triangle');toast('Fusão concluída: '+SPC[s].n+' '+SZ[z][0])};
@@ -581,8 +585,8 @@ $('bf').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():do
 document.addEventListener('contextmenu',e=>e.preventDefault());
 /* ===== Entrada: joystick, câmera por toque, teclado ===== */
 const K={},J={x:0,y:0},cv=$('c');let jp=null,cp=null,jo={x:0,y:0},ls={x:0,y:0};
-addEventListener('keydown',e=>{if(e.code==='F2'){e.preventDefault();toggleAdmin();return}if(adminVisible||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;K[e.code]=1;if(e.code==='KeyE')doAct();if(e.code==='Space'){e.preventDefault();jump()}});addEventListener('keyup',e=>K[e.code]=0);
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);
+addEventListener('keydown',e=>{if(window.RoubeOvoHatching?.active)return;if(e.code==='F2'){e.preventDefault();toggleAdmin();return}if(adminVisible||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;K[e.code]=1;if(e.code==='KeyE')doAct();if(e.code==='Space'){e.preventDefault();if(!e.repeat)jump()}});addEventListener('keyup',e=>K[e.code]=0);
+cv.addEventListener('pointerdown',e=>{if(window.RoubeOvoHatching?.active)return;cv.setPointerCapture(e.pointerId);
  if(e.pointerType!=='mouse'&&e.clientX<innerWidth*.45&&jp===null){jp=e.pointerId;jo={x:e.clientX,y:e.clientY};const s=$('js').style;s.display=$('jk').style.display='block';s.left=jo.x-55+'px';s.top=jo.y-55+'px';$('jk').style.left=jo.x-25+'px';$('jk').style.top=jo.y-25+'px'}
  else if(cp===null){cp=e.pointerId;ls={x:e.clientX,y:e.clientY}}});
 cv.addEventListener('pointermove',e=>{
@@ -592,8 +596,8 @@ const pu=e=>{if(e.pointerId===jp){jp=null;J.x=J.y=0;$('js').style.display=$('jk'
 cv.addEventListener('pointerup',pu);cv.addEventListener('pointercancel',pu);cv.addEventListener('lostpointercapture',pu);
 addEventListener('blur',()=>{jp=cp=null;J.x=J.y=0;Object.keys(K).forEach(x=>K[x]=0);$('js').style.display=$('jk').style.display='none'});
 cv.addEventListener('wheel',e=>{P.dist=Math.max(4,Math.min(18,P.dist+e.deltaY*.01))});
-$('bj').onpointerdown=e=>{e.preventDefault();jump()};$('ba').onpointerdown=e=>{e.preventDefault();doAct()};
-const mvIn=()=>{const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1||(jp!==null&&l>.22)?[x/l,y/l]:[x,y]};
+$('bj').onpointerdown=e=>{e.preventDefault();jump()};$('bj').onclick=e=>{if(e.detail===0)jump()};$('ba').onpointerdown=e=>{e.preventDefault();doAct()};
+const mvIn=()=>{if(window.RoubeOvoHatching?.active)return[0,0];const x=J.x+(K.KeyD||K.ArrowRight?1:0)-(K.KeyA||K.ArrowLeft?1:0),y=J.y+(K.KeyW||K.ArrowUp?1:0)-(K.KeyS||K.ArrowDown?1:0),l=Math.hypot(x,y);return l>1||(jp!==null&&l>.22)?[x/l,y/l]:[x,y]};
 /* ===== HUD ===== */
 const upHud=()=>{const n=Math.max(0,Math.ceil(nextReset-Date.now()/1e3)),b=cb();
  $('hud').innerHTML='<div>Speed '+fm(S.sp)+(S.tr>=0?' (trail x'+TR[S.tr][1]+')':'')+', efetiva '+fm(eff())+'</div><div>$'+moneyView()+' (+$'+incomeView()+'/s)</div><div>'+(carry?'Ovo '+RAR[carry.r]+': '+SPC[carry.s].n+', '+SZ[carry.z][0]+', peso '+carry.w:'Mãos livres')+'</div><div>'+(b<0?'Base':'PARTE '+(b+1)+' • '+BI[b].n+' (Speed recomendada '+fm(BI[b].req)+')')+': pets '+AP.length+'/'+CAP[S.bl]+', index '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</div><div>'+(EGG_NIGHT.phase==='day'?'Novos ovos em '+Math.floor(n/60)+':'+String(n%60).padStart(2,'0'):EGG_NIGHT.phase==='night'?'🌙 Noite dos ovos • Crescimento 30×':'☀️ Amanheceu • Portões abrindo')+'</div>';
@@ -742,7 +746,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  const runMultiplier=A.moveMult;
  const rawSp=carryingRunSpeed();
  let sp=rawSp;
- if(P.stun>0){P.stun-=dt;sp=0}
+ if(P.stun>0){P.stun=Math.max(0,P.stun-dt);sp=0}
  const s_=Math.sin(P.yaw),c_=Math.cos(P.yaw);let tx=(-s_*iy+c_*ix)*sp,tz=(-c_*iy-s_*ix)*sp;
  if(P.train){tx=tz=0;P.x=BASE_HOME.x-14;P.z=BASE_HOME.z+4.2;S.sp+=TM[S.tm][1]*CFG.train*abuseTrainMult()*dt}
  const k=Math.min(1,dt*10);P.vx+=(tx-P.vx)*k;P.vz+=(tz-P.vz)*k;const oldPartX=P.x,oldPartZ=P.z;P.x+=P.vx*dt;P.z+=P.vz*dt;partBorderCollision(P,oldPartZ,oldPartX);
@@ -820,12 +824,13 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(EGG_NIGHT.phase==='night')nite=Math.min(1,nite+dt*2);else nite=Math.max(0,nite-dt*1.4);
  bg.copy(day).lerp(nit,A.night?1:nite*.92);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.28:1-.73*nite);abuseSky(dt)
  if(A.autoSecret){adminAutoTime+=dt;if(adminAutoTime>=Math.max(5,+A.autoSecretEvery||30)){adminAutoTime=0;if(eggs.filter(e=>e.s!==LIMITED_ID).length<190)adminSpawnEgg(Math.floor(Math.random()*BI.length),5,Math.floor(Math.random()*SZ.length),'nest',false)}}else adminAutoTime=0;
-  if(A.autoHatch||abuseIs('hatch')){for(let i=0;i<S.inc.length;i++)if(S.inc[i])hatch(i)}
+  if(A.autoHatch||abuseIs('hatch')){for(let i=0;i<S.inc.length;i++)if(S.inc[i])hatch(i,true)}
   if(tt>0){tt-=dt;if(tt<=0)$('ms').style.opacity=0}
- sec+=dt;if(sec>=1){sec=0;upGates();S.inc.forEach((s,k2)=>{if(s&&Date.now()>=s.b)hatch(k2);IV[k2].l.set(S.inc[k2]?SPC[S.inc[k2].s].n+' '+ft((S.inc[k2].b-Date.now())/1e3):'vazio')});if(open)ui();const ac=$('abPanelClock');if(ac&&ABUSE.active)ac.textContent='Faltam '+Math.ceil(ABUSE.active.left)+'s • '+ABUSE.active.details}
- hq+=dt;if(hq>.25){hq=0;upHud()}
+ sec+=dt;if(sec>=1){sec=0;upGates();S.inc.forEach((s,k2)=>{IV[k2].l.set(!s?'vazio':Date.now()>=s.b?'🐣 Pronto! Chocar ovo':'🥚 Incubando '+ft((s.b-Date.now())/1e3))});if(open)ui();const ac=$('abPanelClock');if(ac&&ABUSE.active)ac.textContent='Faltam '+Math.ceil(ABUSE.active.left)+'s • '+ABUSE.active.details}
+ hq+=dt;if(hq>.25){hq=0;upHud();if(window.RoubeOvoHatching)window.RoubeOvoHatching.updateButtons()}
  sv+=dt;if(sv>2){sv=0;save()}};
-const loop=now=>{requestAnimationFrame(loop);const dt=Math.min(.05,(now-lt)/1e3);lt=now;step(dt);mpUpdate(dt);R.render(sc,cam);
+const loop=now=>{requestAnimationFrame(loop);const dt=Math.min(.05,(now-lt)/1e3);lt=now;step(dt);mpUpdate(dt);if(window.RoubeOvoClowns)window.RoubeOvoClowns.update();R.render(sc,cam);
+ if(window.RoubeOvoHatching?.active)window.RoubeOvoHatching.render(dt);
  fa+=dt;if(++fn===60){const a=fa/60,mx=Math.min(devicePixelRatio||1,2);if(a>.03&&q>.75){q=Math.max(.75,q-.2);rs()}else if(a<.0185&&q<mx){q=Math.min(mx,q+.15);rs()}fa=fn=0}};
 addEventListener('pagehide',save);addEventListener('beforeunload',save);document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
 
@@ -960,7 +965,7 @@ const abuseStart=(id,settings=null,keepQueue=false)=>{
  $('abClock').textContent='⏳ '+Math.ceil(e.left)+'s restantes';
  abuseRecord('Começou: '+e.label+' ('+duration+'s)');
  if(id==='fury')GD.forEach(g=>{g.st='wake';g.t=.4});
- if(id==='hatch')S.inc.forEach((p,i)=>{if(p)hatch(i)});
+ if(id==='hatch')S.inc.forEach((p,i)=>{if(p)hatch(i,true)});
  abuseWave();
  abuseFlash(abuseColor(id),14);
  toast('🔥 '+e.label+' INICIADO!');beep(660,.18,'triangle',.05);
@@ -1222,7 +1227,7 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
   case 'abGift':S.$+=adValidNumber('abGiveMoney',1,1e12);msg='Presente adicionado à sua conta';abuseFlash(0xffdc4b,16);break;
  case 'abThree':{for(const j of [5,6,7])abuseSpawn(j,1);msg='Secret, Eternal e Divine foram spawnados';break}
  case 'abEveryBiome':{let n=0;for(let i=0;i<BI.length;i++)if(adminSpawnEgg(i,5,2,'nest',false))n++;msg=n+' Secrets espalhados por todos os biomas';break}
- case 'abInstant':{let n=0;S.inc.forEach((p,i)=>{if(p){hatch(i);n++}});msg=n+' ovos chocados';break}
+ case 'abInstant':{let n=0;S.inc.forEach((p,i)=>{if(p&&hatch(i,true))n++});msg=n+' ovos chocados';break}
  case 'abFullPower':A.god=true;A.weightless=true;A.moveMult=1;A.personalFast=false;A.jumpMult=6;AS.moveMult='1';AS.jumpMult='6';msg='Poderes máximos ativados (velocidade normal)';break;
  case 'abAllTrails':S.own=TR.map((_,i)=>i);S.tr=TR.length-1;msg='Todas as trails liberadas e última equipada';break;
  case 'abAnnounce':abuseAnnounce(String(AS.abAnnouncement||'').trim(),adValidNumber('broadcastSeconds',4,30));mpBroadcastAction(String(AS.abAnnouncement||'').trim(),'announce');msg='Anúncio no topo exibido';break;
@@ -1257,8 +1262,8 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'spawnSecret':case 'spawnEternal':case 'spawnDivine':{const j=act==='spawnSecret'?5:act==='spawnEternal'?6:7,b=adNum('eggBiome',0,BI.length-1,0)|0,z=adNum('eggSize',0,4,1)|0,e=adminSpawnEgg(b,j,z,AS.eggWhere==='player'?'player':'nest');msg=e?`Ovo ${RAR[e.r]} spawnou em ${BI[b].n}!`:'Limite de ovos atingido';break}
  case 'regen':abuseRegrow();msg='Ninhos renovados!';break;
  case 'clearEggs':if(!confirm('Apagar todos os ovos soltos no mapa?'))return;adminClearEggs();msg='Ovos soltos removidos';break;
- case 'hatchAll':{let done=0;S.inc.forEach((p,i)=>{if(p){hatch(i);done++}});msg=done+' ovos chocados';break}
- case 'hatchNext':{const i=S.inc.findIndex(Boolean);if(i>=0)hatch(i);msg=i<0?'Incubadoras vazias':'Ovo chocado';break}
+ case 'hatchAll':{let done=0;S.inc.forEach((p,i)=>{if(p&&hatch(i,true))done++});msg=done+' ovos chocados';break}
+ case 'hatchNext':{const i=S.inc.findIndex(Boolean);if(i>=0)hatch(i,true);msg=i<0?'Incubadoras vazias':'Ovo chocado';break}
  case 'givePet':{const s=adNum('petSpecies',0,SPC.length-1,0)|0,z=adNum('petSize',0,3,3)|0,c=adNum('petCount',1,30,1)|0,m=AS.petMutation==='all'?MUT.map((_,i)=>i):(+AS.petMutation>=0?[+AS.petMutation]:[]);for(let i=0;i<c;i++)adminGivePet(s,z,m);msg=c+' pets '+SPC[s].n+' adicionados';break}
  case 'giveSecretPet':case 'giveDivinePet':{const j=act==='giveSecretPet'?5:7,b=Math.floor(Math.random()*BI.length);adminGivePet(b*8+j,3);msg='Pet '+RAR[RS[j]]+': '+BI[b].sp[j];break}
  case 'indexAll':ACTIVE_SPECIES.forEach(p=>S.idx[p.id]=1);msg='Index completado: '+ACTIVE_SPECIES.length+' espécies';break;
@@ -1430,5 +1435,6 @@ try{
 }catch(err){console.warn('Falha ao isolar LIMITEDs antigos:',err)}
 upGates();upHud();cam.position.set(0,6,17);
 toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
-requestAnimationFrame(loop);
-</script></body></html>
+// Aguardar os scripts de frutas, animais e chocagem antes do primeiro frame.
+addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
+</script><script src="/egg-hatching.js?v=20261031-1"></script><script src="/halloween-clowns.js?v=20261031-1"></script></body></html>

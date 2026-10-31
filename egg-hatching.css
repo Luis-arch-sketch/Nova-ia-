@@ -1,0 +1,30 @@
+#hatchEggBtn[hidden],#hatchOverlay[hidden],#hatchContinue[hidden]{display:none!important}
+#hatchEggBtn{position:fixed;z-index:60;left:50%;bottom:calc(170px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:90vw;min-height:52px;padding:12px 23px;border:2px solid #fff4c6;border-radius:18px;background:linear-gradient(135deg,#ffe99a,#ffc933);color:#3c260b;font-size:17px;font-weight:900;box-shadow:0 5px 23px #0006,0 0 23px #ffce4666;cursor:pointer}
+#hatchEggBtn:active{transform:translateX(-50%) scale(.97)}
+#hatchOverlay{position:fixed;inset:0;z-index:1400;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:calc(14px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px));background:radial-gradient(ellipse at 50% 46%,#28336b,#11162e 58%,#070a18);color:#fff;overflow:auto;touch-action:pan-y}
+#hatchCard{position:relative;width:min(100%,580px);margin:auto;text-align:center;font:600 16px system-ui,sans-serif}
+#hatchEyebrow{margin:0 0 9px;color:#ffdb78;font-size:11px;font-weight:900;letter-spacing:3px}
+#hatchTitle{margin:0;font-size:clamp(23px,6vw,34px);line-height:1.2;color:#fff;text-shadow:0 3px 16px #0006}
+#hatchSubtitle{margin:9px 0 0;font-size:14px;line-height:1.45;color:#c6d2f7;min-height:21px}
+#hatchStage{position:relative;height:min(46dvh,360px);min-height:160px;margin:5px auto;max-width:520px;overflow:hidden}
+#hatchStage canvas{display:block;width:100%;height:100%;outline:none}
+#hatchMystery{position:absolute;top:9%;right:17%;font-size:clamp(34px,10vw,62px);font-weight:900;color:#fff;filter:drop-shadow(0 0 13px #c5d6ff);pointer-events:none}
+#hatchDetails{min-height:38px;font-size:14px;line-height:1.5;color:#d7e4ff;white-space:pre-line;margin:0 6px 12px}
+#hatchContinue{min-height:50px;min-width:190px;border-radius:15px;padding:12px 24px;background:linear-gradient(120deg,#ffecaa,#ffc933);font-size:17px;font-weight:900;color:#322107;box-shadow:0 5px 20px #0005;cursor:pointer}
+#hatchProgress{display:flex;justify-content:center;gap:8px;height:8px;margin:18px auto 0}
+#hatchProgress span{width:29px;height:5px;border-radius:6px;background:#ffffff26}
+#hatchProgress span.done{background:#ffdc83}
+#hatchFlash{position:absolute;inset:0;opacity:0;background:radial-gradient(circle,#fff,#fff0 67%);pointer-events:none}
+#hatchOverlay[data-phase=reveal] #hatchFlash{animation:hatchFlash .55s ease-out}
+#hatchOverlay[data-phase=mystery] #hatchMystery{animation:hatchQuestion .8s ease-in-out infinite alternate}
+body.hatchOpen #top,body.hatchOpen #hud,body.hatchOpen #bj,body.hatchOpen #ba,body.hatchOpen #hatchEggBtn,body.hatchOpen #js,body.hatchOpen #jk,body.hatchOpen #eggNightClock,body.hatchOpen #ms,body.hatchOpen #an{visibility:hidden}
+@keyframes hatchFlash{from{opacity:.9;transform:scale(.7)}to{opacity:0;transform:scale(1.4)}}
+@keyframes hatchQuestion{from{transform:translateY(0) rotate(-7deg);opacity:.65}to{transform:translateY(-9px) rotate(6deg);opacity:1}}
+@media(max-height:500px) and (orientation:landscape){
+ #hatchEggBtn{bottom:105px;font-size:15px;padding:10px 17px}
+ #hatchCard{max-width:700px;display:grid;grid-template-columns:1fr 1fr;align-items:center;column-gap:18px}
+ #hatchStage{grid-column:1;grid-row:1/8;width:100%;height:74dvh;min-height:160px;margin:0}
+ #hatchEyebrow,#hatchTitle,#hatchSubtitle,#hatchDetails,#hatchContinue,#hatchProgress{grid-column:2}
+ #hatchTitle{font-size:25px}#hatchDetails{margin:5px 0}#hatchProgress{margin:9px auto}
+}
+@media(prefers-reduced-motion:reduce){#hatchOverlay #hatchMystery,#hatchOverlay #hatchFlash{animation:none!important}}

@@ -11,6 +11,12 @@
  const music=new Audio(MUSIC_URL);
  music.loop=true;music.controls=false;music.autoplay=true;music.preload='none';
  music.volume=.45;music.muted=false;
+ const audioFocus=new Set();
+ const focusMusic=(key,on)=>{if(on)audioFocus.add(key);else audioFocus.delete(key);music.volume=audioFocus.size?.08:.45};
+ for(const [event,key] of [['egg-hatch','hatch'],['clown-music','clown'],['witch-laugh','witch']]){
+  addEventListener(event+'-start',()=>focusMusic(key,true));
+  addEventListener(event+'-end',()=>focusMusic(key,false));
+ }
  const now=()=>serverTime===null?Date.now():serverTime+performance.now()-clockAnchor;
  if(window.RoubeOvoHalloweenPets)window.RoubeOvoHalloweenPets.setClock(now);
  const keep=r=>{resources.push(r);return r};

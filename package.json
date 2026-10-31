@@ -5,7 +5,10 @@
   "description": "Servidor multiplayer por salas para Roube um Ovo 3D",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test tests/*.test.cjs",
+    "test:hatching": "node tests/hatching-browser.cjs",
+    "test:clowns": "node tests/clowns-browser.cjs"
   },
   "engines": {
     "node": ">=18"
