@@ -46,6 +46,16 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
    }
    if(m.type==='ping'){send(ws,{type:'pong',serverNow:now});return}
    if(!ws.room)return;
+   // Chat de texto: apenas membros conectados a esta mesma sala recebem a mensagem.
+   // Nome e sala saem da sessao validada pelo servidor; o cliente nunca os escolhe no pacote.
+   if(m.type==='chat'){
+    if(typeof m.text!=='string')return;
+    const text=m.text.slice(0,160).replace(/[\u0000-\u001f\u007f-\u009f\u202a-\u202e]/g,' ').trim();
+    if(!text || now-(ws.lastChatAt||0)<900)return;
+    ws.lastChatAt=now;
+    broadcast(ws.room,{type:'chat',room:ws.room,id:ws.id,name:ws.name,text,at:now});
+    return;
+   }
    const world=roomWorlds.get(ws.room);if(!world)return;
    if(m.type==='world-request'){send(ws,world.snapshot(now));return}
    if(m.type==='stats'){
