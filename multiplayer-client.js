@@ -66,9 +66,11 @@ const mpBuild=(id,u)=>{const grp=new T.Group(),geoms=[],mats=[];const add=(geom,
 const mpDraw=()=>{
  const others=[...MP.players.values()];
  $('roomPlayerList').textContent=others.map(p=>(p.admin?'👑 ADMIN • ':'👤 ')+p.name).join(' | ')||'—';
- $('mpPresence').textContent=MP.connected
-  ?'🌍 SALA '+MP.room+' • '+(others.length+1)+'/16 jogadores'+(others.length?' • 👥 '+others.map(p=>p.name).join(', '):'')
+ const text=MP.connected
+  ?'🌍 SALA '+MP.room+' • '+(others.length+1)+'/16 jogadores'+(others.length?' • 👥 '+others.slice(0,2).map(p=>p.name).join(', ')+(others.length>2?'…':''):'')
   :'🌍 Conectando ao multiplayer…';
+ if($('mpPresence').textContent!==text)$('mpPresence').textContent=text;
+ const button=$('mpFindFriend');if(button){button.disabled=!MP.connected||!others.length;button.textContent=others.length?'👥 Encontrar amigo':'👥 Esperando amigo';}
 };
 const mpApplyUsers=users=>{const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)mpBuild(u.id,u);syncPeerBase(u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
 const mpRemoteEvent=ev=>{if(ev.kind==='event'&&ev.action==='start'&&ev.endsAt&&MP.roomEvent?.endsAt===ev.endsAt&&ABUSE.active?.id===ev.id)return;MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st={...(ev.settings||{duration:60,interval:10,wave:1})};if(ev.endsAt){st.duration=Math.max(.01,(ev.endsAt-Date.now()-MP.clockOffset)/1000);MP.roomEvent=ev;}abuseStart(ev.id,st)}else if(ev.action==='stop'){abuseStop(true);MP.roomEvent=null;}}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){if(MP.protocol>=2)return;
@@ -88,7 +90,27 @@ $('roomButton').onclick=()=>{$('roomPanel').style.display='block'};
 $('roomClose').onclick=()=>{$('roomPanel').style.display='none'};
 $('roomJoin').onclick=()=>mpJoin('join');$('roomLeave').onclick=()=>{mpDisconnect();mpStatus('Saiu da sala.')};
 
-const mpPosition=()=>({x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y});
+const mpPosition=()=>({x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y,cameraYaw:Number.isFinite(P.yaw)?P.yaw:0});
+const mpPlace=spawn=>{
+ if(!spawn||!Number.isFinite(spawn.x)||!Number.isFinite(spawn.z))return;
+ P.x=spawn.x;P.z=spawn.z;P.y=Number.isFinite(spawn.y)?Math.max(0,spawn.y):0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
+ P.yaw=Number.isFinite(spawn.cameraYaw)?spawn.cameraYaw:0;P.pitch=.45;P.dist=Math.max(8,P.dist||9);
+ P.g.position.set(P.x,P.y,P.z);P.g.rotation.y=Number.isFinite(spawn.yaw)?spawn.yaw:0;
+ if(typeof cam!=='undefined'){
+  const target=new T.Vector3(P.x,P.y+2.2,P.z),distance=Math.cos(P.pitch)*P.dist;
+  if(typeof CT!=='undefined')CT.copy(target);
+  cam.position.set(P.x+Math.sin(P.yaw)*distance,target.y+Math.sin(P.pitch)*P.dist,P.z+Math.cos(P.yaw)*distance);cam.lookAt(target);
+ }
+};
+const mpMeetFriend=id=>{
+ if(!MP.connected){mpStatus('⚠ Entre na mesma sala que seu amigo.');return false;}
+ if(MP.pending||window.RoubeOvoHatching?.active){toast('⏳ Termine a ação do ovo antes de encontrar seu amigo.');return false;}
+ const friends=[...MP.players.values()].sort((a,b)=>Math.hypot(a.x-P.x,a.z-P.z)-Math.hypot(b.x-P.x,b.z-P.z));
+ const friend=id?MP.players.get(id):friends[0];
+ if(!friend){mpStatus('👥 Seu amigo precisa abrir o convite desta sala.');return false;}
+ return mpSend({type:'meet',id:friend.id});
+};
+$('mpFindFriend').onclick=()=>mpMeetFriend();
 const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.mesh.position.x,z:e.mesh.position.z});
 const mpRemoveEgg=id=>{
  const e=eggs.find(e=>e.netId===id);if(!e)return;
@@ -188,13 +210,13 @@ const mpJoin=(mode='join',retrying=false)=>{
  let ws;try{ws=new WebSocket(mpEndpoint())}catch(e){mpReconnect();return;}
  MP.socket=ws;MP.lastRx=performance.now();mpStatus(retrying?'🔄 Reconectando…':'Conectando ao servidor…');
  MP.connectTimer=setTimeout(()=>{if(MP.socket===ws&&!MP.connected){MP.socket=null;try{ws.close()}catch(e){}mpReconnect();}},15000);
- ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name,token})};
+ ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name,token,friend:new URLSearchParams(location.search).get('amigo')||undefined})};
  ws.onmessage=e=>{if(MP.socket!==ws)return;MP.lastRx=performance.now();let msg;try{msg=JSON.parse(e.data)}catch{return;}
   if(msg.type==='joined'){
    if(MP.connected)mpClear();if(MP.joining){MP.name=MP.joining.name;MP.joining=null;}
    clearTimeout(MP.connectTimer);MP.connected=true;MP.protocol=msg.protocol||1;MP.self=msg.id;MP.room=msg.room;MP.retry=0;MP.lastTx=MP.lastRankTx=0;
    $('roomCode').value=msg.room;MP.tokens.set(msg.room,msg.token);try{localStorage.setItem('rue3d_mp_room',msg.room);sessionStorage.setItem('rue3d_mp_token_'+msg.room,msg.token)}catch(e){}
-   setHomeBaseSlot(msg.baseSlot);P.x=BASE_HOME.x;P.z=BASE_HOME.z+8;P.y=0;P.vx=P.vy=P.vz=0;
+   setHomeBaseSlot(msg.baseSlot);mpPlace(msg.spawn||{x:BASE_HOME.x,z:BASE_HOME.z+8});
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
    mpApplyUsers(msg.players||[]);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
    mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);
@@ -208,6 +230,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    const self=msg.players?.find(p=>p.id===MP.self);
    if(carry?.netId&&self&&!self.carrying&&!MP.pending){P.g.remove(carry.mesh);if(carry.aura){if(carry.s===LIMITED_ID)disposeLimitedAura(carry);else sc.remove(carry.aura)}carry=null;}
   }else if(msg.type==='world-sync')mpWorldSync(msg);
+  else if(msg.type==='reposition'){mpPlace(msg.spawn);$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition()});toast('👥 Você e '+msg.name+' estão de frente!');}
   else if(msg.type==='world-add')for(const d of msg.eggs||[])mpUpsertEgg(d);
   else if(msg.type==='world-remove')mpRemoveEgg(msg.id);
   else if(msg.type==='egg-result')mpEggResult(msg);

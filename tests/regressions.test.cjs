@@ -80,7 +80,7 @@ test('admin distingue o dinheiro digitado do acumulado',()=>{
 });
 test('mensagens de salas antigas são ignoradas',()=>{
  assert(html.includes('ws.onmessage=e=>{if(MP.socket!==ws)return;'));
- assert(html.includes('if(MP.socket===ws)mpSend({type:mode,room,name,token})'));
+ assert(html.includes('if(MP.socket===ws)mpSend({type:mode,room,name,token,friend:'));
  assert(html.includes("msg.type==='limited-sync'"));
 });
 test('retirar LIMITED inválido sincroniza e limpar apaga os carregados',()=>{

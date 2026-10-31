@@ -90,7 +90,7 @@
   el('svInvite').addEventListener('click',async()=>{
     if(!MP.connected||!MP.room){friendsMessage('⚠ Entre em uma sala antes de convidar.');return}
     const url=new URL('/',location.href);
-    url.searchParams.set('sala',MP.room);
+    url.searchParams.set('sala',MP.room);url.searchParams.set('amigo',MP.self);
     const invite=url.toString();
     try{
       if(navigator.share){await navigator.share({title:'Roube um Ovo 3D • Minha sala',text:'🎮 Vem jogar Roube um Ovo comigo!',url:invite});friendsMessage('✅ Convite da sala '+MP.room+' pronto!');return}
@@ -103,19 +103,7 @@
       try{prompt('Copie o convite do Roube um Ovo',invite)}catch(e){}
     }
   });
-  el('svFindFriend').addEventListener('click',()=>{
-    if(!MP.connected){friendsMessage('⚠ Conecte-se à sua sala primeiro.');return}
-    const friend=[...MP.players.values()][0];
-    if(!friend){friendsMessage('👥 Ainda não há outro jogador nesta sala. Envie o convite primeiro.');return}
-    if(!Number.isFinite(friend.x)||!Number.isFinite(friend.z)){friendsMessage('⏳ Aguardando a localização do amigo.');return}
-    P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;
-    P.x=Math.max(-99,Math.min(99,friend.x+3));
-    P.z=Math.max(zlim,Math.min(333,friend.z+4));
-    P.y=0;
-    P.yaw=Math.atan2(P.x-friend.x,P.z-friend.z);
-    roomPanel.style.display='none';
-    toast('👀 Você foi até '+friend.name+'! A base dele fica nesta área.');
-  });
+  el('svFindFriend').addEventListener('click',()=>{if(mpMeetFriend())friendsMessage('👥 Encontrando seu amigo…');else friendsMessage($('roomStatus').textContent)});
   el('svGoHome').addEventListener('click',()=>{
     if(!MP.connected){friendsMessage('⚠ Entre em uma sala primeiro.');return}
     P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;

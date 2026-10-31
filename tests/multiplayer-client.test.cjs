@@ -22,7 +22,7 @@ function createClient(port,name,room,{blockedStorage=false}={}){
   setTimeout:(f,n)=>{const timer=setTimeout(f,n);timers.push(timer);return timer},clearTimeout,setInterval:(f,n)=>{const timer=setInterval(f,n);timers.push(timer);return timer},addEventListener(){},
  };
  const code=html.slice(html.indexOf('const take=e=>'),html.indexOf('const hit=g=>'))+'\n'+html.slice(html.indexOf('const dep=k=>'),html.indexOf('// O tempo prepara'))+'\n'+client+
-  '\nglobalThis.api={MP,P,S,eggs,join:mpJoin,disconnect:mpDisconnect,tick:mpUpdate,take,drop,deposit:dep,peers:PEER_BASES,send:mpSend,get carry(){return carry},get home(){return BASE_HOME}};';
+  '\nglobalThis.api={MP,P,S,eggs,join:mpJoin,meet:mpMeetFriend,disconnect:mpDisconnect,tick:mpUpdate,take,drop,deposit:dep,peers:PEER_BASES,send:mpSend,get carry(){return carry},get home(){return BASE_HOME}};';
  vm.runInNewContext(code,ctx,{filename:'cliente-real.js'});
  const tick=setInterval(()=>ctx.api.tick(.025),25);timers.push(tick);
  return Object.assign(ctx.api,{elements,messages,storage,close(){ctx.api.disconnect(false);for(const t of timers){clearTimeout(t);clearInterval(t)}}});
@@ -37,6 +37,15 @@ test('dois clientes reais: mesmo mapa, corrida de coleta, base, depósito perdid
   await until(()=>a.MP.players.size===1&&b.MP.players.size===1,'presença sincronizada');
   const ids=c=>c.eggs.map(e=>e.netId).filter(Boolean).sort();assert.deepEqual(ids(a),ids(b));assert.equal(ids(a).length,24);
   assert.notEqual(a.home.x,b.home.x);assert.equal(b.MP.room,'CLIENTTEST','convite funciona com armazenamento bloqueado');
+  assert(Math.hypot(a.P.x-b.P.x,a.P.z-b.P.z)<7,'novos amigos chegam perto, mantendo bases distintas');
+  assert.equal(a.elements.get('mpFindFriend').disabled,false);
+  a.P.x=70;a.P.z=-100;a.P.yaw=1.2;
+  await until(()=>b.MP.players.get(a.MP.self)?.x===70,'amigo se afastou');
+  assert(b.meet(a.MP.self));
+  await until(()=>Math.hypot(a.P.x-b.P.x,a.P.z-b.P.z)<7,'encontro confirmado pelo servidor');
+  const direction=new T.Vector2(b.P.x-a.P.x,b.P.z-a.P.z);
+  assert(direction.dot(new T.Vector2(-Math.sin(a.P.yaw),-Math.cos(a.P.yaw)))>0,'visitante fica diante da câmera do amigo');
+  await until(()=>Math.hypot(a.MP.views.get(b.MP.self).group.position.x-b.P.x,a.MP.views.get(b.MP.self).group.position.z-b.P.z)<.25,'avatar aparece na posição do encontro');
   const id=ids(a)[0];
   for(const c of [a,b]){const e=c.eggs.find(e=>e.netId===id);c.P.x=e.mesh.position.x;c.P.z=e.mesh.position.z;c.take(e);}
   await until(()=>!a.MP.pending&&!b.MP.pending,'disputa resolvida');

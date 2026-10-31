@@ -5,7 +5,7 @@ const {LIMITED}=require('./multiplayer-world.cjs');
 const previewPort=process.argv.indexOf('--port');
 const PORT=Number(process.env.PORT||(previewPort>=0?process.argv[previewPort+1]:3000)),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map(),roomWorlds=new Map(),sessions=new Map();
 const send=(ws,o)=>{if(ws.readyState!==WebSocket.OPEN)return;try{if(ws.bufferedAmount>1024*1024){ws.terminate();return}ws.send(JSON.stringify(o))}catch{ws.terminate()}};
-const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,admin:ws.admin,baseSlot:ws.baseSlot,carrying:ws.heldEgg||null,training:!!ws.training});
+const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0,admin:ws.admin,baseSlot:ws.baseSlot,carrying:ws.heldEgg||null,training:!!ws.training});
 const peers=room=>rooms.get(room)||new Set();
 // Salas sob demanda, sem um número máximo definido de salas.
 // A lotação continua em 16 por sala; salas vazias são removidas automaticamente.
@@ -34,7 +34,7 @@ const broadcastPresence=room=>broadcast(room,{type:'players',players:[...peers(r
 const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r),world=roomWorlds.get(r);
  const egg=world?.drop(ws);
  if(egg){broadcast(r,{type:'world-add',eggs:[egg]},ws);if(egg.s===LIMITED)broadcast(r,{type:'event',kind:'limited-drop',egg},ws)}
- if(ws.session){ws.session.active=false;ws.session.expiresAt=Date.now()+120000;}
+ if(ws.session){ws.session.position={x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0};ws.session.active=false;ws.session.expiresAt=Date.now()+120000;}
  p?.delete(ws);ws.room=null;ws.admin=false;ws.baseSlot=null;
  if(p?.size===0){rooms.delete(r);if(world)world.emptyAt=Date.now()}else broadcastPresence(r);
 };
@@ -45,7 +45,7 @@ const error=(ws,message)=>send(ws,{type:'error',message});
 // O servidor preserva salas, ADMIN Abuse e saves com a esteira normal.
 const installServerBrowser=html=>{
  if(!html.includes('</body>'))throw new Error('Fim do HTML não encontrado');
- return html.replace('</body>','<script src="/servers-ui.js"></script></body>');
+ return html.replace('</body>','<script src="/servers-ui.js?v=20261031-visibility-1"></script></body>');
 };
 // Atualização visual: mantém todos os botões, salas, saves, ADMIN e treino originais.
 const applyGraphicUpgrade=html=>{

@@ -10,6 +10,8 @@ Conexões interrompidas tentam reconectar automaticamente, com limite entre as t
 
 A sala de destino é validada antes da troca; se estiver cheia, o jogador permanece na anterior. Novos jogadores recebem o evento ativo com seu horário de término, e a reconexão não transporta eventos nem ovos de outra sala. ADMIN remoto é verificado novamente a cada conexão. Dados inválidos são ignorados, conexões mortas são removidas e a transmissão de movimento é agrupada a cada 100 ms.
 
+Ao entrar numa sala ocupada, o jogador aparece perto de outro jogador, diante da câmera dele, mantendo sua própria base e incubadoras. O botão **👥 Encontrar amigo**, disponível na tela e em Salas, pede ao servidor um encontro na mesma sala e aponta a câmera para o amigo. O convite inclui o código da sala e o jogador que convidou; a reconexão conserva a última posição quando a sessão ainda existe. O código da sala e a presença dos jogadores ficam visíveis na tela.
+
 ## Executar o projeto
 
 Com Node.js 18 ou superior instalado, abra um terminal nesta pasta e execute:

@@ -5,6 +5,15 @@ const SIZES=[.8,1,1.4,1.9,12/1.8],CHANCES={2:.4,3:.3,4:.2,7:.1,8:.04,9:.005};
 const HALLOWEEN_START=Date.parse('2026-10-13T00:00:00-03:00'),HALLOWEEN_END=Date.parse('2026-11-01T00:00:00-03:00');
 const baseSpawn=slot=>({x:[0,52,-52][slot%3],z:8+Math.floor(slot/3)*56});
 const finite=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
+// Colocar o visitante diante da câmera do amigo, onde ambos podem se enxergar.
+const meetingSpawn=(friend,slot=0)=>{
+ slot=Math.max(0,Math.floor(slot)||0);
+ const angle=finite(friend.cameraYaw,-100,100)?friend.cameraYaw:0;
+ const side=(slot%2?1:-1)*(1.2+Math.floor(slot%4/2)*.7),ahead=4.8+Math.floor(slot/4)*1.2;
+ const x=Math.max(-97,Math.min(97,friend.x-Math.sin(angle)*ahead+Math.cos(angle)*side));
+ const z=Math.max(-937,Math.min(333,friend.z-Math.cos(angle)*ahead-Math.sin(angle)*side));
+ return {x,y:Math.max(0,Number(friend.y)||0),z,yaw:Math.atan2(friend.x-x,friend.z-z),cameraYaw:Math.atan2(x-friend.x,z-friend.z)};
+};
 class World {
  constructor(now=Date.now(),random=Math.random){
   this.random=random;this.eggs=new Map();this.reset=300000;this.phase='day';this.until=0;this.nextReset=now+this.reset;this.event=null;this.emptyAt=0;
@@ -69,4 +78,4 @@ class World {
   const egg=player.heldEgg;player.heldEgg=null;return egg;
  }
 }
-module.exports={World,LIMITED,baseSpawn,finite};
+module.exports={World,LIMITED,baseSpawn,finite,meetingSpawn};

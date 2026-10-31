@@ -1,6 +1,19 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {World,baseSpawn}=require('../multiplayer-world.cjs');
+const {World,baseSpawn,meetingSpawn}=require('../multiplayer-world.cjs');
+test('amigos ficam visíveis nas duas câmeras, inclusive em celular vertical e câmera girada',()=>{
+ const T=require('../three.min.js');
+ function visible(viewer,subject,aspect){
+  const c=new T.PerspectiveCamera(62,aspect,.5,900),angle=viewer.cameraYaw||0,dist=9,pitch=.45,target=new T.Vector3(viewer.x,2.2,viewer.z);
+  c.position.set(viewer.x+Math.sin(angle)*Math.cos(pitch)*dist,target.y+Math.sin(pitch)*dist,viewer.z+Math.cos(angle)*Math.cos(pitch)*dist);c.lookAt(target);c.updateMatrixWorld();
+  const p=new T.Vector3(subject.x,1.4,subject.z).project(c);return Math.abs(p.x)<1&&Math.abs(p.y)<1&&p.z>-1&&p.z<1;
+ }
+ for(const aspect of [393/852,852/393,1280/720])for(const cameraYaw of [0,Math.PI/2,Math.PI,-Math.PI/2]){
+  const friend={x:0,y:0,z:8,cameraYaw},visitor=meetingSpawn(friend);
+  assert(visible(friend,visitor,aspect),'o amigo vê quem chegou');assert(visible(visitor,friend,aspect),'quem chegou também vê o amigo');
+ }
+ assert(!visible({x:0,z:8,cameraYaw:0},{x:52,z:8},393/852),'bases afastadas reproduzem o problema anterior');
+});
 test('guardiões encontram a entrada e a saída de todas as bases, inclusive fora da origem',()=>{
  const vm=require('node:vm'),html=require('node:fs').readFileSync('index.html','utf8');
  const source=html.slice(html.indexOf('const guardPath='),html.indexOf('const aim='));
