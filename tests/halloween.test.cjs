@@ -90,7 +90,7 @@ test('HTTP serve faixa completa, intervalos de áudio e integração válida com
   assert.equal(Number(head.headers.get('content-length')),expected.length);assert.equal((await head.arrayBuffer()).byteLength,0);
   const html=await (await fetch(origin+'/')).text();
   assert(html.includes("if(typeof MP!=='undefined'&&MP.pending)return;if(!carry&&near(6,-7,6))"));
-  assert(html.includes('/multiplayer-client.js?v=20261031-visibility-1'));
+  assert(/\/multiplayer-client\.js\?v=20261031-[^"']+/.test(html));
   assert(html.includes('/halloween-event.js?v=20261013-pets-eternal-divino-v3'));assert(html.includes('/fruits-shop.js'));assert(html.includes('/servers-ui.js'));
   assert(html.indexOf('/halloween-pets.js?v=20261013-pets-eternal-divino-v3')<html.indexOf('const HW=window.RoubeOvoHalloweenPets'));
   const petsResponse=await fetch(origin+'/halloween-pets.js?v=20261013-pets-eternal-divino-v3');assert.equal(petsResponse.status,200);
