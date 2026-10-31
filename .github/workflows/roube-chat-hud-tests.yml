@@ -1,0 +1,28 @@
+name: Roube um Ovo - Chat e HUD
+on:
+  push:
+    branches: [feature-roube-ovo-hud-chat-20261031, roube-um-ovo-3d-multiplayer]
+    paths:
+      - 'hud-chat.js'
+      - 'multiplayer-network.cjs'
+      - 'server.js'
+      - 'tests/chat-hud.test.cjs'
+      - '.github/workflows/roube-chat-hud-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci --omit=dev --no-audit --no-fund
+      - name: Testar multiplayer, progresso e chat
+        run: npm test
