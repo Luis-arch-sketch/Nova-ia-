@@ -49,3 +49,9 @@ Os dois sons novos pausam durante a revelação de um ovo e quando o jogo vai pa
 `npm test` executa os testes de lógica, salvamento, salto e multiplayer. Os testes de rede iniciam o servidor e conectam dois clientes com o código real do jogo em um ambiente sem renderização: disputam o mesmo ovo, perdem uma confirmação de depósito, reconectam e verificam a ausência de duplicação. Também são verificados capacidade de 16 jogadores, bases diferentes, troca para sala cheia, isolamento entre salas, eventos para novos jogadores e pacotes inválidos. Para o teste visual, instale `playwright` (`npm install --no-save playwright` e `npx playwright install chromium`) e execute `npm run test:hatching`. Ele verifica celular na vertical e horizontal e computador, com capturas em `test-results/hatching`.
 
 `npm run test:clowns` verifica os palhaços em celular e computador, a repetição real da música, a distância, a risada independente e a pausa dos sons durante a chocagem. Capturas ficam em `test-results/clowns`.
+
+## HUD de progresso e chat da sala — 31/10/2026
+
+O jogo mostra apenas dois contadores de progresso na interface: **dinheiro** (estado `S.$`) e **Velocidade/Speed** (estado `S.sp`), sem velocímetro de carro nem botões de compra. O painel `hud-chat.js` consulta o estado em memória e não modifica o formato dos saves locais (`rue3d_v1`), os pets, os ovos nem as melhorias.
+
+O chat é um recurso do WebSocket `/ws`: cada jogador conectado envia `{type:"chat",text:"..."}`; o servidor valida, limita frequência, atribui nome e sala a partir da sessão e transmite apenas para os membros daquela sala. O histórico fica somente no navegador durante a sessão; as mensagens não entram nos saves. O painel funciona em celular e computador. Testes: `node --test tests/chat-hud.test.cjs` ou `npm test`.
