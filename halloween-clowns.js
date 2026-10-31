@@ -5,7 +5,7 @@
  const music=new Audio('/audio/clown-dance.webm');
  const witch=new Audio('/audio/witch-laugh.mp3');
  music.loop=true;music.preload='none';music.volume=.65;
- witch.loop=false;witch.preload='auto';witch.volume=.85;
+ witch.loop=false;witch.preload='auto';witch.volume=.70;
  let interacted=false,musicPending=false,witchPending=false,nearClown=false;
  let musicFocused=false,witchFocused=false,nextWitchAt=Infinity,retryMusicAt=0;
  let hatchOpen=false;
