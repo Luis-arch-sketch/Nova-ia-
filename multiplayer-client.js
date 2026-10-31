@@ -5,13 +5,17 @@ if(/^[A-Z0-9-]{3,12}$/.test(mpInvitation))$('roomCode').value=mpInvitation;
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
 const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:mpInvitation?'join':'quick-join'};
 const mpStatus=s=>{$('roomStatus').textContent=s;const h=$('mpPresence');if(h&&!MP.connected)h.textContent=s.startsWith('⚠')?'⚠ Multiplayer: '+s:'🌍 '+s};
+// A câmera e o portal realizam uma cena 3D completa, de pelo menos 5,9 segundos.
 const mpEntrance=(show,immediate=false)=>{
  const layer=$('mpEntrance');if(!layer||!layer.style)return;
- clearTimeout(MP.entranceTimer);
- if(show){if(layer.style.display!=='grid')MP.entranceAt=Date.now();layer.style.display='grid';return;}
- const delay=immediate?0:Math.max(0,1200-(Date.now()-(MP.entranceAt||0)));
- if(delay)MP.entranceTimer=setTimeout(()=>{layer.style.display='none';MP.entranceTimer=null;},delay);
- else layer.style.display='none';
+ if(show){
+  if(layer.style.display==='block'&&window.RoubeOvoEntrance?.active)return;
+  layer.style.display='block';window.RoubeOvoEntrance?.start();
+ }else if(immediate){
+  window.RoubeOvoEntrance?.stop();layer.style.display='none';
+ }else{
+  window.RoubeOvoEntrance?.finish();
+ }
 };
 const mpEndpoint=()=>{
  const host=location.host;
