@@ -85,11 +85,11 @@ function inspectAnimal(){
    await snapshot(page,mode+'-reveal');await page.locator('#hatchContinue').click();
    assert.equal(await page.evaluate(()=>RoubeOvoHatching.active),false);assert(await page.evaluate(()=>sc.visible));
    if(mobile){
-    // Halloween Divino usa o próprio modelo e permanece branco até a revelação.
+    // Animal Divino já conquistado usa o próprio modelo e permanece branco até a revelação.
     await page.setViewportSize({width:852,height:393});await seed(page,[128]);await page.locator('#hatchEggBtn').tap();
     await waitPhase(page,'mystery');assert((await page.evaluate(inspectAnimal)).white);await snapshot(page,'android-landscape-mystery');
     await waitPhase(page,'reveal');assert.equal(await page.locator('#hatchTitle').textContent(),'Kirín das Estrelas');
-    assert((await page.locator('#hatchDetails').textContent()).includes('Halloween Divino'));
+    assert((await page.locator('#hatchDetails').textContent()).includes('Divino'));
     await snapshot(page,'android-landscape-reveal');await page.locator('#hatchContinue').click();
     await page.setViewportSize({width:393,height:852});await seed(page,[104]);await page.locator('#hatchEggBtn').tap();
     // Recarregar durante o suspense conserva o pet e consome o ovo uma única vez.
