@@ -2,7 +2,6 @@
 const crypto=require('node:crypto');
 const LIMITED=104,REMOVED=new Set([0,9]),RARITIES=[0,1,2,3,4,7,8,9];
 const SIZES=[.8,1,1.4,1.9,12/1.8],CHANCES={2:.4,3:.3,4:.2,7:.1,8:.04,9:.005};
-const HALLOWEEN_START=Date.parse('2026-10-13T00:00:00-03:00'),HALLOWEEN_END=Date.parse('2026-11-01T00:00:00-03:00');
 const baseSpawn=slot=>({x:[0,52,-52][slot%3],z:8+Math.floor(slot/3)*56});
 const finite=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
 // Colocar o visitante diante da câmera do amigo, onde ambos podem se enxergar.
@@ -21,9 +20,9 @@ class World {
  }
  add(b,j,size,x,z,now=Date.now(),species=b*8+j,nest=null){
   if(this.eggs.size>=400||REMOVED.has(species))return null;
-  const halloween=species>=105&&species<129,tier=halloween?Math.floor((species-105)/4):0;
-  const egg={id:crypto.randomUUID(),b,j,s:species,r:species===LIMITED?10:halloween?11+tier:RARITIES[j],size,
-   w:species===LIMITED?1:+((halloween?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,grownAt:now};
+  const collected=species>=105&&species<129,tier=collected?Math.floor((species-105)/4):0;
+  const egg={id:crypto.randomUUID(),b,j,s:species,r:species===LIMITED?10:collected?11+tier:RARITIES[j],size,
+   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,grownAt:now};
   this.eggs.set(egg.id,egg);return egg;
  }
  size(){const n=this.random()*100;return n<50?0:n<85?1:n<97?2:3;}
@@ -41,13 +40,7 @@ class World {
    const candidates=Array.from({length:13},(_,b)=>b).filter(b=>!REMOVED.has(b*8+j)&&!occupied.has(b*8+j));
    if(candidates.length)spawn(candidates[Math.floor(this.random()*candidates.length)],j);
   }
-  if(!first&&now>=HALLOWEEN_START&&now<HALLOWEEN_END){
-   const chances=[.15,.04,.008,.001,.00065,.00018];
-   for(let tier=0;tier<6;tier++)if(this.random()<chances[tier]&&[...this.eggs.values()].filter(e=>e.s>=105).length<6){
-    const b=Math.floor(this.random()*13),s=105+tier*4+Math.floor(this.random()*4);
-    this.add(b,Math.min(7,4+tier),this.size(),(this.random()<.5?-1:1)*(31+this.random()*5),-65-70*b+(this.random()-.5)*36,now,s);
-   }
-  }
+
  }
  tick(now=Date.now()){
   let changed=false;

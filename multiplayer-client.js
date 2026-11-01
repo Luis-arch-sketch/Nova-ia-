@@ -130,14 +130,14 @@ const mpRemoveEgg=id=>{
  sc.remove(e.mesh);if(e.nest?.e===e)e.nest.e=null;eggs.splice(eggs.indexOf(e),1);
 };
 const mpClearWorld=()=>{
- for(const e of [...eggs]){if(e.halloweenWelcome)continue;if(!e.netId)e.netId='local-'+Math.random();mpRemoveEgg(e.netId)}
+ for(const e of [...eggs]){if(!e.netId)e.netId='local-'+Math.random();mpRemoveEgg(e.netId)}
  if(carry?.netId){P.g.remove(carry.mesh);if(carry.aura){if(carry.s===LIMITED_ID)disposeLimitedAura(carry);else sc.remove(carry.aura)}carry=null;}
 };
 const mpUpsertEgg=d=>{
  if(!d||typeof d.id!=='string'||!SPC[d.s]||!Number.isFinite(d.x)||!Number.isFinite(d.z))return null;
  if(carry?.netId===d.id)return carry;
  let e=eggs.find(e=>e.netId===d.id);
- if(!e)e=eggs.find(e=>!e.netId&&!e.halloweenWelcome&&e.s===d.s&&Math.hypot(e.mesh.position.x-d.x,e.mesh.position.z-d.z)<1.1);
+ if(!e)e=eggs.find(e=>!e.netId&&e.s===d.s&&Math.hypot(e.mesh.position.x-d.x,e.mesh.position.z-d.z)<1.1);
  if(!e){e={b:d.b,j:d.j,s:d.s,r:d.r,z:d.size,w:d.w,st:'caido',gr:1,nest:null};e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();eggs.push(e);if(AUR[e.r])mkAura(e)}
  e.netId=d.id;e.guardArea=d.b;e.gr=1;e.mesh.visible=true;e.mesh.scale.copy(e.base);e.mesh.position.set(d.x,.45+e.base.y,d.z);
  if(Number.isInteger(d.nest)&&NS[d.nest]){e.nest=NS[d.nest];e.nest.e=e;}
@@ -145,7 +145,7 @@ const mpUpsertEgg=d=>{
 };
 const mpWorldSync=m=>{
  const ids=new Set((m.eggs||[]).map(e=>e.id));
- for(const e of [...eggs])if(!e.halloweenWelcome&&(!e.netId||!ids.has(e.netId))){if(!e.netId)e.netId='local-'+Math.random();mpRemoveEgg(e.netId)}
+ for(const e of [...eggs])if((!e.netId||!ids.has(e.netId))){if(!e.netId)e.netId='local-'+Math.random();mpRemoveEgg(e.netId)}
  for(const e of m.eggs||[])mpUpsertEgg(e);
  if(m.clock){MP.clock=m.clock;MP.clockOffset=m.clock.serverNow-Date.now();mpApplyClock()}
  if(m.event){if(MP.roomEvent?.endsAt!==m.event.endsAt)mpRemoteEvent(m.event);else MP.roomEvent=m.event;}

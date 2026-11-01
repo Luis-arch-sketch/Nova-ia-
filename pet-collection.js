@@ -1,53 +1,50 @@
 'use strict';
 // Keep the order fixed: these IDs are appended after the original LIMITED species.
 (() => {
- const START=Date.parse('2026-10-13T00:00:00-03:00'),END=Date.parse('2026-11-01T00:00:00-03:00');
- let clock=()=>Date.now();
  const types=[
-  {name:'Halloween Raro',short:'Raro',r:11,chance:.15,color:0xff8b24,glow:0xa43d00,income:2e9},
-  {name:'Halloween Lendário',short:'Lendário',r:12,chance:.04,color:0x9c55ed,glow:0x44146b,income:2e10},
-  {name:'Halloween Mítico',short:'Mítico',r:13,chance:.008,color:0x4df7bf,glow:0x075a44,income:2e11},
-  {name:'Halloween Secreto',short:'Secreto',r:14,chance:.001,color:0xe83861,glow:0x650d22,income:2e12},
-  {name:'Halloween Eternal',short:'Eternal',r:15,chance:.00065,color:0x4bdaff,glow:0x07517b,income:8e13},
-  {name:'Halloween Divino',short:'Divino',r:16,chance:.00018,color:0xffde75,glow:0x9e621c,income:9e15}
+  {name:'Raro',short:'Raro',r:11,color:0xff8b24,glow:0xa43d00,income:2e9},
+  {name:'Lendário',short:'Lendário',r:12,color:0x9c55ed,glow:0x44146b,income:2e10},
+  {name:'Mítico',short:'Mítico',r:13,color:0x4df7bf,glow:0x075a44,income:2e11},
+  {name:'Secreto',short:'Secreto',r:14,color:0xe83861,glow:0x650d22,income:2e12},
+  {name:'Eternal',short:'Eternal',r:15,color:0x4bdaff,glow:0x07517b,income:8e13},
+  {name:'Divino',short:'Divino',r:16,color:0xffde75,glow:0x9e621c,income:9e15}
  ];
  const defs=[
-  ['Gato Bruxo','cat',0x252139,0x934ceb,0x68ffbc],
-  ['Morcego Vampiro','bat',0x532248,0xe44562,0xffcf82],
-  ['Coruja da Lua','owl',0x575185,0xdcd5f9,0xffcf64],
-  ['Raposa Abóbora','fox',0xef792b,0xffe2ac,0x6b2baa],
-  ['Lobo Lobisomem','wolf',0x7f87a5,0x332740,0xffb43e],
-  ['Corvo do Eclipse','crow',0x212739,0x6759b3,0xdf5cff],
-  ['Aranha Ametista','spider',0x542b7a,0xc774ec,0x67ffbe],
-  ['Serpente Maldita','snake',0x1c7667,0xb9e06f,0xff8cad],
-  ['Escorpião Necro','scorpion',0x283846,0x63d1ac,0xed9bff],
-  ['Coelho Vodu','rabbit',0xbaa88c,0x614377,0xffab55],
-  ['Cervo da Lua de Sangue','stag',0x6c2c3c,0xf6d7b4,0xff5869],
-  ['Unicórnio Sombrio','unicorn',0x463968,0xa0f6e6,0xffbceb],
-  ['Cérbero Infernal','cerberus',0x34242c,0xe77a30,0xffda67],
-  ['Fênix da Meia-Noite','phoenix',0x583c96,0xf28643,0xffd083],
-  ['Quimera Maldita','chimera',0x73745d,0x54365e,0x83ffbc],
-  ['Dragão do Eclipse','dragon',0x222733,0xbb4866,0xfbdd9b],
+  ['Gato','cat',0xb38354,0xffe5bd,0x6c9a50],
+  ['Morcego','bat',0x78665b,0xb49b80,0x4d3325],
+  ['Coruja','owl',0x575185,0xdcd5f9,0xffcf64],
+  ['Raposa','fox',0xcc783d,0xffe2ac,0x49372a],
+  ['Lobo','wolf',0x7f87a5,0x332740,0xffb43e],
+  ['Corvo','crow',0x212739,0x6759b3,0xdf5cff],
+  ['Aranha','spider',0x542b7a,0xc774ec,0x67ffbe],
+  ['Serpente','snake',0x1c7667,0xb9e06f,0xff8cad],
+  ['Escorpião','scorpion',0x283846,0x63d1ac,0xed9bff],
+  ['Coelho','rabbit',0xbaa88c,0x614377,0xffab55],
+  ['Cervo','stag',0x6c2c3c,0xf6d7b4,0xff5869],
+  ['Unicórnio','unicorn',0x463968,0xa0f6e6,0xffbceb],
+  ['Cérbero','cerberus',0x34242c,0xe77a30,0xffda67],
+  ['Fênix','phoenix',0x583c96,0xf28643,0xffd083],
+  ['Quimera','chimera',0x73745d,0x54365e,0x83ffbc],
+  ['Dragão','dragon',0x222733,0xbb4866,0xfbdd9b],
   // ETERNAL: quatro criaturas inéditas com modelos e cores próprios.
-  ['Hidra da Meia-Noite','hydra',0x153d4d,0x3cdded,0xa9ffff],
-  ['Pantera do Vazio','panther',0x171b31,0x6457ed,0x7cf6ff],
-  ['Grifo do Abismo','griffin',0x354366,0x63b7e9,0xffd18b],
+  ['Hidra','hydra',0x153d4d,0x3cdded,0xa9ffff],
+  ['Pantera','panther',0x171b31,0x6457ed,0x7cf6ff],
+  ['Grifo','griffin',0x354366,0x63b7e9,0xffd18b],
   ['Leviatã Lunar','leviathan',0x234367,0x66ebed,0xe0a9ff],
-  // DIVINO: os quatro animais mais difíceis de encontrar no Halloween.
-  ['Dragão da Lua de Sangue','celestial_dragon',0x5d1638,0xffc04d,0xfff0bc],
-  ['Fênix do Sol Negro','celestial_phoenix',0x6a2248,0xffce5a,0xfff8c9],
+  // DIVINO: manter a ordem e a renda dos animais já conquistados.
+  ['Dragão Celeste','celestial_dragon',0x5d1638,0xffc04d,0xfff0bc],
+  ['Fênix Solar','celestial_phoenix',0x6a2248,0xffce5a,0xfff8c9],
   ['Leão Astral Sagrado','celestial_lion',0xdbc3a4,0xffd44f,0xf6faff],
   ['Kirín das Estrelas','kirin',0xa5deea,0xf8d674,0xffffff]
- ].map((d,i)=>({key:'halloween2026-'+i,name:d[0],kind:d[1],body:d[2],accent:d[3],eye:d[4],tier:Math.floor(i/4),rank:i%4,id:null}));
+ ].map((d,i)=>({key:'collection-'+i,name:d[0],kind:d[1],body:d[2],accent:d[3],eye:d[4],tier:Math.floor(i/4),rank:i%4,id:null}));
  const byId=new Map(),caches=new WeakMap();
- const active=()=>clock()>=START&&clock()<END;
  function register(SPC,RAR){
   for(const type of types)RAR[type.r]=type.name;
   for(const d of defs){
-   const existing=SPC.find(s=>s.halloweenKey===d.key);
+   const existing=SPC.find(s=>s.collectionKey===d.key);
    d.id=existing?existing.id:SPC.length;
    if(!existing)SPC.push({id:d.id,n:d.name,b:0,r:4+d.tier,hr:types[d.tier].r,
-    inc:types[d.tier].income*(1+d.rank*.2),halloweenKey:d.key,halloweenTier:d.tier});
+    inc:types[d.tier].income*(1+d.rank*.2),collectionKey:d.key,collectionTier:d.tier});
    byId.set(d.id,d);
   }
  }
@@ -235,15 +232,11 @@
    }
    case 'cat':{
     const h=quadruped();tail();
-    mesh('ring',accent,[0,.47,0],[.70,.70,1],h).rotation.x=Math.PI/2;
-    cone(mane,[0,1.20,0],[.48,1.36,.48],h).rotation.z=-.16;
-    mesh('ring',glow,[0,.77,0],[.30,.30,1],h).rotation.x=Math.PI/2;
     break;
    }
    case 'fox':{
     const h=quadruped();tail(true);
     for(const side of [-1,1])orb(cream,[side*.27,-.28,.41],[.25,.20,.26],h);
-    for(let i=0;i<3;i++)cone(dark,[0,1.91-i*.18,.61],[.35-i*.05,.23,.08]).rotation.z=Math.PI;
     break;
    }
    case 'wolf':{
@@ -286,7 +279,7 @@
    }
    case 'bat':{
     orb(body,[0,1.8,0],[.46,.74,.4]);const h=head(0,2.70,.12,.88,true);batWings(2,-.16);
-    for(const side of [-1,1]){cone(cream,[side*.18,-.33,.64],[.065,.28,.065],h).rotation.z=Math.PI;orb(accent,[side*.19,.37,0],[.13,.22,.14]);}
+    for(const side of [-1,1])orb(accent,[side*.19,.37,0],[.13,.22,.14]);
     break;
    }
    case 'snake':{
@@ -331,12 +324,10 @@
      orb(accent,[side*.27,.96,.10],[.09,.66,.035],h).rotation.z=-side*.16;
      orb(body,[side*.47,.39,.28],[.27,.32,.47]);orb(accent,[side*.54,1.46,.49],[.17,.37,.17]);
     }
-    orb(accent,[-.23,.11,.59],[.14,.16,.045],h);
-    segment([-.30,.04,.65],[-.16,.18,.65],.023,cream,h);segment([-.30,.18,.65],[-.16,.04,.65],.023,cream,h);
     orb(cream,[0,1.16,-.61],[.25,.24,.25]);break;
    }
   }
-  g.scale.setScalar(k);g.mat=body;g.userData.halloweenSpecies=id;g.userData.modelVersion='Halloween animals 2026 v1';
+  g.scale.setScalar(k);g.mat=body;g.userData.collectionSpecies=id;g.userData.modelVersion='animals 2026 v1';
   g.userData.customUpdate=(t,phase=0)=>{
    const n=t*2.1+phase;root.position.y=Math.sin(n)*.055;
    heads.forEach((h,i)=>h.rotation.y=Math.sin(n*.53+i)*.065);
@@ -346,45 +337,10 @@
   };
   if(scene)scene.add(g);return g;
  }
- function eggDecor(T,species,parent){
-  const d=byId.get(species),type=types[d.tier],geo=init(T);
-  const dark=new T.MeshBasicMaterial({color:0x251330,side:T.DoubleSide});
-  const trim=new T.MeshLambertMaterial({color:type.color,emissive:type.glow});
-  for(const side of [-1,1]){
-   const eye=new T.Mesh(geo.face,dark);eye.position.set(side*.31,.19,.94);parent.add(eye);
-  }
-  const mouth=new T.Mesh(geo.box,dark);mouth.position.set(0,-.28,.97);mouth.scale.set(.59,.13,.035);parent.add(mouth);
-  const ring=new T.Mesh(geo.ring,trim);ring.rotation.x=Math.PI/2;ring.scale.setScalar(.91);ring.position.y=-.35;parent.add(ring);
-  for(let i=0;i<=d.tier;i++){
-   const gem=new T.Mesh(geo.sphere,trim);gem.position.set((i-d.tier/2)*.21,.59,.80);gem.scale.setScalar(.09);parent.add(gem);
-  }
- }
- function egg(T,e,SZ,scene){
-  const d=byId.get(e.s);if(!d)return null;const type=types[d.tier],geo=init(T);
-  const g=new T.Group(),shell=new T.Mesh(geo.sphere,new T.MeshLambertMaterial({color:type.color,emissive:type.glow,emissiveIntensity:.46}));
-  shell.castShadow=true;g.add(shell);eggDecor(T,e.s,g);
-  g.name='Ovo '+type.name;g.userData.halloweenTier=d.tier;g.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2);
-  if(scene)scene.add(g);return g;
- }
- function styleIncubator(T,mesh,species){
-  const d=byId.get(species),old=mesh.getObjectByName('HalloweenEggMark');
-  if(!d){if(old)mesh.remove(old);mesh.material.emissive.setHex(0);return;}
-  const type=types[d.tier];mesh.material.color.setHex(type.color);mesh.material.emissive.setHex(type.glow);
-  if(old?.userData.species===species)return;
-  if(old)mesh.remove(old);const group=new T.Group();group.name='HalloweenEggMark';group.userData.species=species;
-  eggDecor(T,species,group);mesh.add(group);
- }
+ // Old saves keep the same species IDs, size, mutations and income.
  function indexHtml(S){
-  return '<p><b>🎃 Coleção de Halloween • 24 animais</b></p>'+types.map((t,i)=>{
-   const group=defs.filter(d=>d.tier===i),found=group.filter(d=>S.idx[d.id]).length;
-   return '<p><b>Ovo '+t.name+' ('+found+'/4)</b><br>'+group.map(d=>S.idx[d.id]?d.name:'???').join(' • ')+
-    '<br><small>Chance de aparecer por renovação: '+Number((t.chance*100).toFixed(2))+'%.</small></p>';
-  }).join('');
+  const owned=defs.filter(d=>S.idx[d.id]||S.pets.some(p=>p.s===d.id)||S.inc.some(e=>e?.s===d.id));
+  return owned.length?'<p><b>Animais da sua coleção</b></p><p>'+owned.map(d=>d.name).join(' • ')+'</p>':'';
  }
- window.RoubeOvoHalloweenPets={
-  types,defs,register,active,endsAt:END,setClock(fn){clock=fn},has:id=>byId.has(id),
-  definition:id=>byId.get(id),draw:tier=>{const candidates=defs.filter(d=>d.tier===tier);return candidates[Math.floor(Math.random()*candidates.length)]},
-  rarityName:s=>s?.hr!=null?types[s.halloweenTier].name:null,create,egg,styleIncubator,indexHtml,
-  auras:Object.fromEntries(types.map((t,i)=>[t.r,[t.color,1.15+i*.16]]))
- };
+ window.RoubeOvoPetCollection={types,defs,register,has:id=>byId.has(id),create,indexHtml};
 })();

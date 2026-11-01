@@ -68,12 +68,12 @@
   const light=new T.DirectionalLight(0xffffff,1.3);light.position.set(3,5,6);scene.add(light);
   const tint=new T.Color().setHSL((p.s*37%360)/360,.55,.6);
   if(p.m.length)tint.lerp(new T.Color(MUT[p.m[0]][3]),.6);
-  const model=HW?.has(p.s)?HW.create(T,p.s,1,scene):window.RoubeOvoVisuals?.create(T,p.s,1,tint,scene)||creature(tint,1);
+  const model=PC?.has(p.s)?PC.create(T,p.s,1,scene):window.RoubeOvoVisuals?.create(T,p.s,1,tint,scene)||creature(tint,1);
   const animal=new T.Group(),holder=new T.Group();animal.name='HatchAnimal';holder.add(model);animal.add(holder);scene.add(animal);
   animal.visible=false;
   const originalMaterials=new Map(),originalVisibility=new Map(),originalColors=new Map();
   const white=new T.MeshBasicMaterial({color:0xffffff,side:T.DoubleSide,skinning:true,morphTargets:true});
-  // Também neutraliza texturas, olhos, cores de vértices e brilho do Halloween.
+  // Também neutraliza texturas, olhos, cores de vértices e brilho dos materiais.
   function makeWhite(){model.traverse(o=>{
    if(o.isSprite||o.isPoints){if(!originalVisibility.has(o))originalVisibility.set(o,o.visible);o.visible=false}
    else if(o.isMesh||o.isLine){
@@ -97,7 +97,7 @@
   }
   fitAnimal();makeWhite();
   // Duas meias-cascas com borda irregular: a abertura é uma animação 3D real.
-  const shell=new T.Group(),shellMaterial=new T.MeshLambertMaterial({color:HW?.has(p.s)?HW.types[HW.defs.find(d=>d.id===p.s).tier].color:0xffe7ad,side:T.DoubleSide});shell.name='HatchEggShell';
+  const shell=new T.Group(),shellMaterial=new T.MeshLambertMaterial({color:0xffe7ad,side:T.DoubleSide});shell.name='HatchEggShell';
   const halves=[];
   for(let side=0;side<2;side++){
    const geometry=new T.SphereGeometry(1,32,18,0,Math.PI*2,side?Math.PI/2:0,Math.PI/2);
