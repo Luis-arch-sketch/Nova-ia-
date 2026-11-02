@@ -5,6 +5,11 @@ on:
     paths:
       - 'hud-chat.js'
       - 'multiplayer-network.cjs'
+      - 'multiplayer-world.cjs'
+      - 'multiplayer-client.js'
+      - 'avatar-customizer.js'
+      - 'tests/movement.test.cjs'
+      - 'tests/multiplayer-world.test.cjs'
       - 'server.js'
       - 'tests/chat-hud.test.cjs'
       - 'tests/normal-mode.test.cjs'
