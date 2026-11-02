@@ -7,6 +7,7 @@ on:
       - 'index.html'
       - 'animals3d.js'
       - 'world-detail.js'
+      - 'world-remake.js'
       - 'imported-biomes.js'
       - 'tests/imported-biomes-browser.cjs'
       - 'servers-ui.js'
