@@ -1,0 +1,29 @@
+name: Roube um Ovo - Estações físicas e fusão
+on:
+  push:
+    branches: [roube-um-ovo-3d-multiplayer]
+    paths:
+      - 'fusion-rules.js'
+      - 'fusion-system.js'
+      - 'world-activities.js'
+      - 'tests/physical-stations-browser.cjs'
+      - '.github/workflows/physical-stations.yml'
+  workflow_dispatch:
+jobs:
+  android-physical:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Dependências Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Fusão real e estações físicas no Android
+        run: node tests/physical-stations-browser.cjs
