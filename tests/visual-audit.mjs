@@ -61,7 +61,7 @@ try{
   await page.screenshot({path:'test-results/'+mode+'.png'});
   console.log(mode.toUpperCase()+' STATE '+JSON.stringify(state));
   assert.equal(state.visualsReady,true,'Visuals must be initialized');
-  const detail=await page.evaluate(()=>window.RoubeOvoWorldDetail||null);
+  const detail=await page.evaluate(()=>{const d=window.RoubeOvoWorldDetail;return d?{installed:d.installed,worldCount:d.worldCount,baseCount:d.baseCount,biomes:d.biomes,fallbackVisible:d.fallbackWorld?.visible}:null});
   assert(detail?.installed&&detail.worldCount>=500&&detail.baseCount>=30,'Casas, jardins e pracinhas devem aparecer no mapa e na base');
   console.log(mode.toUpperCase()+' CENÁRIO '+JSON.stringify(detail));
   assert.equal(state.species,103,'103 espécies ativas, com pato e pintinho retirados');
