@@ -18,11 +18,11 @@ class World {
   this.random=random;this.eggs=new Map();this.reset=120000;this.phase='day';this.until=0;this.nextReset=now+this.reset;this.event=null;this.emptyAt=0;
   this.regrow(true,now);
  }
- add(b,j,size,x,z,now=Date.now(),species=b*8+j,nest=null){
+ add(b,j,size,x,z,now=Date.now(),species=b*8+j,nest=null,mutations=[]){
   if(this.eggs.size>=400||REMOVED.has(species))return null;
   const collected=species>=105&&species<129,tier=collected?Math.floor((species-105)/4):0;
   const egg={id:crypto.randomUUID(),b,j,s:species,r:species===LIMITED?10:collected?11+tier:RARITIES[j],size,
-   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,grownAt:now,expiresAt:species===LIMITED?null:now+this.reset};
+   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,m:[...new Set((Array.isArray(mutations)?mutations:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<8))],grownAt:now,expiresAt:species===LIMITED?null:now+this.reset};
   this.eggs.set(egg.id,egg);return egg;
  }
  size(){const n=this.random()*100;return n<50?0:n<85?1:n<97?2:3;}
