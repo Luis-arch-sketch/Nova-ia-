@@ -74,6 +74,18 @@
   }catch(err){console.warn('Falha na animação de entrada:',err);erase();return;}
   if(state.ready&&t>=5.9)erase();
  };
+ const layer=document.getElementById('mpEntrance');
+ if(layer&&!document.getElementById('mpEntranceSkip')){
+  const style=document.createElement('style');
+  style.textContent='#mpEntranceSkip{position:absolute;z-index:30;top:calc(15px + env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));min-width:105px;min-height:46px;padding:10px 17px;border:2px solid #fff;border-radius:12px;background:#131825eb;color:white;font:900 17px system-ui,sans-serif;letter-spacing:.10em;box-shadow:0 5px 18px #0009;cursor:pointer;touch-action:manipulation}#mpEntranceSkip:focus-visible{outline:3px solid #72d7ff;outline-offset:3px}';
+  document.head.appendChild(style);
+  const skip=document.createElement('button');
+  skip.id='mpEntranceSkip';skip.type='button';skip.textContent='SKIP ⏭';
+  skip.setAttribute('aria-label','Pular animação de entrada e jogar');
+  skip.addEventListener('pointerdown',event=>event.stopPropagation());
+  skip.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();erase()});
+  layer.appendChild(skip);
+ }
  const finish=()=>{state.ready=true;if(!state.active){const layer=document.getElementById('mpEntrance');if(layer)layer.style.display='none';}};
  window.RoubeOvoEntrance={start,update,finish,stop:erase,get active(){return state.active},get seconds(){return state.seconds}};
 })();
