@@ -18,6 +18,8 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
     // O marcador legado não deve conceder o selo nem zerar o progresso.
    },{index});
    const page=await context.newPage();pages.push(page);debugPages.push(page);page.on('pageerror',error=>errors.push(error.message));
+   // Teste de roubo/admin: impedir apenas no navegador de QA o trailer automático, que cobre os menus.
+   await page.route('**/radioactive-cutscene.js*',route=>route.fulfill({status:200,contentType:'application/javascript',body:''}));
    await page.goto(origin+'/?sala=BAT-QA');console.log('UI ready',index,await page.locator('#roube-play').isVisible());if(await page.locator('#roube-play').isVisible())await page.locator('#roube-play').click({force:true});
    await page.waitForFunction(()=>MP.connected,null,{timeout:15000});
    await page.evaluate(()=>{for(let i=0;i<120;i++)window.RoubeOvoEntrance?.update(.05);A.freeze=true;A.god=true;});
