@@ -329,7 +329,29 @@ let raccoonGuard=null;
 }
 
 const newEgg=(b,j)=>{let z=pick(SZ);if(EGG_NIGHT.phase==='night'&&Math.random()<.32)z=Math.min(SZ.length-1,z+1);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
-const eggMesh=e=>{const limited=e.s===LIMITED_ID,c=limited?new T.Color(0xff410c):new T.Color().setHSL((e.s*37%360)/360,.65,.62),m=new T.Mesh(GS,new T.MeshLambertMaterial({color:c,emissive:limited?0xff7e17:c.clone().multiplyScalar(e.j>=5?.45:0),emissiveIntensity:limited?.75:1}));m.castShadow=true;m.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited&&e.z!==4?3.8:1));sc.add(m);return m};
+const eggMutationMark=(mesh,mutations)=>{
+ if(!mesh)return mesh;
+ const mods=Array.isArray(mutations)?[...new Set(mutations.filter(i=>Number.isInteger(i)&&MUT[i]))]:[];
+ const sig=mods.join(',');
+ if(mesh.userData.rueMutationSig===sig)return mesh;
+ if(mesh.userData.rueMutationMaterial){mesh.material=mesh.userData.rueOriginalMaterial;mesh.userData.rueMutationMaterial.dispose();mesh.userData.rueMutationMaterial=null}
+ if(!mesh.userData.rueOriginalMaterial)mesh.userData.rueOriginalMaterial=mesh.material;
+ for(const item of mesh.userData.rueMutationRings||[]){mesh.remove(item);item.geometry.dispose();item.material.dispose();}
+ mesh.userData.rueMutationRings=[];
+ if(mods.length){
+  const tint=new T.Color(MUT[mods[0]][3]),material=mesh.userData.rueOriginalMaterial.clone();
+  material.color?.lerp(tint,.65);
+  material.emissive?.copy(tint);
+  material.emissiveIntensity=.42+.06*Math.min(4,mods.length);
+  mesh.material=material;mesh.userData.rueMutationMaterial=material;
+  for(let i=0;i<Math.min(mods.length,8);i++){
+   const ring=new T.Mesh(new T.TorusGeometry(1.04+i*.085,.035,5,21),new T.MeshBasicMaterial({color:MUT[mods[i]][3],transparent:true,opacity:.85,depthWrite:false}));
+   ring.rotation.x=Math.PI/2.3+i*.10;ring.position.y=.10+(i%2)*.1;mesh.add(ring);mesh.userData.rueMutationRings.push(ring);
+  }
+ }
+ mesh.userData.rueMutationSig=sig;return mesh;
+};
+const eggMesh=e=>{const limited=e.s===LIMITED_ID,c=limited?new T.Color(0xff410c):new T.Color().setHSL((e.s*37%360)/360,.65,.62),m=new T.Mesh(GS,new T.MeshLambertMaterial({color:c,emissive:limited?0xff7e17:c.clone().multiplyScalar(e.j>=5?.45:0),emissiveIntensity:limited?.75:1}));m.castShadow=true;m.scale.set(.55,.75,.55).multiplyScalar(SZ[e.z][1]*1.2*(limited&&e.z!==4?3.8:1));sc.add(m);return eggMutationMark(m,e.m)};
 // Event eggs use normal pickup, guardians, incubators, pets and saves.
 const regrow=first=>{if(typeof MP!=='undefined'&&MP.connected)return;const nw=[],sp=n=>{if(REMOVED_BIRDS.has(n.b*8+n.j))return null;const e=newEgg(n.b,n.j);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=first?1:0;e.mesh.scale.multiplyScalar(e.gr||.001);e.mesh.position.set(n.x,.45+e.base.y*e.gr,n.z);e.nest=n;n.e=e;eggs.push(e);if(AUR[e.r])mkAura(e);return e};NS.forEach(n=>{if(!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&CFG.rare[RS[n.j]]===undefined)sp(n)});if(!first)for(const r in CFG.rare){if(Math.random()>=CFG.rare[r])continue;const c=NS.filter(n=>!n.e&&!REMOVED_BIRDS.has(n.b*8+n.j)&&RS[n.j]==r);if(c.length)nw.push(sp(c[Math.floor(Math.random()*c.length)]))}if(nw.length)rareFx(nw);};
 const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.3,'rgba(255,255,255,.5)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return new T.CanvasTexture(c)})();
@@ -557,11 +579,11 @@ const INCUBATOR_MAX_GROWTH=16; // cada ovo pode atingir 16 vezes seu tamanho ao 
 const dep=k=>{const e=carry;if(!e||!Number.isInteger(k)||k<0||k>=S.inc.length||S.inc[k])return false;
  if(typeof MP!=='undefined'&&e.netId&&!MP.settingRemote){if(MP.connected)return mpEggRequest('egg-deposit',e,k);return false;}carry=null;
  if(raccoonGuard){if(raccoonGuard.st==='chase'||raccoonGuard.st==='wake')raccoonGuard.st='ret';raccoonGuard.rush=false}
- P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.base.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(typeof MP!=='undefined'&&MP.committingReceipt){S.mpDeposits=(S.mpDeposits||[]).filter(x=>typeof x==='string').slice(-99);S.mpDeposits.push(MP.committingReceipt);}
+ P.g.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else{sc.remove(e.aura);e.aura=null}}e.st='incubando';const d=(e.s===LIMITED_ID?15:(12+e.j*10+e.b*4)*(1+e.z*.5))*1000,n=Date.now();S.inc[k]={s:e.s,z:e.z,w:e.w,a:n,b:n+d,initialScale:e.base.toArray(),maxGrowth:INCUBATOR_MAX_GROWTH,m:Array.isArray(e.m)?e.m.slice():null};GD.forEach(g=>{if(g.st==='chase'||g.st==='wake')g.st='ret';g.rush=false});beep(880,.2);toast('Ovo depositado na incubadora '+(k+1)+'. Chocando por '+Math.round(d/1e3)+'s.');if(typeof MP!=='undefined'&&MP.committingReceipt){S.mpDeposits=(S.mpDeposits||[]).filter(x=>typeof x==='string').slice(-99);S.mpDeposits.push(MP.committingReceipt);}
  if(e.s===LIMITED_ID)persistLimitedWorld();save()};
 // O tempo prepara o ovo; somente o botão o abre. Admin e eventos podem antecipar.
 // Consumir a incubadora e salvar antes da animação impede duplicação e perda ao sair.
-const hatch=(k,force=false)=>{const s=S.inc[k];if(!Number.isInteger(k)||!s||(!force&&Date.now()<s.b))return false;S.inc[k]=null;const m=[];MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();
+const hatch=(k,force=false)=>{const s=S.inc[k];if(!Number.isInteger(k)||!s||(!force&&Date.now()<s.b))return false;S.inc[k]=null;const m=Array.isArray(s.m)?[...s.m]:[];if(!Array.isArray(s.m))MUT.forEach((u,j)=>{if(Math.random()<u[2])m.push(j)});const p={id:S.id++,s:s.s,z:s.z,w:s.w,m};S.pets.push(p);S.idx[s.s]=1;recalc();save();
  if(window.RoubeOvoHatching)window.RoubeOvoHatching.play(p,s);
  else toast('Chocou: '+SPC[s.s].n+' '+SZ[s.z][0]+'. Renda $'+fm(pinc(p))+'/s');return p};
 const fuse=s=>{const l=S.pets.filter(p=>p.s===s).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3),c=SPC[s].inc*100;if(l.length<3||S.$<c)return;S.$-=c;const ids=l.map(p=>p.id);S.pets=S.pets.filter(p=>!ids.includes(p.id));
@@ -1037,7 +1059,7 @@ const rankShow=async()=>{const list=$('rankList'),ticket=++rankRequest;
 const rankToggle=flag=>{$('rankOverlay').style.display=flag?'flex':'none';if(flag){if(adminVisible)toggleAdmin(false);rankShow()}else rankRequest++};
 setInterval(()=>{if($('rankOverlay').style.display==='flex')rankShow()},10000);
 const adminTabs=['Início','Ovos','Pets','Mundo','Config.','🔥 Abuse / Eventos','🏆 Placar','Dados'];
-const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'4',eggCount:'1',eggWhere:'nest',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'10',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
+const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'4',eggCount:'1',eggWhere:'nest',eggMutation:'random',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'10',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
 AS.chanceSecret=String(CFG.rare[7]*100);AS.chanceEternal=String(CFG.rare[8]*100);AS.chanceDivine=String(CFG.rare[9]*100);
 AS.resetSeconds=String(CFG.reset);AS.trainMult=String(CFG.train);AS.moveMult=String(A.moveMult);AS.jumpMult=String(A.jumpMult);AS.autoSeconds=String(A.autoSecretEvery);AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));
 let adminMessage='Painel conectado ao jogo. Escolha uma ação.';
@@ -1064,7 +1086,7 @@ const adminUI=(resetScroll=false)=>{
  }
  if(adminTab===1){
  h='<h3>🥚 Spawn real de ovos</h3><p>O ovo aparece fisicamente no mundo e pode ser coletado, incubado e chocado normalmente.</p><div class="adGrid">';
- h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',BI[adNum('eggBiome',0,BI.length-1,0)|0].sp.map((n,j)=>n?[j,`${RAR[RS[j]]} • ${n}`]:null).filter(Boolean))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}${adBtn('spawnEgg12','⚡ Spawn instantâneo 12u aqui','secondary')}</div>`);
+ h+=adCard('Criador de ovos',`${adSelect('eggBiome','Bioma',adOpts(BI,b=>b.n))}${adSelect('eggSlot','Espécie / raridade',BI[adNum('eggBiome',0,BI.length-1,0)|0].sp.map((n,j)=>n?[j,`${RAR[RS[j]]} • ${n}`]:null).filter(Boolean))}<div class="adHint">A espécie corresponde ao bioma selecionado.</div>${adSelect('eggSize','Tamanho',adOpts(SZ,z=>z[0]))}${adSelect('eggWhere','Local do spawn',[['nest','No ninho (ou junto dele)'],['player','Ao lado do jogador']])}${adSelect('eggMutation','🌈 Mutação do ovo',[['random','Sorteio normal ao chocar'],['none','Sem mutação'],...MUT.map((m,i)=>[i,m[0]+' x'+m[1]]),['all','TODAS as mutações']])}${adField('eggCount','Quantidade (1–20)','number','min="1" max="20" step="1"')}<div class="adControls">${adBtn('spawnEgg','Spawnar ovos')}${adBtn('spawnEgg12','⚡ Spawn instantâneo 12u aqui','secondary')}</div>`);
  h+=adCard('Raridades especiais',`<div class="adStat">${adEggsCount()} ovos no mundo</div><p>Spawn de 1 ovo no bioma escolhido, com o tamanho selecionado.</p><div class="adControls">${adBtn('spawnSecret','🔵 Secret')}${adBtn('spawnEternal','💠 Eternal')}${adBtn('spawnDivine','🌸 Divine')}${adBtn('spawnLimited','🔥 LIMITED ∞')}${adBtn('spawnLimitedNear','🔥 LIMITED 12u aqui','secondary')}${adBtn('regen','Renovar ninhos','secondary')}${adBtn('clearEggs','Limpar ovos soltos','danger')}</div>`);
  h+=adCard('Incubadoras',`<div class="adStat">${S.inc.filter(Boolean).length}/4 ocupadas</div><p>Conclua imediatamente os ovos incubando; os pets irão para a coleção.</p><div class="adControls">${adBtn('hatchAll','Chocar todos')}${adBtn('hatchNext','Chocar primeiro','secondary')}</div>`);
  h+='</div>';
@@ -1136,11 +1158,11 @@ const toggleAdmin=force=>{
 };
 const adStatus=msg=>{adminMessage=msg;toast(msg);const el=$('adContent').querySelector('.adStatus');if(el)el.textContent=msg};
 const adFinish=msg=>{save();saveAdmin();recalc();upGates();upHud();adminUI();adStatus(msg)};
-const adminSpawnEgg=(b,j,z,where='nest',fx=true)=>{
+const adminSpawnEgg=(b,j,z,where='nest',fx=true,mutations=null)=>{
  if(typeof MP!=='undefined'&&MP.connected&&!MP.owner)return null;
  if(eggs.filter(e=>e.s!==LIMITED_ID).length>=200)return null;
  b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));z=Math.max(0,Math.min(4,Math.floor(z)));
- if(REMOVED_BIRDS.has(b*8+j))return null;const e=newEgg(b,j),n=NS[b*8+j];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
+ if(REMOVED_BIRDS.has(b*8+j))return null;const e=newEgg(b,j),n=NS[b*8+j];e.m=mutations===null?null:[...new Set((Array.isArray(mutations)?mutations:[]).filter(v=>Number.isInteger(v)&&MUT[v]))];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
  if(where==='nest'&&!n.e){n.e=e;e.nest=n;e.mesh.position.set(n.x,.45+e.base.y,n.z)}
  else {let x,zp;if(where==='player'){x=P.x+(Math.random()-.5)*5;zp=P.z+(Math.random()-.5)*5}else{x=n.x+2.5+(Math.random()-.5)*4;zp=n.z+(Math.random()-.5)*6}e.mesh.position.set(Math.max(-97,Math.min(97,x)),.45+e.base.y,Math.max(-936,Math.min(49,zp)));e.st='caido'}
  eggs.push(e);if(AUR[e.r])mkAura(e);if(typeof MP!=='undefined'&&MP.connected&&MP.owner)mpSend({type:'admin-spawn',eggs:[mpDescribeEgg(e)]});if(fx){if(e.r>=7)rareFx([e]);else playSnd(e.r)}return e;
@@ -1277,8 +1299,8 @@ const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='A
  case 'trailSet':{const i=adNum('trailLevel',0,TR.length-1,0)|0;if(!S.own.includes(i))S.own.push(i);S.tr=i;msg='Trail '+TR[i][0]+' equipado';break}
  case 'trailOff':S.tr=-1;msg='Trail retirada';break;
  case 'trailAll':S.own=TR.map((_,i)=>i);msg='Todas as trails desbloqueadas';break;
- case 'spawnEgg':case 'spawnEgg12':{const near=act==='spawnEgg12',b=adNum('eggBiome',0,BI.length-1,0)|0,j=adNum('eggSlot',0,7,5)|0,z=near?4:adNum('eggSize',0,4,4)|0,count=adNum('eggCount',1,20,1)|0,where=near?'player':AS.eggWhere==='player'?'player':'nest';let done=0,first=null;for(let i=0;i<count;i++){const e=adminSpawnEgg(b,j,z,where,false);if(e){done++;if(!first)first=e}}if(first&&first.r>=7)rareFx([first]);msg=done+' ovos '+RAR[RS[j]]+(near?' de 12 unidades spawnados perto de você!':' criados em '+BI[b].n);break}
- case 'spawnSecret':case 'spawnEternal':case 'spawnDivine':{const j=act==='spawnSecret'?5:act==='spawnEternal'?6:7,b=adNum('eggBiome',0,BI.length-1,0)|0,z=adNum('eggSize',0,4,1)|0,e=adminSpawnEgg(b,j,z,AS.eggWhere==='player'?'player':'nest');msg=e?`Ovo ${RAR[e.r]} spawnou em ${BI[b].n}!`:'Limite de ovos atingido';break}
+ case 'spawnEgg':case 'spawnEgg12':{const chosen=AS.eggMutation==='all'?MUT.map((_,i)=>i):AS.eggMutation==='random'?null:AS.eggMutation==='none'?[]:[Number(AS.eggMutation)];const near=act==='spawnEgg12',b=adNum('eggBiome',0,BI.length-1,0)|0,j=adNum('eggSlot',0,7,5)|0,z=near?4:adNum('eggSize',0,4,4)|0,count=adNum('eggCount',1,20,1)|0,where=near?'player':AS.eggWhere==='player'?'player':'nest';let done=0,first=null;for(let i=0;i<count;i++){const e=adminSpawnEgg(b,j,z,where,false,chosen);if(e){done++;if(!first)first=e}}if(first&&first.r>=7)rareFx([first]);msg=done+' ovos '+RAR[RS[j]]+(chosen?.length?' com '+(chosen.length===MUT.length?'todas as mutações':chosen.map(i=>MUT[i][0]).join(', ')):'')+(near?' de 12 unidades spawnados perto de você!':' criados em '+BI[b].n);break}
+ case 'spawnSecret':case 'spawnEternal':case 'spawnDivine':{const j=act==='spawnSecret'?5:act==='spawnEternal'?6:7,b=adNum('eggBiome',0,BI.length-1,0)|0,z=adNum('eggSize',0,4,1)|0,e=adminSpawnEgg(b,j,z,AS.eggWhere==='player'?'player':'nest',true,AS.eggMutation==='all'?MUT.map((_,i)=>i):AS.eggMutation==='random'?null:AS.eggMutation==='none'?[]:[Number(AS.eggMutation)]);msg=e?`Ovo ${RAR[e.r]} spawnou em ${BI[b].n}!`:'Limite de ovos atingido';break}
  case 'regen':abuseRegrow();msg='Ninhos renovados!';break;
  case 'clearEggs':if(!confirm('Apagar todos os ovos soltos no mapa?'))return;adminClearEggs();msg='Ovos soltos removidos';break;
  case 'hatchAll':{let done=0;S.inc.forEach((p,i)=>{if(p&&hatch(i,true))done++});msg=done+' ovos chocados';break}
