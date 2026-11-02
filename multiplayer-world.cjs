@@ -2,6 +2,7 @@
 const crypto=require('node:crypto');
 const LIMITED=104,REMOVED=new Set([0,9]),RARITIES=[0,1,2,3,4,7,8,9];
 const SIZES=[.8,1,1.4,1.9,12/1.8],CHANCES={2:.4,3:.3,4:.2,7:.1,8:.04,9:.005};
+const speciesForBiome=(b,j)=>b===13?129+j:b*8+j;
 const MUTATION_CHANCES=[.08,.04,.015,.06,.01,.015,.015,.01];
 const baseSpawn=slot=>({x:[0,52,-52][slot%3],z:8+Math.floor(slot/3)*56});
 const finite=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
@@ -11,7 +12,7 @@ const meetingSpawn=(friend,slot=0)=>{
  const angle=finite(friend.cameraYaw,-100,100)?friend.cameraYaw:0;
  const side=(slot%2?1:-1)*(1.2+Math.floor(slot%4/2)*.7),ahead=4.8+Math.floor(slot/4)*1.2;
  const x=Math.max(-97,Math.min(97,friend.x-Math.sin(angle)*ahead+Math.cos(angle)*side));
- const z=Math.max(-937,Math.min(333,friend.z-Math.cos(angle)*ahead-Math.sin(angle)*side));
+ const z=Math.max(-1007,Math.min(333,friend.z-Math.cos(angle)*ahead-Math.sin(angle)*side));
  return {x,y:Math.max(0,Number(friend.y)||0),z,yaw:Math.atan2(friend.x-x,friend.z-z),cameraYaw:Math.atan2(x-friend.x,z-friend.z)};
 };
 class World {
@@ -19,7 +20,7 @@ class World {
   this.random=random;this.eggs=new Map();this.reset=120000;this.phase='day';this.until=0;this.nextReset=now+this.reset;this.event=null;this.emptyAt=0;
   this.regrow(true,now);
  }
- add(b,j,size,x,z,now=Date.now(),species=b*8+j,nest=null,mutations=null){
+ add(b,j,size,x,z,now=Date.now(),species=speciesForBiome(b,j),nest=null,mutations=null){
   if(this.eggs.size>=400||REMOVED.has(species))return null;
   const collected=species>=105&&species<129,tier=collected?Math.floor((species-105)/4):0;
   const egg={id:crypto.randomUUID(),b,j,s:species,r:species===LIMITED?10:collected?11+tier:RARITIES[j],size,
@@ -33,13 +34,13 @@ class World {
   const occupied=new Set([...this.eggs.values()].map(e=>e.nest));
   const spawn=(b,j)=>{const n=b*8+j;if(occupied.has(n)||REMOVED.has(n))return;
    const a=j/8*Math.PI*2;let size=this.size();if(!first&&this.random()<.32)size=Math.min(4,size+1);
-   const e=this.add(b,j,size,Math.cos(a)*22,-65-70*b+Math.sin(a)*22,now,b*8+j,n);if(e)occupied.add(n);
+   const e=this.add(b,j,size,Math.cos(a)*22,-65-70*b+Math.sin(a)*22,now,speciesForBiome(b,j),n);if(e)occupied.add(n);
   };
-  for(let b=0;b<13;b++)for(let j=0;j<2;j++)spawn(b,j);
+  for(let b=0;b<14;b++)for(let j=0;j<2;j++)spawn(b,j);
   if(!first)for(let j=2;j<8;j++){
    const chance=CHANCES[RARITIES[j]]*(j>=6?1.4:1);
    if(this.random()>=chance)continue;
-   const candidates=Array.from({length:13},(_,b)=>b).filter(b=>!REMOVED.has(b*8+j)&&!occupied.has(b*8+j));
+   const candidates=Array.from({length:14},(_,b)=>b).filter(b=>!REMOVED.has(b*8+j)&&!occupied.has(b*8+j));
    if(candidates.length)spawn(candidates[Math.floor(this.random()*candidates.length)],j);
   }
 
@@ -63,7 +64,7 @@ class World {
  }
  drop(player){
   if(!player.heldEgg)return null;
-  const egg={...player.heldEgg,x:Math.max(-97,Math.min(97,player.x+Math.sin(player.yaw)*1.8)),z:Math.max(-937,Math.min(333,player.z+Math.cos(player.yaw)*1.8)),nest:null};
+  const egg={...player.heldEgg,x:Math.max(-97,Math.min(97,player.x+Math.sin(player.yaw)*1.8)),z:Math.max(-1007,Math.min(333,player.z+Math.cos(player.yaw)*1.8)),nest:null};
   this.eggs.set(egg.id,egg);player.heldEgg=null;return egg;
  }
  deposit(player){
@@ -73,4 +74,4 @@ class World {
   const egg=player.heldEgg;player.heldEgg=null;return egg;
  }
 }
-module.exports={World,LIMITED,baseSpawn,finite,meetingSpawn};
+module.exports={World,LIMITED,baseSpawn,finite,meetingSpawn,speciesForBiome};

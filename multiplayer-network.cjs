@@ -1,12 +1,12 @@
 'use strict';
 const crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
-const {World,LIMITED,baseSpawn,finite,meetingSpawn}=require('./multiplayer-world.cjs');
+const {World,LIMITED,baseSpawn,finite,meetingSpawn,speciesForBiome}=require('./multiplayer-world.cjs');
 const {swingBat}=require('./player-combat.cjs');
 module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
  const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:16384});
  const position=(ws,p)=>{
-  if(!p||!finite(p.x,-99,99)||!finite(p.y,-1,2000)||!finite(p.z,-945,333)||!finite(p.yaw,-100,100))return false;
+  if(!p||!finite(p.x,-99,99)||!finite(p.y,-1,2000)||!finite(p.z,-1015,333)||!finite(p.yaw,-100,100))return false;
   ws.x=p.x;ws.y=p.y;ws.z=p.z;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
  };
  const bases=room=>[...peers(room)].filter(p=>p.baseState).map(p=>({id:p.id,base:p.baseState}));
@@ -115,7 +115,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
      if(JSON.stringify(ws.avatar)!==JSON.stringify(avatar)){ws.avatar=avatar;broadcastPresence(ws.room)}
     }
     if(m.base&&Array.isArray(m.base.inc)){
-     const species=s=>Number.isInteger(s)&&s>=0&&s<=128&&!new Set([0,9]).has(s);
+     const species=s=>Number.isInteger(s)&&s>=0&&s<=136&&!new Set([0,9]).has(s);
      const validMut=a=>[...new Set((Array.isArray(a)?a:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<8))];
      ws.baseState={tm:Math.round(bound(m.base.tm,0,10)),inc:m.base.inc.slice(0,4).map(e=>e&&species(e.s)&&finite(e.size,0,4)&&finite(e.until,0,1e14)?{s:e.s,size:Math.floor(e.size),until:e.until,m:validMut(e.m)}:null),pets:(Array.isArray(m.base.pets)?m.base.pets:[]).slice(0,18).filter(e=>e&&species(e.s)&&finite(e.size,0,4)).map(e=>({s:e.s,size:Math.floor(e.size),m:validMut(e.m)}))};
      broadcast(ws.room,{type:'base-state',id:ws.id,base:ws.baseState},ws);
@@ -150,7 +150,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    }
    // Compatibilidade com clientes anteriores; as mesmas regras continuam atômicas.
    if(m.type==='limited-take'){
-    const eggs=world.limited(),egg=eggs.find(e=>finite(m.x,-99,99)&&finite(m.z,-945,333)&&Math.hypot(e.x-m.x,e.z-m.z)<1.1);
+    const eggs=world.limited(),egg=eggs.find(e=>finite(m.x,-99,99)&&finite(m.z,-1015,333)&&Math.hypot(e.x-m.x,e.z-m.z)<1.1);
     if(!egg||!world.take(ws,egg.id,now)){send(ws,{type:'limited-sync',eggs});return}
     broadcast(ws.room,{type:'event',kind:'limited-take',egg},ws);broadcast(ws.room,{type:'world-remove',id:egg.id});broadcastPresence(ws.room);return;
    }
@@ -197,12 +197,12 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    if(m.type==='admin-announce'){const text=String(m.text||'').slice(0,160).trim();if(text)broadcast(ws.room,{type:'event',kind:'announce',text,seconds:bound(m.seconds??10,4,30)},ws);return}
    if(m.type==='admin-limited'){
     const input=Array.isArray(m.eggs)?m.eggs.slice(0,100):[],eggs=[];
-    for(const p of input)if(p&&finite(p.x,-97,97)&&finite(p.z,-937,333)){const e=world.add(12,7,4,p.x,p.z,now,LIMITED);if(e)eggs.push(e)}
+    for(const p of input)if(p&&finite(p.x,-97,97)&&finite(p.z,-1007,333)){const e=world.add(12,7,4,p.x,p.z,now,LIMITED);if(e)eggs.push(e)}
     if(eggs.length){broadcast(ws.room,{type:'world-add',eggs});broadcast(ws.room,{type:'event',kind:'limited',eggs},ws)}return;
    }
    if(m.type==='admin-spawn'){
     const input=Array.isArray(m.eggs)?m.eggs.slice(0,10):[],eggs=[];
-    for(const e of input)if(e&&Number.isInteger(e.b)&&e.b>=0&&e.b<13&&Number.isInteger(e.j)&&e.j>=0&&e.j<8&&Number.isInteger(e.size)&&e.size>=0&&e.size<5&&finite(e.x,-97,97)&&finite(e.z,-937,333)&&Number.isInteger(e.s)&&((e.s===e.b*8+e.j)||(e.s>=105&&e.s<129))){const egg=world.add(e.b,e.j,e.size,e.x,e.z,now,e.s,null,e.m);if(egg)eggs.push(egg)}
+    for(const e of input)if(e&&Number.isInteger(e.b)&&e.b>=0&&e.b<14&&Number.isInteger(e.j)&&e.j>=0&&e.j<8&&Number.isInteger(e.size)&&e.size>=0&&e.size<5&&finite(e.x,-97,97)&&finite(e.z,-1007,333)&&Number.isInteger(e.s)&&((e.s===speciesForBiome(e.b,e.j))||(e.s>=105&&e.s<129))){const egg=world.add(e.b,e.j,e.size,e.x,e.z,now,e.s,null,e.m);if(egg)eggs.push(egg)}
     if(eggs.length)broadcast(ws.room,{type:'world-add',eggs});return;
    }
    if(m.type==='admin-clear'||m.type==='admin-limited-clear'){

@@ -50,7 +50,7 @@ test('mobs corrigidos usam malhas suavizadas e Kitsune é a guardiã visível',(
  assert(html.includes("'Cosmic Skeleton','Centapede,Cosmic Gecko"));
  assert(!html.includes('Fantasma Cósmico'));
 
- assert(server.includes("guardianSpecies=[6,5,6,6,6,5,5,5,4,7,6,6,6]"));
+ assert(server.includes("guardianSpecies=[6,5,6,6,6,5,5,5,4,7,6,6,6,7]"));
  assert(server.includes("fs.readFileSync(path.join(__dirname,'mobs-polished.js'),'utf8')"));
  assert(server.includes("'+polishedMobsSource+'"));
  assert(animal.includes('if(g?.userData?.customUpdate)'));

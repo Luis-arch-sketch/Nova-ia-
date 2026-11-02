@@ -55,7 +55,7 @@ test('cronômetros usam o servidor, preservam ovos carregados e respeitam 9 + 3 
  assert.equal(w.eggs.has(egg.id),false,'a renovação não duplica o ovo carregado');
 });
 test('geração inicial não despeja ovos raros e o limite do mapa é aplicado',()=>{
- const w=new World(1000);assert.equal(w.eggs.size,24);assert([...w.eggs.values()].every(e=>e.r<2));
+ const w=new World(1000);assert.equal(w.eggs.size,26);assert([...w.eggs.values()].every(e=>e.r<2));
  for(let n=0;n<500;n++)w.add(1,2,1,1,-100,1000);
  assert.equal(w.eggs.size,400);
 });

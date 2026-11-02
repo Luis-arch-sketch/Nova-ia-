@@ -10,7 +10,7 @@ test('modo normal não cria ovos sazonais, mesmo com data antiga do evento',()=>
   const now=Date.parse(day+'T12:00:00Z'),world=new World(now,()=>.0001);
   for(let i=0;i<10;i++)world.regrow(false,now+i*300000);
   assert(world.eggs.size>0);
-  assert([...world.eggs.values()].every(e=>e.s<105));
+  assert([...world.eggs.values()].every(e=>e.s<105||e.s>=129));
  }
 });
 

@@ -179,10 +179,10 @@ const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.m
 const mpRequestSpawn=(b,j,size,where,fx,mutations)=>{
  if(!MP.connected||!MP.canAdmin)return null;
  b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));size=Math.max(0,Math.min(4,Math.floor(size)));
- const s=b*8+j;if(!SPC[s]||s===0||s===9)return null;
+ const s=biomeSpecies(b,j);if(!SPC[s]||s===0||s===9)return null;
  const nest=NS[b*8+j],x=where==='player'?P.x+(Math.random()-.5)*5:(nest?.x||0)+(nest?.e?2.5:0),z=where==='player'?P.z+(Math.random()-.5)*5:(nest?.z||(-65-70*b));
  const preview={b,j,s,r:RS[j],z:size,m:mutations};
- if(!mpSend({type:'admin-spawn',eggs:[{b,j,s,size,x:Math.max(-97,Math.min(97,x)),z:Math.max(-937,Math.min(333,z)),m:mutations}]}))return null;
+ if(!mpSend({type:'admin-spawn',eggs:[{b,j,s,size,x:Math.max(-97,Math.min(97,x)),z:Math.max(-1007,Math.min(333,z)),m:mutations}]}))return null;
  if(fx){if(preview.r>=7)rareFx([preview]);else playSnd(preview.r)}return preview;
 };
 const mpRemoveEgg=id=>{

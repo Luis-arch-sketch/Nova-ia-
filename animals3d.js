@@ -44,7 +44,8 @@ const biomePalettes=[
  [0x50a9e2,0xd1eaff,0x295eaa],[0x7a9c66,0xe5bf7b,0x655742],
  [0x9270e8,0x71e0f2,0x363476],[0xe598b8,0xffddeb,0x725b93],
  [0xa1b0b8,0xe3c67e,0x5a718a],[0xffe9b6,0xf3a6d8,0xa56ea5],
- [0x87e2c9,0xf7d5fa,0x6468c2]
+ [0x87e2c9,0xf7d5fa,0x6468c2],
+ [0x38542d,0xbaff3f,0x272d32]
 ];
 let T=null;const shared={},materials=new Map(),shells=new Map();
 function init(three){
@@ -75,6 +76,7 @@ function mesh(g,shape,c,scale,pos){
 }
 function create(three,id,k,col,scene){
  init(three);
+ if(window.RoubeOvoRadioactive?.has(id))return window.RoubeOvoRadioactive.create(three,id,k,col,scene);
  // Novos mobs 3D derivados dos STL/3MF recebidos: versão de baixa complexidade para Android.
  if(id!==68 && window.RoubeOvoUserMobs?.has(id)){ // Fantasma 3MF é decoração; restaura o Skeleton original
   try{const imported=window.RoubeOvoUserMobs.create(three,id,k,scene);if(imported)return imported}

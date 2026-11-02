@@ -14,9 +14,9 @@ function createClient(port,name,room,{blockedStorage=false}={}){
  const ctx={console,WebSocket,crypto,performance,URLSearchParams,Map,Set,Math,Date,JSON,T,sc:scene,document:{hidden:false,getElementById:el,createElement(){return {width:0,height:0,getContext(){return {fillRect(){},strokeRect(){},fillText(){}}}}},addEventListener(){}},navigator:{onLine:true},location:{host:'127.0.0.1:'+port,protocol:'http:',search:'?sala='+room},localStorage:store,sessionStorage:store,
   $:el,GB:new T.BoxGeometry(1,1,1),GY:new T.CylinderGeometry(1,1,1),GS:new T.SphereGeometry(1,8,8),label,
   mk(g,color,scale,parent,pos){const m=new T.Mesh(g,new T.MeshLambertMaterial({color}));m.scale.set(...scale);m.position.set(...pos);parent.add(m);return m},
-  S,AP:[],A:{god:false},CFG:{reset:300},SPC:Array.from({length:129},(_,id)=>({n:'Pet '+id})),SZ:[['P',.8],['M',1],['E',1.4],['G',1.9],['C',12/1.8]],MUT:Array.from({length:8},(_,id)=>['Mutação '+id,1,0,0x85ee55]),RAR:Array(17).fill('Ovo'),LIMITED_ID:104,
+  S,AP:[],A:{god:false},CFG:{reset:300},SPC:Array.from({length:147},(_,id)=>({n:'Pet '+id})),SZ:[['P',.8],['M',1],['E',1.4],['G',1.9],['C',12/1.8]],MUT:Array.from({length:8},(_,id)=>['Mutação '+id,1,0,0x85ee55]),RAR:Array(17).fill('Ovo'),LIMITED_ID:104,
   P:{g:new T.Group(),x:0,y:0,z:8,vx:0,vy:0,vz:0,train:false},carry:null,eggs:[],NS:[],OB:[],BASE_HOME:{x:0,z:0},BASE_GROUP:new T.Group(),BASE_FENCE_OB:[],BASE_SLOTS:Array.from({length:16},(_,i)=>({x:[0,52,-52][i%3],z:Math.floor(i/3)*56})),
-  EGG_NIGHT:{phase:'day',until:0,last:''},nextReset:0,dirty:false,AUR:{},GD:[],raccoonGuard:null,BI:Array.from({length:13},()=>({req:0})),ABUSE:{active:null},ownerVerified:false,adminBadge:{visible:false},window:{},INCUBATOR_MAX_GROWTH:16,
+  EGG_NIGHT:{phase:'day',until:0,last:''},nextReset:0,dirty:false,AUR:{},GD:[],raccoonGuard:null,BI:Array.from({length:14},()=>({req:0})),ABUSE:{active:null},ownerVerified:false,adminBadge:{visible:false},window:{},INCUBATOR_MAX_GROWTH:16,
   eggMesh(e){const m=new T.Mesh(ctx.GS,new T.MeshLambertMaterial());m.scale.set(.55,.75,.55);scene.add(m);return m},
   guardAreaOfEgg:e=>e.b,eff:()=>1e10,beep(){},toast:m=>messages.push(m),save(){storage.set('saved',JSON.stringify(S));return true},persistLimitedWorld(){},mkLimitedAura(){},disposeLimitedAura(){},mkAura(){},refreshEggNightUI(){},regrow(){},ft:n=>String(Math.ceil(n)),syncRoomLimitedEggs(){},makeLimitedEgg(){},clearRoomLimitedEggs(){},abuseStop(){ctx.ABUSE.active=null},abuseStart(id,settings){ctx.ABUSE.active={id,left:settings.duration}},abuseAnnounce(){},abuseFlash(){},
   setTimeout:(f,n)=>{const timer=setTimeout(f,n);timers.push(timer);return timer},clearTimeout,setInterval:(f,n)=>{const timer=setInterval(f,n);timers.push(timer);return timer},addEventListener(){},
@@ -35,7 +35,7 @@ test('dois clientes reais: mesmo mapa, corrida de coleta, base, depósito perdid
   const a=createClient(port,'LuisTeste','CLIENTTEST'),b=createClient(port,'AmigoTeste','CLIENTTEST',{blockedStorage:true});clients.push(a,b);
   a.join();b.join();await until(()=>a.MP.connected&&b.MP.connected,'dois clientes na sala');
   await until(()=>a.MP.players.size===1&&b.MP.players.size===1,'presença sincronizada');
-  const ids=c=>c.eggs.map(e=>e.netId).filter(Boolean).sort();assert.deepEqual(ids(a),ids(b));assert.equal(ids(a).length,24);
+  const ids=c=>c.eggs.map(e=>e.netId).filter(Boolean).sort();assert.deepEqual(ids(a),ids(b));assert.equal(ids(a).length,26);
   assert.notEqual(a.home.x,b.home.x);assert.equal(b.MP.room,'CLIENTTEST','convite funciona com armazenamento bloqueado');
   assert(Math.hypot(a.P.x-b.P.x,a.P.z-b.P.z)<7,'novos amigos chegam perto, mantendo bases distintas');
   assert.equal(a.elements.get('mpFindFriend').disabled,false);

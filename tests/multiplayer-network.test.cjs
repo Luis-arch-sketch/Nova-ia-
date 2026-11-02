@@ -15,7 +15,7 @@ test('rede: 16 bases, sala cheia preserva sala anterior, eventos para novos joga
  try{
   for(let n=0;n<100;n++){try{if((await fetch('http://127.0.0.1:'+PORT+'/health')).ok)break}catch{}if(srv.exitCode!==null)throw Error(log);await pause(30)}
   const slots=new Set(),ids=new Set();
-  for(let i=0;i<16;i++){const ws=await connect();clients.push(ws);const m=await join(ws,'FULLROOM','Jogador'+i);slots.add(m.baseSlot);ids.add(m.id);assert.equal(m.world.eggs.length,24)}
+  for(let i=0;i<16;i++){const ws=await connect();clients.push(ws);const m=await join(ws,'FULLROOM','Jogador'+i);slots.add(m.baseSlot);ids.add(m.id);assert.equal(m.world.eggs.length,26)}
   assert.equal(slots.size,16);assert.equal(ids.size,16);
   const outsider=await connect();clients.push(outsider);const own=await join(outsider,'ORIGINAL','Visitante');
   outsider.sendJSON({type:'join',room:'FULLROOM',name:'Visitante'});

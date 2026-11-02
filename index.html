@@ -183,6 +183,8 @@ const LIMITED_RATE=Number(LIMITED_RATE_TEXT);
 const LIMITED_ID=SPC.length;
 SPC.push({id:LIMITED_ID,n:'LIMITED ∞ • Dragão de Fogo',b:0,r:10,inc:LIMITED_RATE});
 const PC=window.RoubeOvoPetCollection;if(PC)PC.register(SPC,RAR);
+window.RoubeOvoRadioactive?.register(BI,SPC,RS);
+const biomeSpecies=(b,j)=>b===13?129+j:b*8+j;
 // O pintinho e o pato ficam fora do jogo; manter IDs antigos preserva os saves.
 const REMOVED_BIRDS=new Set([0,9]);
 const ACTIVE_SPECIES=SPC.filter(p=>!REMOVED_BIRDS.has(p.id));
@@ -274,7 +276,7 @@ const creature=(col,k)=>{const g=new T.Group(),m=new T.MeshLambertMaterial({colo
  mk(GS,0x111111,[.08,.08,.08],g,[-.2,1.6,1.3]);mk(GS,0x111111,[.08,.08,.08],g,[.2,1.6,1.3]);g.scale.setScalar(k);g.mat=m;sc.add(g);return g};
 /* ===== Mundo: chão quadriculado, caminhos, muros, montanhas, nuvens, árvores ===== */
 const OB=[]; // obstáculos circulares {x,z,r}
-plane(204,1010,0x5fbf4a,0,0,-450,tex(204/8,1010/8));
+plane(204,1080,0x5fbf4a,0,0,-485,tex(204/8,1080/8));
 plane(204,300,0x5fbf4a,0,.008,185,tex(204/8,300/8));
 // Treze partes com pisos e bordas próprios; a estrada central mantém a passagem livre.
 BI.forEach((b,i)=>{
@@ -282,20 +284,21 @@ BI.forEach((b,i)=>{
  plane(200,66,b.t,0,.018,z,tex(200/8,66/8));
  plane(190,58,b.g,0,.025,z,tex(190/8,58/8));
 })
-plane(14,1010,0xd9c8a0,0,.04,-450,tex(1,1010/8));
+plane(14,1080,0xd9c8a0,0,.04,-485,tex(1,1080/8));
 plane(14,300,0xd9c8a0,0,.045,185,tex(1,300/8));
-{const wl=(w,d,x,z)=>mk(GB,0x8b6b4a,[w,7,d],sc,[x,3.5,z]);wl(2,1010,-102,-450);wl(2,1010,102,-450);wl(2,282,-102,196);wl(2,282,102,196);wl(206,2,0,338);wl(206,2,0,-956)}
+{const wl=(w,d,x,z)=>mk(GB,0x8b6b4a,[w,7,d],sc,[x,3.5,z]);wl(2,1080,-102,-485);wl(2,1080,102,-485);wl(2,282,-102,196);wl(2,282,102,196);wl(206,2,0,338);wl(206,2,0,-1026)}
 {const m4=new T.Matrix4(),I=new T.Quaternion(),v=new T.Vector3(),s=new T.Vector3();
  const mt=new T.InstancedMesh(GC,M(0x7f93a8),60),cl=new T.InstancedMesh(GS,new T.MeshBasicMaterial({color:0xffffff,fog:false}),40);
- for(let k=0;k<60;k++){const w=20+rn()*30,h=40+rn()*60;m4.compose(v.set((k%2?1:-1)*(160+rn()*80),h/2-4,56-rn()*1010),I,s.set(w,h,w));mt.setMatrixAt(k,m4)}
- for(let k=0;k<40;k++){m4.compose(v.set((rn()-.5)*500,80+rn()*40,56-rn()*1010),I,s.set(16+rn()*16,6+rn()*4,10+rn()*8));cl.setMatrixAt(k,m4)}
+ for(let k=0;k<60;k++){const w=20+rn()*30,h=40+rn()*60;m4.compose(v.set((k%2?1:-1)*(160+rn()*80),h/2-4,56-rn()*1080),I,s.set(w,h,w));mt.setMatrixAt(k,m4)}
+ for(let k=0;k<40;k++){m4.compose(v.set((rn()-.5)*500,80+rn()*40,56-rn()*1080),I,s.set(16+rn()*16,6+rn()*4,10+rn()*8));cl.setMatrixAt(k,m4)}
  mt.frustumCulled=cl.frustumCulled=false;sc.add(mt,cl)}
 {const N=252,tk=new T.InstancedMesh(GY,M(0x7a5230),N),cn=new T.InstancedMesh(GC,new T.MeshLambertMaterial({color:0xffffff}),N),m4=new T.Matrix4(),I=new T.Quaternion(),v=new T.Vector3(),s=new T.Vector3(),col=new T.Color();
- for(let k=0;k<N;k++){const b=Math.min(12,Math.floor(k/18)-1),zc=-65-70*b;let x,z;
+ for(let k=0;k<N;k++){const b=Math.min(13,Math.floor(k/18)-1),zc=-65-70*b;let x,z;
   do{x=(rn()*2-1)*96;z=b<0?50-rn()*75:zc+(rn()-.5)*66}while(Math.abs(x)<10||(b<0?Math.abs(x)<24&&z>-14:Math.hypot(x,z-zc)<28));
   const h=4+rn()*3,r=1.6+rn()*1.2;m4.compose(v.set(x,1.5,z),I,s.set(.5,3,.5));tk.setMatrixAt(k,m4);
   m4.compose(v.set(x,3+h/2,z),I,s.set(r,h,r));cn.setMatrixAt(k,m4);cn.setColorAt(k,col.setHex(b<0?0x2e8b3a:BI[b].t));OB.push({x,z,r:1.1})}
  cn.instanceColor.needsUpdate=true;tk.frustumCulled=cn.frustumCulled=false;sc.add(tk,cn)}
+window.RoubeOvoRadioactive?.decorate(T,sc,OB);
 /* ===== Divisões: LIVRES de dia, paredes brancas só nos cronômetros ===== */
 const gz=i=>-30-70*i;
 // Os muros permanentes sumiram; estas são só as posições das paredes NOTURNAS.
@@ -304,8 +307,8 @@ const PART_BORDERS=BI.map((b,i)=>gz(i));
 const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,depthWrite:true,side:T.DoubleSide}),[204,10.5,.8],sc,[0,5.25,z]);bar.visible=false;
  // Sem pilares e traves visíveis de dia.
  const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);const timer=label('',512,128,15);timer.position.set(0,5.35,z+.72);timer.visible=false;sc.add(timer);return{z,bar,timer,l,b,req:b.req}});
-let zlim=-938;
-const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=-938}; // todas as áreas liberadas: o número da placa é só recomendação
+let zlim=-1008;
+const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=-1008}; // todas as áreas liberadas: o número da placa é só recomendação
 /* ===== Ninhos, ovos, guardiões ===== */
 const NS=[],eggs=[];
 BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
@@ -328,7 +331,7 @@ let raccoonGuard=null;
  }
 }
 
-const newEgg=(b,j)=>{let z=pick(SZ);if(EGG_NIGHT.phase==='night'&&Math.random()<.32)z=Math.min(SZ.length-1,z+1);return{b,j,r:RS[j],s:b*8+j,z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
+const newEgg=(b,j)=>{let z=pick(SZ);if(EGG_NIGHT.phase==='night'&&Math.random()<.32)z=Math.min(SZ.length-1,z+1);return{b,j,r:RS[j],s:biomeSpecies(b,j),z,w:+((1+j*.9)*SZ[z][1]*2).toFixed(1),st:'nest',gr:1}};
 const eggMutationMark=(mesh,mutations)=>{
  if(!mesh)return mesh;
  const mods=Array.isArray(mutations)?[...new Set(mutations.filter(i=>Number.isInteger(i)&&MUT[i]))]:[];
@@ -523,7 +526,7 @@ const partBorderCollision=(player,previousZ,previousX=player.x)=>{
   }
  }
 };
-const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
+const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(BI.length-1,Math.floor((-30-P.z)/70));
 // Chegar até o ovo permite pegá-lo: o desafio de Speed vem do guardião veloz.
 const findEgg=()=>{
  if(EGG_NIGHT.phase!=='day')return null;
@@ -606,7 +609,7 @@ const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p
  if(tab===2)h+='<p>Equipada: '+(S.tr<0?'nenhuma':TR[S.tr][0]+' x'+TR[S.tr][1])+'. Só uma por vez; multiplica sua Speed efetiva.</p>'+TR.map((t,i)=>{const o=S.own.includes(i);return'<div class=r><span>'+t[0]+' x'+t[1]+(o?'':' por $'+fm(t[2]))+'</span>'+(o?(S.tr===i?bt('un','Tirar'):bt('e'+i,'Equipar')):bt('b'+i,'Comprar',S.$<t[2]))+'</div>'}).join('');
  if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
   Object.keys(by).forEach(s=>{const l=by[s],c=SPC[s].inc*100;h+='<div class=r><span>'+SPC[s].n+' x'+l.length+', melhor $'+fm(Math.max(...l.map(pinc)))+'/s</span>'+(l.length>=3?bt('f'+s,'Fundir 3 por $'+fm(c),S.$<c):'')+'</div>'})}
- if(tab===4){h+='<p><b>Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞.</b> Legendary é mais fraco que Secret; cada área tem sua progressão própria de renda.</p><p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>');if(PC)h+=PC.indexHtml(S);}
+ if(tab===4){h+='<p><b>Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞.</b> Legendary é mais fraco que Secret; cada área tem sua progressão própria de renda.</p><p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[biomeSpecies(i,j)]?n:'???').filter(Boolean).join(', ')+'</p>');if(PC)h+=PC.indexHtml(S);}
  if(tab===5)h+=window.RoubeOvoEquipment?.inventoryHtml()||'<p>Carregando inventário…</p>';
  p.innerHTML=h;p.style.display='block';p.scrollTop=st};
 $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
@@ -1071,7 +1074,7 @@ const adminUI=(resetScroll=false)=>{
  h+=adCard('💰 Dinheiro e evolução',`<div class="abPreset">${adBtn('ab_money','💸 Chuva de dinheiro')}${adBtn('ab_profit2','💵 Renda 2×')}${adBtn('ab_profit10','💎 Renda 10×')}${adBtn('ab_training','⚡ Treino 10×')}${adBtn('ab_speed','🏃 Corrida 3×')}${adBtn('ab_hatch','🐣 Chocagem instantânea')}</div>`);
  h+=adCard('🍀 Sorte e maravilhas',`<div class="abPreset">${adBtn('ab_luck','🍀 Sorte extrema')}${adBtn('ab_rainbow','🎨 Festival Rainbow')}${adBtn('ab_gold','🌟 Chuva dourada')}${adBtn('ab_meteor','☄️ Meteoros Divinos')}${adBtn('ab_moon','🌙 Gravidade lunar')}</div>`);
  h+=adCard('🌎 Eventos do mundo',`<div class="abPreset">${adBtn('ab_eclipse','🌑 Eclipse')}${adBtn('ab_sun','☀️ Sol radiante')}${adBtn('ab_freeze','🧊 Guardiões congelados')}${adBtn('ab_fury','😈 Caos dos guardiões')}${adBtn('ab_fireworks','🎆 Show de fogos')}</div>`);
- h+=adCard('🎁 Comandos rápidos',`${adField('abGiveMoney','Dinheiro de presente para você','number','min="1" max="1000000000000"') }<div class="abPreset">${adBtn('abGift','🎁 Dar dinheiro')}${adBtn('abThree','🥚 3 ovos especiais')}${adBtn('abEveryBiome','🌍 Secret em 13 biomas')}${adBtn('abInstant','✨ Chocar incubadoras')}${adBtn('abFullPower','👑 Poderes máximos')}${adBtn('abAllTrails','🌈 Todas as trails')}</div>`);
+ h+=adCard('🎁 Comandos rápidos',`${adField('abGiveMoney','Dinheiro de presente para você','number','min="1" max="1000000000000"') }<div class="abPreset">${adBtn('abGift','🎁 Dar dinheiro')}${adBtn('abThree','🥚 3 ovos especiais')}${adBtn('abEveryBiome','🌍 Secret em 14 biomas')}${adBtn('abInstant','✨ Chocar incubadoras')}${adBtn('abFullPower','👑 Poderes máximos')}${adBtn('abAllTrails','🌈 Todas as trails')}</div>`);
  h+=adCard('📢 Anúncio no alto da tela',`${adField('abAnnouncement','Mensagem do admin (até 160 caracteres)','text','maxlength="160"')}${adField('broadcastSeconds','Duração do anúncio (4–30 segundos)','number','min="4" max="30"')}<div class="adControls">${adBtn('abAnnounce','📣 Enviar anúncio')}${adBtn('abHello','👋 Hello guys!','secondary')}${adBtn('abWelcome','🎉 Anúncio de evento','secondary')}${adBtn('abHideMessage','Ocultar anúncio','danger')}</div><p class="adHint">Faixa personalizada no topo com título ADMIN. Visível nesta versão local do jogo.</p>`);
  h+=adCard('📋 Histórico desta sessão',`<div class="adHint">${ABUSE.log.slice(0,12).map(x=>`<div style="padding:4px 0;border-bottom:1px solid #ffffff12">${adEsc(x)}</div>`).join('')||'Os próximos comandos aparecerão aqui.'}</div>`);
  h+='</div>';
@@ -1113,7 +1116,7 @@ const adminSpawnEgg=(b,j,z,where='nest',fx=true,mutations=null)=>{
  b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));z=Math.max(0,Math.min(4,Math.floor(z)));
  if(REMOVED_BIRDS.has(b*8+j))return null;const e=newEgg(b,j),n=NS[b*8+j];e.m=mutations===null?null:[...new Set((Array.isArray(mutations)?mutations:[]).filter(v=>Number.isInteger(v)&&MUT[v]))];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
  if(where==='nest'&&!n.e){n.e=e;e.nest=n;e.mesh.position.set(n.x,.45+e.base.y,n.z)}
- else {let x,zp;if(where==='player'){x=P.x+(Math.random()-.5)*5;zp=P.z+(Math.random()-.5)*5}else{x=n.x+2.5+(Math.random()-.5)*4;zp=n.z+(Math.random()-.5)*6}e.mesh.position.set(Math.max(-97,Math.min(97,x)),.45+e.base.y,Math.max(-936,Math.min(49,zp)));e.st='caido'}
+ else {let x,zp;if(where==='player'){x=P.x+(Math.random()-.5)*5;zp=P.z+(Math.random()-.5)*5}else{x=n.x+2.5+(Math.random()-.5)*4;zp=n.z+(Math.random()-.5)*6}e.mesh.position.set(Math.max(-97,Math.min(97,x)),.45+e.base.y,Math.max(-1006,Math.min(49,zp)));e.st='caido'}
  eggs.push(e);if(AUR[e.r])mkAura(e);if(typeof MP!=='undefined'&&MP.connected&&MP.canAdmin)mpSend({type:'admin-spawn',eggs:[mpDescribeEgg(e)]});if(fx){if(e.r>=7)rareFx([e]);else playSnd(e.r)}return e;
 };
 const WORLD_LIMITED_KEY='rue3d_limited_world_v1';
@@ -1126,7 +1129,7 @@ const persistLimitedWorld=()=>{
  save();
 };
 const makeLimitedEgg=(x,z)=>{
- const b=BI.length-1,e=newEgg(b,7);
+ const b=Math.max(0,BI.findIndex(area=>area.n==='Floresta Encantada')),e=newEgg(b,7);
  e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=4;e.w=1;e.st='caido';e.gr=1;e.nest=null;
  e.mesh=eggMesh(e);e.mesh.castShadow=false;e.base=e.mesh.scale.clone();
  e.mesh.position.set(Math.max(-92,Math.min(92,x)),.45+e.base.y,Math.max(-937,Math.min(49,z)));
@@ -1158,7 +1161,7 @@ const syncRoomLimitedEggs=list=>{
 const adminSpawnLimited=(count=1,silent=false,nearPlayer=false)=>{
  if(MP.connected&&!MP.canAdmin)throw Error('Autentique o ADMIN na sala antes de invocar ovos.');
  if(!Number.isSafeInteger(count)||count<1||count>100)throw Error('Escolha de 1 a 100 LIMITED por comando. Repita à vontade!');
- const centerZ=-65-70*(BI.length-1);
+ const centerZ=-65-70*Math.max(0,BI.findIndex(area=>area.n==='Floresta Encantada'));
  let first=null;const requested=[];
  for(let k=0;k<count;k++){
   const serial=Number.isSafeInteger(S.limitedSerial)?S.limitedSerial:0;
