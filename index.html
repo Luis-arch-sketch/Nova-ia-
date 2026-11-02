@@ -597,7 +597,7 @@ $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
  else if(a[0]==='f')fuse(+a.slice(1));else if(a[0]==='s')prev(+a.slice(1));
  upGates();save();ui()};
 $('bm').onclick=()=>{tab=0;open=!open;ui()};
-$('bf').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
+$('bf').onclick=async()=>{try{if(document.fullscreenElement){await document.exitFullscreen()}else{await document.documentElement.requestFullscreen();try{await screen.orientation?.lock?.('landscape')}catch(e){}}}catch(e){try{await screen.orientation?.lock?.('landscape')}catch(err){}}};
 document.addEventListener('contextmenu',e=>e.preventDefault());
 /* ===== Entrada: joystick, câmera por toque, teclado ===== */
 const K={},J={x:0,y:0},cv=$('c');let jp=null,cp=null,jo={x:0,y:0},ls={x:0,y:0};
@@ -630,7 +630,8 @@ const EGG_NIGHT={phase:'day',until:0,last:'',cycles:0,renewed:0};
 const eggNightLocked=()=>EGG_NIGHT.phase!=='day';
 const refreshEggNightUI=(now=Date.now())=>{
  const locked=eggNightLocked(),overlay=$('eggNightClock');
- overlay.style.display=locked?'block':'none';
+ // O cronômetro gigante cobria a visão; manter a renovação silenciosa.
+ overlay.style.display='none';
  if(!locked){
   if(EGG_NIGHT.last!=='day'){
    GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false});
@@ -645,7 +646,7 @@ const refreshEggNightUI=(now=Date.now())=>{
  $('eggNightTitle').textContent=night?'🌙 NOITE • OVOS RENOVANDO':'☀️ AMANHECEU • PORTÕES TRANCADOS';
  $('eggNightTime').textContent=remaining+'s';
  $('eggNightHelp').textContent=night?'Ovos protegidos • Crescimento 30×':'Áreas liberadas em 3 segundos';
- GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)});
+ GT.forEach(g=>{g.bar.visible=true;g.timer.visible=false});
  // A base preserva exclusivamente sua cerca original, sem parede branca nem cronômetro.
 };
 const renewNestEggs=()=>{if(typeof MP!=='undefined'&&MP.connected)return 0;
@@ -671,21 +672,22 @@ const startEggNight=(now=Date.now())=>{
  if(eggNightLocked())return false;
  EGG_NIGHT.phase='night';EGG_NIGHT.until=now+9000;EGG_NIGHT.last='';
  EGG_NIGHT.cycles++;renewNestEggs();
+ // Ao anoitecer volta para casa levando o ovo na mão, sem perdê-lo.
+ P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.x=BASE_HOME.x;P.y=0;P.z=BASE_HOME.z+8;
  nite=1;refreshEggNightUI(now);
- toast('🌙 NOITE! 9 segundos até amanhecer. Crescimento dos ovos 30×!');
  beep(260,.36,'sine',.052);return true;
 };
 const updateEggNight=(now=Date.now())=>{
  if(typeof MP!=='undefined'&&MP.connected){mpApplyClock();return;}
  if(EGG_NIGHT.phase==='night'&&now>=EGG_NIGHT.until){
   EGG_NIGHT.phase='unlock';EGG_NIGHT.until+=3000;EGG_NIGHT.last='';
-  toast('☀️ AMANHECEU! 3 segundos até desbloquear as 13 áreas!');
+  // Renovação acontece sem alertas que bloqueiem o jogo.
   beep(660,.25,'triangle',.065);
  }
  if(EGG_NIGHT.phase==='unlock'&&now>=EGG_NIGHT.until){
   EGG_NIGHT.phase='day';EGG_NIGHT.until=0;EGG_NIGHT.last='';
   nextReset=now/1000+CFG.reset;
-  toast('✅ As 13 áreas foram liberadas! Pegue os novos ovos!');
+  // Os novos ovos já estão nos ninhos.
   beep(880,.28,'triangle',.07);
  }
  refreshEggNightUI(now);
