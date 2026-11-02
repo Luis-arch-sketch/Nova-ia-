@@ -61,6 +61,12 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
    if(m.type==='stats'){
     if(!finite(m.money,0,1e100)||!finite(m.speed,0,1e100))return;
     ws.money=m.money;ws.speed=m.speed;
+    // Apenas opções conhecidas de avatar circulam pela sala; dados de progresso permanecem locais.
+    if(m.avatar&&typeof m.avatar==='object'){
+     const options={kind:['boy','girl'],hair:['short','long','curly','ponytail'],color:['black','brown','blonde','pink','blue'],accessory:['none','cap','glasses','headphones'],outfit:['blue','red','green','purple']};
+     const avatar={};for(const [key,values] of Object.entries(options))avatar[key]=values.includes(m.avatar[key])?m.avatar[key]:values[0];
+     if(JSON.stringify(ws.avatar)!==JSON.stringify(avatar)){ws.avatar=avatar;broadcastPresence(ws.room)}
+    }
     if(m.base&&Array.isArray(m.base.inc)){
      const species=s=>Number.isInteger(s)&&s>=0&&s<=128&&!new Set([0,9]).has(s);
      ws.baseState={tm:Math.round(bound(m.base.tm,0,10)),inc:m.base.inc.slice(0,4).map(e=>e&&species(e.s)&&finite(e.size,0,4)&&finite(e.until,0,1e14)?{s:e.s,size:Math.floor(e.size),until:e.until}:null),pets:(Array.isArray(m.base.pets)?m.base.pets:[]).slice(0,4).filter(e=>e&&species(e.s)&&finite(e.size,0,4)).map(e=>({s:e.s,size:Math.floor(e.size)}))};
@@ -145,7 +151,18 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
   const now=Date.now();
   for(const [room,world] of roomWorlds){
    if(!rooms.has(room)){if(world.emptyAt&&now-world.emptyAt>120000)roomWorlds.delete(room);continue}
-   if(world.tick(now))broadcast(room,world.snapshot(now));
+   if(world.tick(now)){
+     if(world.phase==='night'){
+      // Quando anoitece, cada jogador volta à própria base. O ovo carregado permanece nas mãos.
+      for(const player of peers(room)){
+       const spawn={...baseSpawn(player.baseSlot),y:0,yaw:0,cameraYaw:0};
+       Object.assign(player,spawn,{training:false});
+       send(player,{type:'reposition',reason:'night',spawn});
+      }
+      broadcastPresence(room);
+     }
+     broadcast(room,world.snapshot(now));
+    }
    if([...peers(room)].some(p=>p.dirtyMove)){for(const p of peers(room))p.dirtyMove=false;broadcastPresence(room)}
   }
   for(const [token,s] of sessions)if(!s.active&&now>s.expiresAt)sessions.delete(token);
