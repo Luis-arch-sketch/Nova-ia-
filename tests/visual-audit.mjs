@@ -105,8 +105,10 @@ try{
     // Toque Android de verdade pelo protocolo Chromium, usando o joystick existente.
     const session=await context.newCDPSession(page);
     const startPos=await page.evaluate(()=>({x:P.x,z:P.z}));
-    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:76,y:645,id:1}]});
-    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:76,y:575,id:1}]});
+    // A área do chat fica no canto inferior esquerdo; iniciar o joystick acima dele.
+    const touch=await page.evaluate(()=>({x:Math.min(75,Math.floor(innerWidth*.23)),y:Math.floor(innerHeight*.68)}));
+    await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:touch.x,y:touch.y,id:1}]});
+    await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:touch.x,y:touch.y-65,id:1}]});
     await page.waitForTimeout(1700);
     await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
     const endPos=await page.evaluate(()=>({x:P.x,z:P.z}));
