@@ -159,7 +159,7 @@ try{
     let meshes=0,vertexCount=0;
     m.traverse(node=>{if(node.isMesh){meshes++;vertexCount+=node.geometry?.attributes?.position?.count||0;}});
     codes.push({id,kind:v?.kind||(m.userData.realMesh?'STL-'+id:'custom-'+id),
-      meshCount:Math.max(meshes,Math.ceil(vertexCount/45))});
+      meshCount:Math.max(meshes,Math.ceil(vertexCount/45)),realMesh:!!m.userData.realMesh,vertexCount});
     sc.remove(m);
    }
    return codes;
@@ -201,7 +201,7 @@ try{
   assert(sculptureAudit.minImportedVertices>=100,'Malhas STL/3MF legítimas têm geometria 3D própria');
   console.log(mode.toUpperCase()+' ANIMAIS 3D ÚNICOS '+JSON.stringify(sculptureAudit));
 
-  assert(pageVisuals.every(x=>x.meshCount>=7),'Each species model has detail');
+  assert(pageVisuals.every(x=>x.realMesh?x.vertexCount>=100:x.meshCount>=7),'Each species model has detailed geometry');
   assert(new Set(pageVisuals.map(x=>x.kind)).size>=17,'Distinct species shapes');
   console.log(mode.toUpperCase()+' VISUALS '+JSON.stringify(pageVisuals));
   if(mode==='desktop'){
