@@ -87,7 +87,7 @@ try{
     ownerVerified=false;const beforeRegular=S.sp;step(.05);
     const gainedRegular=S.sp-beforeRegular;
     ownerVerified=true;P.train=true;const beforeAdmin=S.sp;step(.05);
-    return {gainedRegular,gainedAdmin:S.sp-beforeAdmin,treadmillVisible:!!TMO&&sc.children.includes(TMO.g)};
+    return {gainedRegular,gainedAdmin:S.sp-beforeAdmin,treadmillVisible:!!TMO&&BASE_GROUP.children.includes(TMO.g)};
    }finally{
     S.sp=old.sp;S.tm=old.tm;P.train=old.train;ownerVerified=old.verified;
     CFG.train=old.cfg;P.x=old.x;P.z=old.z;P.vx=old.vx;P.vz=old.vz;P.stun=old.stun;styleTM();
