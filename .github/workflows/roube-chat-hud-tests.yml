@@ -10,6 +10,7 @@ on:
       - 'avatar-customizer.js'
       - 'tests/movement.test.cjs'
       - 'tests/multiplayer-world.test.cjs'
+      - 'tests/multiplayer-client.test.cjs'
       - 'server.js'
       - 'tests/chat-hud.test.cjs'
       - 'tests/normal-mode.test.cjs'
