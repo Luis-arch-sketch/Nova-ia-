@@ -24,6 +24,7 @@
       :S.pets.filter(p=>p.s===species).sort((a,b)=>pinc(a)-pinc(b)).slice(0,3);
  }
  function view(){
+  if(mode==='pets'&&!petKinds().some(([id])=>id===species))species=petKinds()[0]?.[0]??-1;
   const current=inputs(),ready=current.length===3&&(mode==='eggs'||S.inc.some(e=>!e)),cost=ready?price(current):0;
   const header='<div style="display:flex;align-items:center;justify-content:space-between"><h2>🧬 MÁQUINA DE FUSÃO</h2><button id="rue-fuse-close">✕</button></div>';
   const tip='<div class="risk"><b>🎲 50% DE SUCESSO • 50% DE PERDER TUDO</b><div>Se ganhar: nasce um ovo melhor ou maior.<br>Se perder: desaparecem os 3 insumos e o dinheiro.<br>Cada tentativa custa 40% a mais que a anterior.</div></div>';
