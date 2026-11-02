@@ -19,6 +19,14 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    const context=await browser.newContext({viewport:{width:393,height:852},isMobile:true,hasTouch:true});
    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(base+'/?teste=kenney');
+   await page.waitForFunction(()=>window.RoubeOvoMapRebuild?.installed===true,null,{timeout:15000});
+   const map=await page.evaluate(()=>window.RoubeOvoMapRebuild);
+   console.log('ORIGINAL STYLE ARCHITECTURE '+JSON.stringify(map));
+   assert(map.oldGroundHidden>=25,'Pisos antigos devem ser substituídos por studs Roblox');
+   assert(map.oldFenceHidden===5,'As cinco paredes da cerca devem virar trilhos laranja');
+   assert(map.oldWallsHidden>=6,'Muralhas baixas devem ser substituídas');
+   assert(map.cliffSections>=70&&map.groundTiles>=16,'Paredões e chão reformulados por completo');
+   assert(map.fenceSections===5,'Portão aberto e cercas com vãos corretos');
    await page.waitForFunction(()=>window.RoubeOvoImportedModels?.requestedTypes>=8,null,{timeout:15000});
    try{await page.waitForFunction(()=>window.RoubeOvoImportedModels?.loadedTypes>=5,null,{timeout:40000});}
    catch(e){const debug=await page.evaluate(()=>window.RoubeOvoImportedModels);throw Error('GLB remoto falhou: '+JSON.stringify(debug)+' | '+String(e));}
