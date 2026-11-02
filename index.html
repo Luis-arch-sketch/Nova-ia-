@@ -21,7 +21,7 @@ button:disabled{opacity:.5}
 #pn p{margin:6px 0}#pn .r{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #8884}
 #js,#jk{position:fixed;border-radius:50%;display:none;pointer-events:none}
 #js{width:110px;height:110px;background:#fff3;border:2px solid #fff9}#jk{width:50px;height:50px;background:#fffa}
-#ms{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--hd);color:#fff;padding:8px 14px;border-radius:12px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:86vw}
+#ms{position:fixed;left:50%;top:calc(64px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--hd);color:#fff;padding:6px 10px;border-radius:12px;opacity:0;transition:opacity .3s;pointer-events:none;text-align:center;max-width:75vw;font-size:clamp(11px,3vw,14px);line-height:1.15;z-index:18;box-shadow:0 4px 14px #0005}
 #an{position:fixed;left:50%;top:calc(112px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:92vw;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
 #an div{padding:8px 14px;border-radius:12px;font:800 15px system-ui,sans-serif;text-align:center;transition:opacity .5s}
 .k7{color:#000;background:rgba(255,255,255,.92)}.k8{color:#ffd400;background:rgba(14,32,40,.9)}
@@ -1338,7 +1338,7 @@ try{
  localStorage.removeItem(WORLD_LIMITED_KEY);save();
 }catch(err){console.warn('Falha ao isolar LIMITEDs antigos:',err)}
 upGates();upHud();cam.position.set(0,6,17);
-toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
+toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'🥚 Roube um ovo e leve até a sua base!');
 // Aguardar os scripts de frutas, animais e chocagem antes do primeiro frame.
 addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
 </script><script src="/multiplayer-client.js?v=20261102-shared-bat5"></script><script src="/entrance-cinematic.js?v=20261031-cutscene3d-1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
