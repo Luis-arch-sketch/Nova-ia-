@@ -46,7 +46,8 @@ function spots(b,slot,id){
  const flowers=/flower|plant-|mushroom|grass/.test(id);
  const structure=/castle-|tower-|column|pillar|altar|gate/.test(id);
  const stones=/rock|meteor|bones|crystal|cliff/.test(id);
- const n=structure?3:flowers?12:stones?8:10;
+ // O original deixa a arena aberta: poucos elementos por área, em vez de um parque de objetos.
+ const n=structure?1:flowers?4:stones?3:5;
  const height=structure?9:flowers?1.4:stones?3.7:9;
  for(let i=0;i<n;i++){
    const seed=181*b+slot*131+i*47+17,side=(i+slot)%2?-1:1;
