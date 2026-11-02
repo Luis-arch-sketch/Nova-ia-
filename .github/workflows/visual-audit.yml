@@ -6,6 +6,9 @@ on:
       - 'server.js'
       - 'index.html'
       - 'animals3d.js'
+      - 'world-detail.js'
+      - 'imported-biomes.js'
+      - 'tests/imported-biomes-browser.cjs'
       - 'servers-ui.js'
       - 'tests/visual-audit.mjs'
       - 'tests/regressions.test.cjs'
@@ -33,6 +36,8 @@ jobs:
         run: node --test tests/regressions.test.cjs
       - name: Testar salas multiplayer e ovos LIMITED
         run: node --test tests/multiplayer.test.cjs
+      - name: Validar modelos 3D da internet por bioma no Android
+        run: node tests/imported-biomes-browser.cjs
       - name: Testar jogo real no Chromium
         run: node tests/visual-audit.mjs
       - name: Capturas Android e desktop
