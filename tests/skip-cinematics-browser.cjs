@@ -26,7 +26,8 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
   assert(radio.hidden,'A cutscene fica invisível ao pular');
   assert.equal(radio.src,'about:blank','O áudio e o vídeo da cutscene param no Skip');
   console.log('RADIO CUTSCENE SKIP ANDROID '+JSON.stringify(radio));
-  await page.evaluate(()=>{document.getElementById('mpEntrance').style.display='block';window.RoubeOvoEntrance.start()});
+  // Simular o clique JOGAR AGORA, que remove a capa antes da animação da sala.
+  await page.evaluate(()=>{document.getElementById('roube-capa')?.remove();document.getElementById('mpEntrance').style.display='block';window.RoubeOvoEntrance.start()});
   await page.waitForFunction(()=>window.RoubeOvoEntrance?.active,null,{timeout:9000});
   assert(await page.locator('#mpEntranceSkip').isVisible(),'SKIP visível na cutscene 3D do multiplayer');
   await page.locator('#mpEntranceSkip').click();
