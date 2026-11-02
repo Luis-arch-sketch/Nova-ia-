@@ -8,10 +8,15 @@
   hair:[['short','Curto'],['long','Comprido'],['curly','Cacheado'],['ponytail','Rabo de cavalo']],
   color:[['black','Preto'],['brown','Castanho'],['blonde','Loiro'],['pink','Rosa'],['blue','Azul']],
   outfit:[['blue','Azul'],['red','Vermelho'],['green','Verde'],['purple','Roxo']],
-  accessory:[['none','Sem acessório'],['cap','🧢 Boné'],['glasses','🕶 Óculos'],['headphones','🎧 Fones']]
+  accessories:[['cap','🧢 Boné'],['glasses','🕶 Óculos'],['headphones','🎧 Fones'],['scarf','🧣 Cachecol'],['mask','🥷 Máscara'],['backpack','🎒 Mochila'],['halo','✨ Auréola'],['wings','🪽 Asas']]
  };
- const defaults={kind:'boy',hair:'short',color:'black',outfit:'blue',accessory:'none'};
- const safe=(v)=>{const a={};for(const k of Object.keys(defaults))a[k]=choices[k].some(p=>p[0]===v?.[k])?v[k]:defaults[k];return a;};
+ const defaults={kind:'boy',hair:'short',color:'black',outfit:'blue',accessories:[]};
+ const safe=(v)=>{
+  const a={};for(const k of ['kind','hair','color','outfit'])a[k]=choices[k].some(p=>p[0]===v?.[k])?v[k]:defaults[k];
+  const raw=Array.isArray(v?.accessories)?v.accessories:(v?.accessory&&v.accessory!=='none'?[v.accessory]:[]);
+  a.accessories=[...new Set(raw.filter(x=>choices.accessories.some(p=>p[0]===x)))];
+  return a;
+ };
  let current=defaults;try{current=safe(JSON.parse(localStorage.getItem(KEY)||'null'));}catch(e){}
  const COLORS={black:0x22202a,brown:0x663c27,blonde:0xe9bd63,pink:0xff7cba,blue:0x54aaf5};
  const CLOTHES={blue:0x3576d9,red:0xd64f50,green:0x37a17b,purple:0x8659cb};
@@ -63,19 +68,36 @@
    make(root,geometry.ball,hair,0,2.14,-.51,.16,.31,.18);
    for(const x of [-.17,.17])make(root,geometry.ball,hair,x,2.53,.26,.15,.19,.14);
   }
-  if(p.accessory==='cap'){
+  if(p.accessories.includes('cap')){
    make(root,geometry.ball,0x212e66,0,2.67,-.02,.46,.23,.44);
    make(root,geometry.box,0x212e66,0,2.57,.42,.55,.075,.30);
-  }else if(p.accessory==='glasses'){
+  }
+  if(p.accessories.includes('glasses')){
    for(const x of [-.17,.17]){
     const lens=make(root,geometry.ring,0x1a1d28,x,2.28,.394,.155,.145,1);
     lens.rotation.z=.06;
     make(root,geometry.ball,0x384c69,x,2.28,.405,.105,.105,.025);
    }
    make(root,geometry.box,0x101721,0,2.29,.40,.15,.045,.04);
-  }else if(p.accessory==='headphones'){
+  }
+  if(p.accessories.includes('headphones')){
    const band=make(root,geometry.ring,0x222d43,0,2.60,0,.47,.48,1);band.rotation.x=Math.PI/2;
    for(const x of [-.44,.44])make(root,geometry.box,0x43b9df,x,2.32,0,.14,.35,.27);
+  }
+  if(p.accessories.includes('scarf')){
+   make(root,geometry.ring,0xe04664,0,1.92,.05,.36,.23,1);
+  }
+  if(p.accessories.includes('mask')){
+   make(root,geometry.box,0x233148,0,2.14,.43,.35,.14,.08);
+  }
+  if(p.accessories.includes('backpack')){
+   make(root,geometry.box,0x9b6d46,0,1.42,-.48,.48,.73,.28);
+  }
+  if(p.accessories.includes('halo')){
+   const halo=make(root,geometry.ring,0xffe18a,0,2.97,0,.47,.30,1);halo.rotation.x=Math.PI/2;
+  }
+  if(p.accessories.includes('wings')){
+   for(const x of [-.48,.48]){const wing=make(root,geometry.ball,0xe9f3ff,x,1.58,-.45,.33,.65,.14);wing.rotation.z=x>0?-.28:.28;}
   }
   group.userData.roubeAvatarSignature=signature;
  }
@@ -98,6 +120,10 @@
  #avatarSheet .avatarOptions button{background:#2c4565;color:#fff;min-height:38px;min-width:70px;border:1px solid #6583a5;font-size:13px;padding:8px 11px}
  #avatarSheet .avatarOptions button.selected{background:#ffd361;color:#22283a;border:2px solid #fff}
  #avatarSheet .avatarClose{background:#9f3e5c;color:#fff;min-width:43px}
+ #avatarSheet .avatarNameRow{display:flex;gap:8px;align-items:center}
+ #avatarSheet .avatarNameRow input{flex:1;min-width:0;min-height:40px;background:#f5faff;color:#15233c;border-radius:9px;padding:8px;font-size:15px}
+ #avatarSheet .avatarNameRow button{background:#ffdd83;color:#20243b;min-height:40px;padding:8px}
+ #avatarSheet .avatarNameHelp{font-size:12px;color:#c5e1ff;min-height:16px}
  #horizontalButton{position:fixed;bottom:calc(9px + env(safe-area-inset-bottom,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:52;background:#ffdd83;color:#1a2b37;min-height:34px;display:none;font-size:12px}
  @media(orientation:portrait) and (pointer:coarse){#horizontalButton{display:block}}
  @media(max-width:700px) and (orientation:landscape){
@@ -109,21 +135,39 @@
  const button=document.createElement('button');button.type='button';button.id='avatarOpen';button.textContent='👕 Personagem';document.body.appendChild(button);
  const panel=document.createElement('div');panel.id='avatarPanel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Personalizar personagem');
  const sheet=document.createElement('div');sheet.id='avatarSheet';panel.appendChild(sheet);document.body.appendChild(panel);
- const labels={kind:'Skin',hair:'Cabelo',color:'Cor do cabelo',outfit:'Roupa',accessory:'Acessórios'};
+ const labels={kind:'Skin',hair:'Cabelo',color:'Cor do cabelo',outfit:'Roupa',accessories:'Acessórios (escolha quantos quiser)'};
  function draw(){
   sheet.replaceChildren();
   const top=document.createElement('div');top.className='avatarTop';
   const title=document.createElement('h2');title.textContent='👕 Personalizar personagem';
   const close=document.createElement('button');close.type='button';close.textContent='✕';close.className='avatarClose';close.addEventListener('click',()=>panel.classList.remove('open'));
   top.append(title,close);sheet.appendChild(top);
+  const nameLabel=document.createElement('label');nameLabel.textContent='Nome no servidor (2 a 20 caracteres)';sheet.appendChild(nameLabel);
+  const nameRow=document.createElement('div');nameRow.className='avatarNameRow';
+  const nameInput=document.createElement('input');nameInput.id='avatarNameInput';nameInput.maxLength=20;nameInput.autocomplete='nickname';nameInput.value=String((typeof MP!=='undefined'&&MP.name)||document.getElementById('roomName')?.value||'').slice(0,20);nameInput.placeholder='Seu nome';
+  const nameSave=document.createElement('button');nameSave.type='button';nameSave.textContent='💾 Trocar nome';
+  nameRow.append(nameInput,nameSave);sheet.appendChild(nameRow);
+  const nameHelp=document.createElement('div');nameHelp.className='avatarNameHelp';nameHelp.setAttribute('role','status');sheet.appendChild(nameHelp);
+  nameSave.addEventListener('click',()=>{
+   const name=nameInput.value.trim();
+   if(name.length<2||name.length>20||/^admin$/i.test(name)||/[\u0000-\u001f\u007f]/.test(name)){nameHelp.textContent='⚠ Escolha um nome de 2 a 20 caracteres (ADMIN é reservado).';return;}
+   if(typeof mpRename==='function'){if(!mpRename(name)){nameHelp.textContent='⚠ Falha ao atualizar o nome.';return;}}
+   else{const el=document.getElementById('roomName');if(el)el.value=name;try{localStorage.setItem('rue3d_mp_name',name)}catch(e){}}
+   nameHelp.textContent='✅ Nome enviado! O servidor confirmará para os outros jogadores.';
+  });
   for(const [key,values] of Object.entries(choices)){
    const label=document.createElement('label');label.textContent=labels[key];sheet.appendChild(label);
    const row=document.createElement('div');row.className='avatarOptions';
    for(const [id,name] of values){
     const b=document.createElement('button');b.type='button';b.textContent=name;
-    if(current[key]===id)b.classList.add('selected');
+    const selected=key==='accessories'?current.accessories.includes(id):current[key]===id;
+    if(selected)b.classList.add('selected');
+    b.setAttribute('aria-pressed',String(selected));
     b.addEventListener('click',()=>{
-     current=safe({...current,[key]:id});
+     const next=key==='accessories'
+      ?{...current,accessories:current.accessories.includes(id)?current.accessories.filter(v=>v!==id):[...current.accessories,id]}
+      :{...current,[key]:id};
+     current=safe(next);
      try{localStorage.setItem(KEY,JSON.stringify(current))}catch(e){}
      applyTo(P.g,current);draw();
      if(typeof MP!=='undefined'&&MP.connected&&typeof mpSend==='function'&&typeof mpBaseState==='function'){
