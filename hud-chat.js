@@ -6,6 +6,9 @@
   const style = document.createElement('style');
   style.textContent = [
     '#hud{display:none!important}',
+    'body.rue-panel-visible #rue-live-hud,body.rue-panel-visible #eggNightClock{display:none!important}',
+    '#eggNightClock{top:calc(56px + env(safe-area-inset-top,0px))!important;width:min(220px,42vw)!important;max-height:85px;overflow:hidden;padding:4px 8px!important;border-radius:9px!important;background:rgba(18,35,57,.84)!important;color:#fff!important;border:1px solid #c5e0ff!important;box-shadow:0 2px 7px #0007!important;transform:translateX(-50%)!important}',
+    '#eggNightClock strong{font-size:16px!important;color:#ffe697!important} #eggNightClock span{font-size:10px!important}#eggNightClock small{font-size:9px!important;color:#dbecff!important;margin-top:0!important}',
     '#rue-live-hud{position:fixed;z-index:26;top:calc(53px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none;font-family:system-ui,sans-serif;}',
     '.rue-live-counter{display:flex;align-items:center;gap:7px;padding:6px 11px;max-width:min(70vw,350px);width:max-content;box-sizing:border-box;min-height:38px;border-radius:15px;background:linear-gradient(130deg,rgba(3,28,18,.93),rgba(3,13,18,.93));border:2px solid #46f375;box-shadow:0 0 12px #2cfc6b6b,0 3px 7px #0007;color:#fff;font-size:clamp(13px,3.3vw,19px);font-weight:900;text-shadow:0 2px 3px #000c;white-space:nowrap;}',
     '.rue-live-counter .rue-ico{font-size:21px;line-height:1;}',
@@ -113,8 +116,18 @@
     messages.scrollTop=messages.scrollHeight;
     if(panel.hidden){unread=Math.min(99,unread+1);openButton.textContent='💬 Chat ('+unread+')';}
   }
+  const modalIds=['pn','roomPanel','adWrap','rankOverlay','avatarPanel','rue-chat-panel','fruitShopPanel'];
+  function anyMenuOpen(){
+    return modalIds.some(id=>{
+      const element=document.getElementById(id);
+      if(!element||element.hidden)return false;
+      const css=getComputedStyle(element);
+      return css.display!=='none'&&css.visibility!=='hidden';
+    });
+  }
   function refresh(){
     try{
+      document.body.classList.toggle('rue-panel-visible',anyMenuOpen());
       if(typeof S!=='undefined'&&typeof fm==='function'){
         const money=Number(S.$),speed=Number(S.sp);
         cashValue.textContent='$ '+(Number.isFinite(money)?fm(money):'—');
