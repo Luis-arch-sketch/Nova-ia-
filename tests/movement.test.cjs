@@ -32,13 +32,13 @@ test('entrada permanece livre; colisão desliza na lateral e recupera sobreposi�
  const slide={x:50,z:25,vx:1400,vz:400};ctx.collide(slide,.5,10,0);assert(slide.x<20);assert(slide.z>0);
  ctx.OB=[{x:0,z:0,r:1}];const overlap={x:0,z:0};ctx.collide(overlap,.5);assert(Math.hypot(overlap.x,overlap.z)>=1.5);
 });
-test('retorno para casa bloqueia ovo, coleta pendente e chocagem antes de enviar pedido',()=>{
+test('retorno para casa permite ovo, mas bloqueia coleta pendente e chocagem',()=>{
  const sent=[],ctx={MP:{connected:true,pending:null},carry:null,window:{},mpStatus(){},toast(){},mpSend:m=>{sent.push(m);return true}};
  vm.runInNewContext(client.slice(client.indexOf('const mpGoHome='),client.indexOf("$('mpFindFriend').onclick"))+'\nglobalThis.goHome=mpGoHome;',ctx);
- ctx.carry={};assert.equal(ctx.goHome(),false);ctx.carry=null;ctx.MP.pending={type:'egg-take'};assert.equal(ctx.goHome(),false);
- ctx.MP.pending=null;ctx.window.RoubeOvoHatching={active:true};assert.equal(ctx.goHome(),false);assert.equal(sent.length,0);
- ctx.window.RoubeOvoHatching.active=false;assert.equal(ctx.goHome(),true);assert.equal(sent[0].type,'go-home');
- ctx.MP.connected=false;assert.equal(ctx.goHome(),false);assert.equal(sent.length,1);
+ ctx.carry={};assert.equal(ctx.goHome(),true);ctx.carry=null;ctx.MP.pending={type:'egg-take'};assert.equal(ctx.goHome(),false);
+ ctx.MP.pending=null;ctx.window.RoubeOvoHatching={active:true};assert.equal(ctx.goHome(),false);assert.equal(sent.length,1);
+ ctx.window.RoubeOvoHatching.active=false;assert.equal(ctx.goHome(),true);assert.equal(sent[1].type,'go-home');
+ ctx.MP.connected=false;assert.equal(ctx.goHome(),false);assert.equal(sent.length,2);
 });
 function connect(port){return new Promise((resolve,reject)=>{
  const ws=new WebSocket('ws://127.0.0.1:'+port+'/ws'),inbox=[],waiters=[];
@@ -46,7 +46,7 @@ function connect(port){return new Promise((resolve,reject)=>{
  ws.next=predicate=>{const i=inbox.findIndex(predicate);if(i>=0)return Promise.resolve(inbox.splice(i,1)[0]);return new Promise((resolve,reject)=>{const w={predicate,resolve};w.timer=setTimeout(()=>reject(Error('Sem resposta esperada')),3000);waiters.push(w)})};
  ws.sendJSON=m=>ws.send(JSON.stringify(m));ws.once('open',()=>resolve(ws));ws.once('error',reject);
 });}
-test('servidor recusa teleporte com ovo mesmo com pacotes seguidos e libera após largar', {timeout:12000},async()=>{
+test('servidor libera retorno à base com ovo sem permitir encontrar amigo carregando', {timeout:12000},async()=>{
  const port=3106,srv=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port)},stdio:['ignore','ignore','pipe']}),clients=[];let log='';srv.stderr.on('data',d=>log+=d);
  try{
   for(let i=0;i<100;i++){if(srv.exitCode!==null)throw Error(log);try{if((await fetch('http://127.0.0.1:'+port+'/health')).ok)break}catch{}await new Promise(r=>setTimeout(r,30))}
@@ -54,8 +54,8 @@ test('servidor recusa teleporte com ovo mesmo com pacotes seguidos e libera apó
   const [a,b]=clients,egg=a.joined.world.eggs[0],position={x:egg.x,y:0,z:egg.z,yaw:0};
   a.sendJSON({type:'egg-take',id:egg.id,requestId:'take-test-123',position});a.sendJSON({type:'go-home'});
   assert.equal((await a.next(m=>m.type==='egg-result')).ok,true);
-  assert.match((await a.next(m=>m.type==='error')).message,/carregando um ovo/);
-  a.sendJSON({type:'meet',id:b.joined.id});assert.match((await a.next(m=>m.type==='error')).message,/carregando um ovo/);
+  const firstHome=await a.next(m=>m.type==='reposition');assert.equal(firstHome.reason,'home');assert.equal(firstHome.spawn.z,8);
+  a.sendJSON({type:'meet',id:b.joined.id});assert.match((await a.next(m=>m.type==='error')).message,/Leve o ovo/);
   a.sendJSON({type:'egg-drop',id:egg.id,requestId:'drop-test-123',position});assert.equal((await a.next(m=>m.type==='egg-result')).ok,true);
   a.sendJSON({type:'go-home'});const home=await a.next(m=>m.type==='reposition');assert.equal(home.reason,'home');assert.equal(home.spawn.x,0);assert.equal(home.spawn.z,8);
   b.sendJSON({type:'go-home'});const second=await b.next(m=>m.type==='reposition');assert.equal(second.spawn.x,52);assert.equal(second.spawn.z,8);
