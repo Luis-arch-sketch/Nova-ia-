@@ -69,7 +69,12 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
     return;
    }
    if(m.type==='move'){if(position(ws,m)){ws.training=!!m.training;ws.dirtyMove=true}return}
-   if(m.type==='meet'){
+   if(m.type==='go-home'||m.type==='meet'){
+    if(ws.heldEgg){error(ws,'Não é possível se teleportar carregando um ovo. Leve-o até sua base a pé.');return}
+    if(m.type==='go-home'){
+     const spawn={...baseSpawn(ws.baseSlot),y:0,yaw:0,cameraYaw:0};Object.assign(ws,spawn,{training:false});
+     send(ws,{type:'reposition',reason:'home',spawn});broadcastPresence(ws.room);return;
+    }
     const friend=[...peers(ws.room)].find(p=>p.id===m.id&&p!==ws&&p.readyState===WebSocket.OPEN);
     if(!friend){error(ws,'Seu amigo precisa estar conectado na mesma sala.');return}
     const spawn=meetingSpawn(friend);Object.assign(ws,spawn,{training:false});

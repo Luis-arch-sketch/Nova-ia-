@@ -438,6 +438,7 @@ const P={g:new T.Group(),x:0,y:0,z:8,vx:0,vy:0,vz:0,yaw:0,pitch:.45,dist:9,stun:
 const lim=(x,y,c,w,h)=>{const p=new T.Group();p.position.set(x,y,0);mk(GB,c,[w,h,w],p,[0,-h/2,0]);P.g.add(p);return p};
 mk(GB,0x3b82f6,[.9,1,.5],P.g,[0,1.5,0]);mk(GS,0xf1c27d,[.38,.38,.38],P.g,[0,2.25,0]);mk(GS,0x222222,[.4,.2,.4],P.g,[0,2.45,-.05]);
 const aL=lim(-.6,2,0xf1c27d,.28,.9),aR=lim(.6,2,0xf1c27d,.28,.9),lL=lim(-.25,1,0x2b2f4a,.34,1),lR=lim(.25,1,0x2b2f4a,.34,1);sc.add(P.g);
+aL.rotation.z=-.08;aR.rotation.z=.08;
 /* Coroa ADMIN rosa, flutuando acima da cabeça. Visível só neste aparelho depois da chave válida. */
 let ownerVerified=false;
 try{ownerVerified=localStorage.getItem(ADMIN_DEVICE_KEY)==='yes'}catch(e){}
@@ -456,7 +457,39 @@ const adminBadge=(()=>{
  P.g.add(sprite);return sprite;
 })();
 let carry=null;
-const push=(o,r)=>{for(const b of OB){const dx=o.x-b.x,dz=o.z-b.z,d=Math.hypot(dx,dz),m=b.r+r;if(d<m&&d>1e-4){o.x=b.x+dx/d*m;o.z=b.z+dz/d*m}}};
+// Varredura do trajeto inteiro: passos grandes não podem saltar a cerca.
+// Deslizar na tangente mantém o movimento ao longo da parede e a entrada livre.
+const push=(o,r,previousX=o.x,previousZ=o.z)=>{
+ let x=previousX,z=previousZ,dx=o.x-x,dz=o.z-z;
+ const epsilon=1e-5;
+ // Recuperar sobreposições antigas, inclusive quando o centro coincide.
+ for(let pass=0;pass<3;pass++)for(const b of OB){
+  let nx=x-b.x,nz=z-b.z,d=Math.hypot(nx,nz);const radius=b.r+r;
+  if(d>=radius-epsilon)continue;
+  if(d<epsilon){nx=-dx;nz=-dz;d=Math.hypot(nx,nz);if(d<epsilon){nx=1;nz=0;d=1}}
+  x=b.x+nx/d*(radius+epsilon);z=b.z+nz/d*(radius+epsilon);
+ }
+ for(let pass=0;pass<6;pass++){
+  const length2=dx*dx+dz*dz;if(length2<epsilon*epsilon)break;
+  let time=1,hit=null;
+  for(const b of OB){
+   const ox=x-b.x,oz=z-b.z,radius=b.r+r,dot=ox*dx+oz*dz;
+   if(dot>=0)continue;
+   const discriminant=dot*dot-length2*(ox*ox+oz*oz-radius*radius);
+   if(discriminant<0)continue;
+   const t=(-dot-Math.sqrt(discriminant))/length2;
+   if(t>=-epsilon&&t<=time){time=Math.max(0,t);hit=b}
+  }
+  if(!hit){x+=dx;z+=dz;break}
+  const safe=Math.max(0,time-epsilon/Math.sqrt(length2));x+=dx*safe;z+=dz*safe;
+  const distance=Math.hypot(x-hit.x,z-hit.z)||1,nx=(x-hit.x)/distance,nz=(z-hit.z)/distance;
+  dx*=1-safe;dz*=1-safe;const inward=Math.min(0,dx*nx+dz*nz);dx-=inward*nx;dz-=inward*nz;
+  if(Number.isFinite(o.vx)&&Number.isFinite(o.vz)){
+   const velocity=Math.min(0,o.vx*nx+o.vz*nz);o.vx-=velocity*nx;o.vz-=velocity*nz;
+  }
+ }
+ o.x=x;o.z=z;
+};
 // Divisões das 13 áreas bloqueiam SOMENTE durante os dois cronômetros.
 // A cerca da base funciona separadamente por OB/push, todos os dias.
 const partBorderCollision=(player,previousZ,previousX=player.x)=>{
@@ -507,11 +540,11 @@ const hit=g=>{
  // Ao cair o ovo, o guarda encerra a perseguição e afasta o jogador do corpo dele.
  drop();
  const dx=P.x-g.m.position.x,dz=P.z-g.m.position.z,d=Math.hypot(dx,dz)||1;
- const oldZ=P.z;
+ const oldX=P.x,oldZ=P.z;
  P.x=Math.max(-99,Math.min(99,P.x+dx/d*5));
  P.z=Math.max(zlim,Math.min(50,P.z+dz/d*5));
  partBorderCollision(P,oldZ);
- push(P,.5);
+ push(P,.5,oldX,oldZ);
  P.stun=.6;
  P.vx=dx/d*7;P.vz=dz/d*7;
  g.st='ret';g.t=0;
@@ -685,7 +718,7 @@ const aim=(g,x,z,s,dt)=>{
  p.x+=dx/d*st;p.z+=dz/d*st;
  g.m.rotation.y=Math.atan2(dx,dz);
  partBorderCollision(p,oldZ,oldX);
- push(p,1.6);
+ push(p,1.6,oldX,oldZ);
 };
 const step=dt=>{TT+=dt;abuseUpdate(dt);
  // Guaxinim da parte 4: só persegue depois do roubo; nunca ataca quem está de mãos vazias.
@@ -745,7 +778,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(!Number.isFinite(P.x)||!Number.isFinite(P.z)||!Number.isFinite(P.y)||!Number.isFinite(P.vx)||!Number.isFinite(P.vz)){
   P.x=BASE_HOME.x;P.z=BASE_HOME.z+8;P.y=0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
   if(tt<=0)toast('🛠 Movimento recuperado automaticamente.');}
- P.x=Math.max(-99,Math.min(99,P.x));P.z=Math.max(zlim,Math.min(333,P.z));if(!P.train)push(P,.5);
+ P.x=Math.max(-99,Math.min(99,P.x));P.z=Math.max(zlim,Math.min(333,P.z));if(!P.train)push(P,.5,oldPartX,oldPartZ);
  const v2=Math.hypot(P.vx,P.vz);P.ph+=dt*(P.train?12:v2*.9);const sw=Math.sin(P.ph)*(P.train?1:Math.min(1,v2/6));
  lL.rotation.x=sw*.9;lR.rotation.x=-sw*.9;aL.rotation.x=aR.rotation.x=carry?-1.4:P.y>.05?-2.6:0;if(!carry&&P.y<=.05){aL.rotation.x=-sw*.9;aR.rotation.x=sw*.9}
  if(P.train)P.g.rotation.y=Math.PI;else if(v2>.5)P.g.rotation.y=Math.atan2(P.vx,P.vz);
@@ -1336,4 +1369,4 @@ upGates();upHud();cam.position.set(0,6,17);
 toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
 // Aguardar os scripts de frutas, animais e chocagem antes do primeiro frame.
 addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
-</script><script src="/multiplayer-client.js?v=20261101-normal-1"></script><script src="/entrance-cinematic.js?v=20261031-cutscene3d-1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
+</script><script src="/multiplayer-client.js?v=20261101-movement-2"></script><script src="/entrance-cinematic.js?v=20261031-cutscene3d-1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>

@@ -107,10 +107,7 @@
   });
   el('svFindFriend').addEventListener('click',()=>{if(mpMeetFriend())friendsMessage('👥 Encontrando seu amigo…');else friendsMessage($('roomStatus').textContent)});
   el('svGoHome').addEventListener('click',()=>{
-    if(!MP.connected){friendsMessage('⚠ Entre em uma sala primeiro.');return}
-    P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;
-    P.x=BASE_HOME.x;P.z=BASE_HOME.z+8;P.y=0;P.yaw=0;
-    roomPanel.style.display='none';toast('🏠 Você voltou para sua base.');
+    if(!mpGoHome())friendsMessage($('roomStatus').textContent);
   });
   el('svQuick').addEventListener('click',()=>mpJoin('quick-join'));
   el('svCreate').addEventListener('click',()=>mpJoin('create-server'));

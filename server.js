@@ -45,7 +45,7 @@ const error=(ws,message)=>send(ws,{type:'error',message});
 // O servidor preserva salas, ADMIN Abuse e saves com a esteira normal.
 const installServerBrowser=html=>{
  if(!html.includes('</body>'))throw new Error('Fim do HTML não encontrado');
- return html.replace('</body>','<script src="/servers-ui.js?v=20261031-entry-2"></script></body>');
+ return html.replace('</body>','<script src="/servers-ui.js?v=20261101-movement-2"></script></body>');
 };
 // Atualização visual: mantém todos os botões, salas, saves, ADMIN e treino originais.
 const applyGraphicUpgrade=html=>{

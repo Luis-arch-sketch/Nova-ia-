@@ -865,7 +865,6 @@ function player(three,g,leftLeg,rightLeg,leftArm,rightArm){
  add(g,'box',0xffe1a3,.37,.19,.07,0,1.94,.39);
  add(g,'box',0xc8d8ff,.038,.58,.035,0,1.55,.286);
  for(const x of [-.31,.31])add(g,'box',0x183b66,.12,.31,.038,x,1.45,.286);
- for(const x of [-.6,.6])add(g,'sphere',0xeabb89,.15,.18,.16,x,1.05,.04);
  // Mochila discreta e alças
  add(g,'box',0x273d55,.72,.83,.38,0,1.52,-.43);
  add(g,'box',0x6cb0ba,.48,.28,.050,0,1.57,-.64);

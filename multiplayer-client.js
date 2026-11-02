@@ -116,11 +116,18 @@ const mpPlace=spawn=>{
 };
 const mpMeetFriend=id=>{
  if(!MP.connected){mpStatus('⚠ Entre na mesma sala que seu amigo.');return false;}
+ if(carry){mpStatus('⚠ Leve o ovo até sua base a pé antes de se teleportar.');toast('🥚 Não é possível se teleportar carregando um ovo.');return false;}
  if(MP.pending||window.RoubeOvoHatching?.active){toast('⏳ Termine a ação do ovo antes de encontrar seu amigo.');return false;}
  const friends=[...MP.players.values()].sort((a,b)=>Math.hypot(a.x-P.x,a.z-P.z)-Math.hypot(b.x-P.x,b.z-P.z));
  const friend=id?MP.players.get(id):friends[0];
  if(!friend){mpStatus('👥 Seu amigo precisa abrir o convite desta sala.');return false;}
  return mpSend({type:'meet',id:friend.id});
+};
+const mpGoHome=()=>{
+ if(!MP.connected){mpStatus('⚠ Entre em uma sala primeiro.');return false;}
+ if(carry){mpStatus('⚠ Leve o ovo até sua base a pé antes de se teleportar.');toast('🥚 Não é possível se teleportar carregando um ovo.');return false;}
+ if(MP.pending||window.RoubeOvoHatching?.active){mpStatus('⏳ Termine a ação do ovo antes de voltar para casa.');return false;}
+ return mpSend({type:'go-home'});
 };
 $('mpFindFriend').onclick=()=>mpMeetFriend();
 const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.mesh.position.x,z:e.mesh.position.z});
@@ -244,7 +251,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    const self=msg.players?.find(p=>p.id===MP.self);
    if(carry?.netId&&self&&!self.carrying&&!MP.pending){P.g.remove(carry.mesh);if(carry.aura){if(carry.s===LIMITED_ID)disposeLimitedAura(carry);else sc.remove(carry.aura)}carry=null;}
   }else if(msg.type==='world-sync')mpWorldSync(msg);
-  else if(msg.type==='reposition'){mpPlace(msg.spawn);$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition()});toast('👥 Você e '+msg.name+' estão de frente!');}
+  else if(msg.type==='reposition'){mpPlace(msg.spawn);$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition()});toast(msg.reason==='home'?'🏠 Você voltou para sua base.':'👥 Você e '+msg.name+' estão de frente!');}
   else if(msg.type==='world-add')for(const d of msg.eggs||[])mpUpsertEgg(d);
   else if(msg.type==='world-remove')mpRemoveEgg(msg.id);
   else if(msg.type==='egg-result')mpEggResult(msg);
