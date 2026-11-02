@@ -41,6 +41,11 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
     if(!roomWorlds.has(room))roomWorlds.set(room,new World(now));
     const world=roomWorlds.get(room);world.emptyAt=0;world.tick(now);
+     // Quem entrar durante a noite começa dentro da própria base.
+     if(world.phase!=='day'){
+      const home={...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0};
+      Object.assign(ws,home);Object.assign(spawn,home);
+     }
     send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,room,baseSlot,spawn,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event});
     broadcastPresence(room);return;
    }
@@ -76,7 +81,7 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
    }
    if(m.type==='move'){if(position(ws,m)){ws.training=!!m.training;ws.dirtyMove=true}return}
    if(m.type==='go-home'||m.type==='meet'){
-    if(ws.heldEgg){error(ws,'Não é possível se teleportar carregando um ovo. Leve-o até sua base a pé.');return}
+    if(ws.heldEgg&&m.type==='meet'){error(ws,'Leve o ovo para sua base antes de encontrar amigos.');return}
     if(m.type==='go-home'){
      const spawn={...baseSpawn(ws.baseSlot),y:0,yaw:0,cameraYaw:0};Object.assign(ws,spawn,{training:false});
      send(ws,{type:'reposition',reason:'home',spawn});broadcastPresence(ws.room);return;
