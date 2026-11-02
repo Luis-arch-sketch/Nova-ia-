@@ -204,8 +204,9 @@ try {
    });
    return total;
  };
- const worldCount=install(parts.world,sc),baseCount=install(parts.base,BASE_GROUP);
- window.RoubeOvoWorldDetail={installed:true,worldCount,baseCount,biomes:Math.min(13,BI.length)};
+ const fallbackWorld=new T.Group();fallbackWorld.name='Cenario procedural de reserva';sc.add(fallbackWorld);
+ const worldCount=install(parts.world,fallbackWorld),baseCount=install(parts.base,BASE_GROUP);
+ window.RoubeOvoWorldDetail={installed:true,worldCount,baseCount,biomes:Math.min(13,BI.length),fallbackWorld};
 } catch(error) {
  console.warn('Cenário extra decorativo ignorado:',error);
 }
