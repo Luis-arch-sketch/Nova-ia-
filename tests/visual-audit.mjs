@@ -68,7 +68,7 @@ try{
     blockedSpawns:adminSpawnEgg(0,0,0)===null&&adminSpawnEgg(1,1,0)===null
    }));
    assert(retired.emptySlots&&retired.hasNoRemovedEggs&&retired.blockedSpawns,'Pato e pintinho devem ficar fora dos ninhos e do spawn');
-   assert.equal(retired.activeIndexSize,103);
+   assert.equal(retired.activeIndexSize,127,'103 espécies principais + 24 animais adicionais da coleção');
    assert.deepEqual(retired.forestOrder,['Dog','Bird','Burrowing Owl','Guaxinim'],'Coruja terceira e guaxinim quarto');
   assert(state.controls.every(e=>e.exists),'Every old button remains');
   assert(state.canvasSize[0]>100&&state.canvasSize[1]>100,'Canvas area');
