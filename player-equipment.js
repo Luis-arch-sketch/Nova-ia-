@@ -17,7 +17,7 @@
  const allowed=()=>equipped==='bat'&&MP.connected&&!carry&&!MP.pending&&!adminVisible&&!open&&!window.RoubeOvoHatching?.active;
  function swing(){
   if(!allowed()||cooldown>0)return false;
-  cooldown=.9;mpSend({type:'move',...mpPosition(),training:false});return mpSend({type:'bat-swing'});
+  cooldown=.65;swings.set(MP.self,.28);beep(260,.05,'triangle',.025);mpSend({type:'move',...mpPosition(),training:false});return mpSend({type:'bat-swing'});
  }
  hit.addEventListener('pointerdown',event=>{event.preventDefault();event.stopPropagation();swing()});
  hit.addEventListener('click',event=>{if(event.detail===0)swing()});
@@ -26,15 +26,15 @@
   if(allowed()){event.preventDefault();swing()}
  });
  function syncRemote(group,weapon){
-  let bat=group.getObjectByName('rue-equipped-bat');if(!bat&&weapon==='bat')bat=makeBat(group,false);if(bat)bat.visible=weapon==='bat';return bat;
+  let bat=group.getObjectByName('rue-equipped-bat');if(!bat&&weapon==='bat'){const arm=group.getObjectByName('rue-peer-right-arm');bat=makeBat(arm||group,!!arm);}if(bat)bat.visible=weapon==='bat';return bat;
  }
  window.RoubeOvoEquipment={
-  inventoryHtml:()=>`<section class="batCard"><h3>🏏 Bastão de madeira</h3><p>Grátis • Acerte um jogador que carrega um ovo para fazê-lo soltar. Pegue o ovo caído com Ação e leve para sua base.</p><p>Equipe, aproxime-se e olhe para o jogador. Toque em <b>🏏 Bater</b> ou aperte <b>F</b>. Há um pequeno intervalo entre golpes.</p>${bt(equipped==='bat'?'unequipBat':'equipBat',equipped==='bat'?'Guardar bastão':'Equipar bastão')}</section>`,
+  inventoryHtml:()=>`<section class="batCard"><h3>🏏 Bastão de madeira</h3><p>Grátis • Acerte um jogador que carrega um ovo para fazê-lo soltar. Pegue o ovo caído com Ação e leve para sua base.</p><p>Equipe e chegue perto de quem está carregando um ovo. Toque em <b>🏏 Bater</b> ou aperte <b>F</b>. Há um pequeno intervalo entre golpes.</p>${bt(equipped==='bat'?'unequipBat':'equipBat',equipped==='bat'?'Guardar bastão':'Equipar bastão')}</section>`,
   equip(weapon){equipped=weapon==='bat'?'bat':null;try{if(equipped)localStorage.setItem(KEY,equipped);else localStorage.removeItem(KEY)}catch{}localBat.visible=equipped==='bat';if(MP.connected)mpSend({type:'equip',weapon:equipped});},
   joined(){mpSend({type:'equip',weapon:equipped})},
   incoming(message){
    if(message.type==='equipment'){equipped=message.weapon==='bat'?'bat':null;localBat.visible=equipped==='bat'}
-   if(message.type==='combat-swing')swings.set(message.id,.25);
+   if(message.type==='combat-swing'&&message.id!==MP.self)swings.set(message.id,.28);
    if(message.type==='combat-hit'&&message.id===MP.self){beep(140,.12,'triangle');toast('🏏 O jogador soltou o ovo! Use Ação para pegar.')}
    if(message.type==='bat-result'&&!message.ok&&message.message)toast(message.message);
   },
@@ -42,8 +42,9 @@
    cooldown=Math.max(0,cooldown-dt);hit.style.display=allowed()?'block':'none';hit.disabled=cooldown>0;
    localBat.visible=equipped==='bat'&&!carry;
    for(const [id,time] of swings){const next=time-dt;if(next<=0)swings.delete(id);else swings.set(id,next)}
-   localBat.rotation.y=swings.has(MP.self)?Math.sin((1-swings.get(MP.self)/.25)*Math.PI)*-1.8:0;
-   for(const [id,view] of MP.views){const user=MP.players.get(id);const bat=syncRemote(view.group,user?.weapon);if(bat){bat.visible=bat.visible&&!user?.carrying;bat.rotation.y=swings.has(id)?Math.sin((1-swings.get(id)/.25)*Math.PI)*-1.8:0}}
+   const pose=(bat,arm,id)=>{const arc=swings.has(id)?Math.sin((1-swings.get(id)/.28)*Math.PI):0;bat.rotation.set(-.28-arc*.45,-.20-arc*1.25,arc*.12);if(arm){arm.rotation.z=.08-arc*.22;if(arc>0)arm.rotation.x=-.20-arc*.95}};
+   pose(localBat,aR,MP.self);
+   for(const [id,view] of MP.views){const user=MP.players.get(id);const bat=syncRemote(view.group,user?.weapon);if(bat){bat.visible=bat.visible&&!user?.carrying;pose(bat,view.group.getObjectByName('rue-peer-right-arm'),id)}}
   }
  };
  if(MP.connected)window.RoubeOvoEquipment.joined();

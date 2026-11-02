@@ -106,6 +106,12 @@ const mpBuild=(id,u)=>{const grp=new T.Group(),geoms=[],mats=[];const add=(geom,
  add(new T.BoxGeometry(.9,1,.55),new T.MeshLambertMaterial({color:0x48cf9d}),0,1.45,0);
  add(new T.SphereGeometry(.28,12,8),new T.MeshLambertMaterial({color:0xf8cca6}),0,2.22,0);
  for(const x of [-.28,.28])add(new T.BoxGeometry(.25,.8,.3),new T.MeshLambertMaterial({color:0x32466a}),x,.45,0);
+ for(const side of [-1,1]){
+  const arm=new T.Group();arm.name=side>0?'rue-peer-right-arm':'rue-peer-left-arm';arm.position.set(side*.6,2,0);arm.rotation.z=side*.08;grp.add(arm);
+  const material=new T.MeshLambertMaterial({color:0xf8cca6}),geometry=new T.BoxGeometry(.25,.8,.3),handGeometry=new T.SphereGeometry(.16,10,7);
+  const upper=new T.Mesh(geometry,material);upper.position.y=-.43;arm.add(upper);
+  const hand=new T.Mesh(handGeometry,material);hand.position.y=-.87;arm.add(hand);geoms.push(geometry,handGeometry);mats.push(material);
+ }
  const texture=mpBadge(u.name,!!u.admin);const sm=new T.SpriteMaterial({map:texture,transparent:true,depthTest:false});mats.push(sm);const label=new T.Sprite(sm);label.position.set(0,3.25,0);label.scale.set(3.2,.8,1);grp.add(label);
  grp.position.set(u.x||0,u.y||0,u.z||0);grp.rotation.y=u.yaw||0;sc.add(grp);const v={group:grp,geometries:geoms,materials:mats,texture,label,admin:!!u.admin,name:u.name};MP.views.set(id,v);return v};
 const mpDraw=()=>{
@@ -332,8 +338,7 @@ const mpJoin=(mode='join',retrying=false)=>{
  ws.onclose=()=>{if(MP.socket===ws){MP.socket=null;clearTimeout(MP.connectTimer);mpClear();mpReconnect();}};
 };
 const mpUpdate=dt=>{
- window.RoubeOvoEquipment?.update(dt);
- if(!MP.connected)return;
+ if(!MP.connected){window.RoubeOvoEquipment?.update(dt);return;}
  const now=performance.now();
  if(now-MP.lastRx>35000){MP.socket?.close();return;}
  if(MP.pending?.accepted)mpFinishDeposit(MP.pending.accepted);
@@ -345,6 +350,7 @@ const mpUpdate=dt=>{
   const x=u.x||0,y=u.y||0,z=u.z||0,k=Math.min(1,dt*14);
   if(Math.hypot(v.group.position.x-x,v.group.position.z-z)>30)v.group.position.set(x,y,z);else{v.group.position.x+=(x-v.group.position.x)*k;v.group.position.y+=(y-v.group.position.y)*k;v.group.position.z+=(z-v.group.position.z)*k;}
   const angle=Math.atan2(Math.sin((u.yaw||0)-v.group.rotation.y),Math.cos((u.yaw||0)-v.group.rotation.y));v.group.rotation.y+=angle*k;
+  const arm=v.group.getObjectByName('rue-peer-right-arm');if(arm)arm.rotation.x=Math.hypot(v.group.position.x-x,v.group.position.z-z)>.08?Math.sin(now*.009)*.35:0;
   if(u.carrying?.id&&v.heldId!==u.carrying.id){
    if(v.held){v.group.remove(v.held);v.held=null;}
    const d=u.carrying;
@@ -356,6 +362,7 @@ const mpUpdate=dt=>{
   }
   if(v.held)v.held.visible=!!u.carrying;
  }
+ window.RoubeOvoEquipment?.update(dt);
 };
 setInterval(()=>{if(MP.connected)mpSend({type:'ping'});},8000);
 addEventListener('online',()=>{if(!MP.stopped&&!MP.connected){clearTimeout(MP.retryTimer);MP.retryTimer=null;mpJoin('join',true)}});

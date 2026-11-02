@@ -4,23 +4,22 @@ const {spawn}=require('node:child_process'),{once}=require('node:events'),WebSoc
 const {World}=require('../multiplayer-world.cjs'),{swingBat}=require('../player-combat.cjs'),{PlayerAccess}=require('../player-access.cjs');
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 
-test('o bastão exige equipamento, alcance, direção e intervalo; o mesmo ovo cai uma única vez',()=>{
+test('um golpe perto derruba o ovo de qualquer lado, com intervalo e sem duplicação',()=>{
  const world=new World(1000,()=>.5),egg=[...world.eggs.values()][0];
- const victim={x:0,z:3,y:0,yaw:0,heldEgg:null},attacker={x:0,z:0,y:0,yaw:0,heldEgg:null,weapon:null};
+ const victim={x:0,z:3,y:0,yaw:0,heldEgg:null},attacker={x:5.5,z:3,y:0,yaw:Math.PI,heldEgg:null,weapon:null};
  world.eggs.delete(egg.id);victim.heldEgg=egg;
  assert.equal(swingBat(attacker,[attacker,victim],world,1000).ok,false);attacker.weapon='bat';
- attacker.z=-10;assert.equal(swingBat(attacker,[victim],world,2000).egg,null);
- attacker.z=0;attacker.yaw=Math.PI;assert.equal(swingBat(attacker,[victim],world,3000).egg,null);
- attacker.yaw=0;const hit=swingBat(attacker,[victim],world,4000);
- assert.equal(hit.egg.id,egg.id);assert.equal(victim.heldEgg,null);assert.deepEqual(hit.egg.m,egg.m);
- assert.equal(swingBat(attacker,[victim],world,4001).ok,false);
+ attacker.x=12;assert.equal(swingBat(attacker,[victim],world,2000).egg,null);
+ attacker.x=5.5;const hit=swingBat(attacker,[victim],world,3000);
+ assert.equal(hit.egg.id,egg.id,'acerta de lado ou de costas, sem mirar');assert.equal(victim.heldEgg,null);assert.deepEqual(hit.egg.m,egg.m);
+ assert.equal(swingBat(attacker,[victim],world,3001).ok,false);
  assert.equal([...world.eggs.values()].filter(e=>e.id===egg.id).length,1);
- // O antigo portador não pode depositar após o golpe; qualquer jogador pode recolher.
  assert.equal(world.deposit(victim),null);
- attacker.x=hit.egg.x;attacker.z=hit.egg.z;assert.equal(world.take(attacker,egg.id,5000).id,egg.id);
- assert.equal(world.take(victim,egg.id,5000),null);assert.equal(world.eggs.has(egg.id),false);
- const other={x:attacker.x,z:attacker.z-2,y:0,yaw:0,weapon:'bat'};attacker.hitProtectedUntil=7000;
- assert.equal(swingBat(other,[attacker],world,6000).egg,null);
+ attacker.x=hit.egg.x;attacker.z=hit.egg.z;assert.equal(world.take(attacker,egg.id,4000).id,egg.id);
+ assert.equal(swingBat(attacker,[victim],world,4001).ok,false,'não bate carregando ovo');
+ assert.equal(world.take(victim,egg.id,4000),null);assert.equal(world.eggs.has(egg.id),false);
+ const other={x:attacker.x+2,z:attacker.z,y:0,yaw:0,weapon:'bat'};attacker.hitProtectedUntil=7000;
+ assert.equal(swingBat(other,[attacker],world,5000).egg.id,egg.id,'o ovo roubado volta a cair em um único golpe');
 });
 
 test('permissões assinadas sobrevivem ao reinício sem confiar em nome, senha compartilhada ou backup editado',()=>{
