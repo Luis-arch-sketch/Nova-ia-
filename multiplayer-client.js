@@ -49,7 +49,28 @@ const makePeerBase=u=>{
  const obstacles=[];
  for(let k=-20;k<=20;k+=2){obstacles.push({x:slot.x+k,z:slot.z+30,r:1});if(Math.abs(k)>=6)obstacles.push({x:slot.x+k,z:slot.z-10,r:1})}
  for(let k=-10;k<=30;k+=2)obstacles.push({x:slot.x-20,z:slot.z+k,r:1},{x:slot.x+20,z:slot.z+k,r:1});
- OB.push(...obstacles);PEER_BASES.set(u.id,{group,obstacles,slot:u.baseSlot,name:u.name,sign,incubators});
+ OB.push(...obstacles);PEER_BASES.set(u.id,{group,obstacles,slot:u.baseSlot,name:u.name,sign,incubators,pets:[],petSignature:''});
+};
+const mpSyncBasePets=(base,pets)=>{
+ const list=Array.isArray(pets)?pets.slice(0,18):[];
+ const signature=JSON.stringify(list);
+ if(base.petSignature===signature)return;
+ for(const m of base.pets||[])base.group.remove(m);
+ base.pets=[];base.petSignature=signature;
+ list.forEach((pet,k)=>{
+  if(!pet||!SPC[pet.s])return;
+  const mods=Array.isArray(pet.m)?pet.m:[];
+  const color=new T.Color().setHSL((pet.s*37%360)/360,.56,.58);
+  if(mods.length&&MUT[mods[0]])color.lerp(new T.Color(MUT[mods[0]][3]),.7);
+  const scale=.64*SZ[pet.size??1][1];
+  let model=null;
+  try{model=window.RoubeOvoPetCollection?.has?.(pet.s)?window.RoubeOvoPetCollection.create(T,pet.s,scale,sc):window.RoubeOvoVisuals?.create?.(T,pet.s,scale,color,sc);}catch(err){console.warn('Pet do amigo:',err)}
+  if(!model){model=new T.Mesh(new T.SphereGeometry(.8,12,9),new T.MeshLambertMaterial({color}));model.scale.setScalar(scale);}
+  base.group.add(model);
+  model.position.set(-15+(k%6)*6,0,15+Math.floor(k/6)*5);
+  if(model.mat?.color)model.mat.color.copy(color);
+  base.pets.push(model);
+ });
 };
 const removePeerBase=id=>{
  const b=PEER_BASES.get(id);if(!b)return;
@@ -130,7 +151,13 @@ const mpGoHome=()=>{
  return mpSend({type:'go-home'});
 };
 $('mpFindFriend').onclick=()=>mpMeetFriend();
-const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.mesh.position.x,z:e.mesh.position.z});
+const mpRename=name=>{
+ name=String(name||'').trim().slice(0,20);
+ if(name.length<2||/^admin$/i.test(name))return false;
+ if(!MP.connected){MP.name=name;const input=$('roomName');if(input)input.value=name;try{localStorage.setItem('rue3d_mp_name',name)}catch(e){}return true;}
+ return mpSend({type:'rename',name});
+};
+const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.mesh.position.x,z:e.mesh.position.z,m:Array.isArray(e.m)?e.m:null});
 const mpRemoveEgg=id=>{
  const e=eggs.find(e=>e.netId===id);if(!e)return;
  if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}
@@ -145,7 +172,8 @@ const mpUpsertEgg=d=>{
  if(carry?.netId===d.id)return carry;
  let e=eggs.find(e=>e.netId===d.id);
  if(!e)e=eggs.find(e=>!e.netId&&e.s===d.s&&Math.hypot(e.mesh.position.x-d.x,e.mesh.position.z-d.z)<1.1);
- if(!e){e={b:d.b,j:d.j,s:d.s,r:d.r,z:d.size,w:d.w,st:'caido',gr:1,nest:null};e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();eggs.push(e);if(AUR[e.r])mkAura(e)}
+ if(!e){e={b:d.b,j:d.j,s:d.s,r:d.r,z:d.size,w:d.w,m:Array.isArray(d.m)?d.m:null,st:'caido',gr:1,nest:null};e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();eggs.push(e);if(AUR[e.r])mkAura(e)}
+ if(JSON.stringify(e.m||null)!==JSON.stringify(d.m||null)){e.m=Array.isArray(d.m)?d.m:null;if(typeof eggMutationMark==='function')eggMutationMark(e.mesh,e.m);}
  e.netId=d.id;e.guardArea=d.b;e.gr=1;e.mesh.visible=true;e.mesh.scale.copy(e.base);e.mesh.position.set(d.x,.45+e.base.y,d.z);
  if(Number.isInteger(d.nest)&&NS[d.nest]){e.nest=NS[d.nest];e.nest.e=e;}
  return e;
@@ -167,13 +195,14 @@ const mpApplyClock=()=>{
  const changed=EGG_NIGHT.phase!==phase||EGG_NIGHT.until!==(until?until-MP.clockOffset:0);EGG_NIGHT.phase=phase;EGG_NIGHT.until=until?until-MP.clockOffset:0;if(changed)EGG_NIGHT.last='';
  nextReset=(c.nextReset-MP.clockOffset)/1000;refreshEggNightUI();
 };
-const mpBaseState=()=>({tm:S.tm,inc:S.inc.map(e=>e?{s:e.s,size:e.z,until:e.b}:null),pets:AP.slice(0,4).map(e=>({s:e.s,size:e.z}))});
+const mpBaseState=()=>({tm:S.tm,inc:S.inc.map(e=>e?{s:e.s,size:e.z,until:e.b,m:e.m}:null),pets:AP.slice(0,18).map(e=>({s:e.s,size:e.z,m:e.m}))});
 const mpApplyBase=(id,state)=>{
  if(!state)return;MP.baseStates.set(id,state);const base=PEER_BASES.get(id);if(!base)return;
  for(let i=0;i<4;i++){
   const visual=base.incubators[i],egg=state.inc?.[i];visual.egg.visible=!!egg;
-  if(egg){const ready=Date.now()+MP.clockOffset>=egg.until;visual.label.set(ready?'🐣 Pronto!':'🥚 '+ft((egg.until-Date.now()-MP.clockOffset)/1000));visual.egg.material.color.setHSL((egg.s*37%360)/360,.65,.62)}else visual.label.set('vazio');
+  if(egg){const ready=Date.now()+MP.clockOffset>=egg.until;visual.label.set(ready?'🐣 Pronto!':'🥚 '+ft((egg.until-Date.now()-MP.clockOffset)/1000));visual.egg.material.color.setHSL((egg.s*37%360)/360,.65,.62);if(Array.isArray(egg.m)&&egg.m.length&&MUT[egg.m[0]])visual.egg.material.color.lerp(new T.Color(MUT[egg.m[0]][3]),.65)}else visual.label.set('vazio');
  }
+ mpSyncBasePets(base,state.pets);
 };
 const mpStorePending=()=>{try{if(MP.pending?.type==='egg-deposit')sessionStorage.setItem('rue3d_mp_deposit',JSON.stringify({...MP.pending,room:MP.room}));else sessionStorage.removeItem('rue3d_mp_deposit')}catch(e){}};
 const mpEggRequest=(type,e,slot)=>{
@@ -246,6 +275,9 @@ const mpJoin=(mode='join',retrying=false)=>{
    if(msg.event)mpRemoteEvent(msg.event);
    if(!MP.pending){try{const p=JSON.parse(sessionStorage.getItem('rue3d_mp_deposit')||'null');if(p?.room===MP.room&&p.type==='egg-deposit')MP.pending=p;}catch(e){}}
    if(MP.pending?.type==='egg-deposit'){const p=MP.pending;if(p.accepted)mpFinishDeposit(p.accepted);else {p.startedAt=performance.now();mpSend({type:p.type,id:p.id,slot:p.slot,requestId:p.requestId,position:mpPosition()});}}
+  }else if(msg.type==='name-updated'){
+   MP.name=msg.name;$('roomName').value=msg.name;
+   try{localStorage.setItem('rue3d_mp_name',msg.name)}catch(e){}
   }else if(msg.type==='players'){
    mpApplyUsers(msg.players||[]);
    const self=msg.players?.find(p=>p.id===MP.self);
@@ -278,7 +310,15 @@ const mpUpdate=dt=>{
   const x=u.x||0,y=u.y||0,z=u.z||0,k=Math.min(1,dt*14);
   if(Math.hypot(v.group.position.x-x,v.group.position.z-z)>30)v.group.position.set(x,y,z);else{v.group.position.x+=(x-v.group.position.x)*k;v.group.position.y+=(y-v.group.position.y)*k;v.group.position.z+=(z-v.group.position.z)*k;}
   const angle=Math.atan2(Math.sin((u.yaw||0)-v.group.rotation.y),Math.cos((u.yaw||0)-v.group.rotation.y));v.group.rotation.y+=angle*k;
-  if(u.carrying&&!v.held){const geometry=new T.SphereGeometry(.42,10,8),material=new T.MeshLambertMaterial({color:0xffce52}),held=new T.Mesh(geometry,material);held.position.set(0,1.6,.8);held.scale.y=1.3;v.group.add(held);v.geometries.push(geometry);v.materials.push(material);v.held=held;}
+  if(u.carrying?.id&&v.heldId!==u.carrying.id){
+   if(v.held){v.group.remove(v.held);v.held=null;}
+   const d=u.carrying;
+   if(SPC[d.s]&&SZ[d.size]){
+    const held=eggMesh({s:d.s,j:d.j,r:d.r,z:d.size,m:d.m});
+    v.group.add(held);held.scale.multiplyScalar(.65);held.position.set(0,1.7,.8);
+    v.held=held;v.heldId=d.id;
+   }
+  }
   if(v.held)v.held.visible=!!u.carrying;
  }
 };
