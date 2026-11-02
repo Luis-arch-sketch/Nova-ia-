@@ -205,8 +205,9 @@ try {
    return total;
  };
  const fallbackWorld=new T.Group();fallbackWorld.name='Cenario procedural de reserva';sc.add(fallbackWorld);
- const worldCount=install(parts.world,fallbackWorld),baseCount=install(parts.base,BASE_GROUP);
- window.RoubeOvoWorldDetail={installed:true,worldCount,baseCount,biomes:Math.min(13,BI.length),fallbackWorld};
+ const fallbackBase=new T.Group();fallbackBase.name='Previous decorative base props';BASE_GROUP.add(fallbackBase);
+ const worldCount=install(parts.world,fallbackWorld),baseCount=install(parts.base,fallbackBase);
+ window.RoubeOvoWorldDetail={installed:true,worldCount,baseCount,biomes:Math.min(13,BI.length),fallbackWorld,fallbackBase};
 } catch(error) {
  console.warn('Cenário extra decorativo ignorado:',error);
 }
