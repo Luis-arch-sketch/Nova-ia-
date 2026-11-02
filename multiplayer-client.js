@@ -154,7 +154,7 @@ $('mpFindFriend').onclick=()=>mpMeetFriend();
 const mpRename=name=>{
  name=String(name||'').trim().slice(0,20);
  if(name.length<2||/^admin$/i.test(name))return false;
- if(!MP.connected){MP.name=name;const input=$('roomName');if(input)input.value=name;try{localStorage.setItem('rue3d_mp_name',name)}catch(e){}window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name}}));return true;}
+ if(!MP.connected){MP.name=name;const input=$('roomName');if(input)input.value=name;try{localStorage.setItem('rue3d_mp_name',name)}catch(e){}typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name}}));return true;}
  return mpSend({type:'rename',name});
 };
 const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.mesh.position.x,z:e.mesh.position.z,m:Array.isArray(e.m)?e.m:null});
@@ -270,7 +270,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
    mpApplyUsers(msg.players||[]);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
    mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);
-   window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:MP.name}}));
+   typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:MP.name}}));
    mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});
    if(MP.adminPassword)mpSend({type:'admin-auth',password:MP.adminPassword});
    if(msg.event)mpRemoteEvent(msg.event);
@@ -278,7 +278,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    if(MP.pending?.type==='egg-deposit'){const p=MP.pending;if(p.accepted)mpFinishDeposit(p.accepted);else {p.startedAt=performance.now();mpSend({type:p.type,id:p.id,slot:p.slot,requestId:p.requestId,position:mpPosition()});}}
   }else if(msg.type==='name-updated'){
    MP.name=msg.name;$('roomName').value=msg.name;
-   window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:msg.name}}));
+   typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:msg.name}}));
    try{localStorage.setItem('rue3d_mp_name',msg.name)}catch(e){}
   }else if(msg.type==='players'){
    mpApplyUsers(msg.players||[]);
