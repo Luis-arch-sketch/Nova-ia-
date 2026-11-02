@@ -156,8 +156,10 @@ try{
    for(const id of sample){
     const m=window.RoubeOvoVisuals.create(THREE,id,.7,new THREE.Color(0xffffff),sc);
     const v=m.userData.motion;
-    const meshCount=m.children[0]?.children?.length;
-    codes.push({id,kind:v.kind,meshCount});
+    let meshes=0,vertexCount=0;
+    m.traverse(node=>{if(node.isMesh){meshes++;vertexCount+=node.geometry?.attributes?.position?.count||0;}});
+    codes.push({id,kind:v?.kind||(m.userData.realMesh?'STL-'+id:'custom-'+id),
+      meshCount:Math.max(meshes,Math.ceil(vertexCount/45))});
     sc.remove(m);
    }
    return codes;
