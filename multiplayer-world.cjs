@@ -15,19 +15,20 @@ const meetingSpawn=(friend,slot=0)=>{
 };
 class World {
  constructor(now=Date.now(),random=Math.random){
-  this.random=random;this.eggs=new Map();this.reset=300000;this.phase='day';this.until=0;this.nextReset=now+this.reset;this.event=null;this.emptyAt=0;
+  this.random=random;this.eggs=new Map();this.reset=120000;this.phase='day';this.until=0;this.nextReset=now+this.reset;this.event=null;this.emptyAt=0;
   this.regrow(true,now);
  }
  add(b,j,size,x,z,now=Date.now(),species=b*8+j,nest=null){
   if(this.eggs.size>=400||REMOVED.has(species))return null;
   const collected=species>=105&&species<129,tier=collected?Math.floor((species-105)/4):0;
   const egg={id:crypto.randomUUID(),b,j,s:species,r:species===LIMITED?10:collected?11+tier:RARITIES[j],size,
-   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,grownAt:now};
+   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,grownAt:now,expiresAt:species===LIMITED?null:now+this.reset};
   this.eggs.set(egg.id,egg);return egg;
  }
  size(){const n=this.random()*100;return n<50?0:n<85?1:n<97?2:3;}
  regrow(first,now){
-  if(!first)for(const [id,e] of this.eggs)if(e.nest!==null&&e.s!==LIMITED)this.eggs.delete(id);
+  // Ovos abandonados e ninhos antigos expiram a cada ciclo; LIMITED e ovos carregados ficam preservados.
+  if(!first)for(const [id,e] of this.eggs)if(e.s!==LIMITED)this.eggs.delete(id);
   const occupied=new Set([...this.eggs.values()].map(e=>e.nest));
   const spawn=(b,j)=>{const n=b*8+j;if(occupied.has(n)||REMOVED.has(n))return;
    const a=j/8*Math.PI*2;let size=this.size();if(!first&&this.random()<.32)size=Math.min(4,size+1);
