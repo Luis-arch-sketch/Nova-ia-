@@ -110,6 +110,7 @@
  const style=document.createElement('style');
  style.textContent=`
  #avatarOpen{position:fixed;top:calc(51px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:40;background:#ffdd83;color:#242641;font-weight:900;padding:7px 12px;min-height:35px;border-radius:12px;box-shadow:0 2px 7px #0004}
+ #playerNameOpen{position:fixed;top:calc(90px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:40;background:#bcddff;color:#152b46;font-weight:900;padding:6px 12px;min-height:33px;border-radius:12px;box-shadow:0 2px 7px #0004;font-size:12px}
  #avatarPanel{display:none;position:fixed;inset:0;z-index:140;background:#071425bd;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;touch-action:pan-y}
  #avatarPanel.open{display:flex}
  #avatarSheet{background:#182c47;color:#fff;border:2px solid #f3ce7b;box-shadow:0 15px 45px #0009;border-radius:16px;width:min(510px,100%);max-height:94dvh;overflow-y:auto;padding:14px 14px 18px;box-sizing:border-box;touch-action:pan-y}
@@ -128,11 +129,13 @@
  @media(orientation:portrait) and (pointer:coarse){#horizontalButton{display:block}}
  @media(max-width:700px) and (orientation:landscape){
   #avatarOpen{top:calc(8px + env(safe-area-inset-top,0px));right:calc(380px + env(safe-area-inset-right,0px));font-size:11px;padding:5px 8px;min-height:30px}
+  #playerNameOpen{top:calc(45px + env(safe-area-inset-top,0px));right:calc(380px + env(safe-area-inset-right,0px));font-size:11px;padding:5px 8px;min-height:30px}
   #avatarSheet{max-height:90dvh}#avatarSheet .avatarOptions button{min-height:33px}
  }
  `;
  document.head.appendChild(style);
  const button=document.createElement('button');button.type='button';button.id='avatarOpen';button.textContent='👕 Personagem';document.body.appendChild(button);
+ const nameButton=document.createElement('button');nameButton.type='button';nameButton.id='playerNameOpen';nameButton.textContent='✏️ Trocar nome';nameButton.setAttribute('aria-controls','avatarPanel');document.body.appendChild(nameButton);
  const panel=document.createElement('div');panel.id='avatarPanel';panel.setAttribute('role','dialog');panel.setAttribute('aria-label','Personalizar personagem');
  const sheet=document.createElement('div');sheet.id='avatarSheet';panel.appendChild(sheet);document.body.appendChild(panel);
  const labels={kind:'Skin',hair:'Cabelo',color:'Cor do cabelo',outfit:'Roupa',accessories:'Acessórios (escolha quantos quiser)'};
@@ -142,7 +145,7 @@
   const title=document.createElement('h2');title.textContent='👕 Personalizar personagem';
   const close=document.createElement('button');close.type='button';close.textContent='✕';close.className='avatarClose';close.addEventListener('click',()=>panel.classList.remove('open'));
   top.append(title,close);sheet.appendChild(top);
-  const nameLabel=document.createElement('label');nameLabel.textContent='Nome no servidor (2 a 20 caracteres)';sheet.appendChild(nameLabel);
+  const nameLabel=document.createElement('label');nameLabel.textContent='👤 Nome do jogador (2 a 20 caracteres)';sheet.appendChild(nameLabel);
   const nameRow=document.createElement('div');nameRow.className='avatarNameRow';
   const nameInput=document.createElement('input');nameInput.id='avatarNameInput';nameInput.maxLength=20;nameInput.autocomplete='nickname';nameInput.value=String((typeof MP!=='undefined'&&MP.name)||document.getElementById('roomName')?.value||'').slice(0,20);nameInput.placeholder='Seu nome';
   const nameSave=document.createElement('button');nameSave.type='button';nameSave.textContent='💾 Trocar nome';
@@ -153,7 +156,7 @@
    if(name.length<2||name.length>20||/^admin$/i.test(name)||/[\u0000-\u001f\u007f]/.test(name)){nameHelp.textContent='⚠ Escolha um nome de 2 a 20 caracteres (ADMIN é reservado).';return;}
    if(typeof mpRename==='function'){if(!mpRename(name)){nameHelp.textContent='⚠ Falha ao atualizar o nome.';return;}}
    else{const el=document.getElementById('roomName');if(el)el.value=name;try{localStorage.setItem('rue3d_mp_name',name)}catch(e){}}
-   nameHelp.textContent='✅ Nome enviado! O servidor confirmará para os outros jogadores.';
+   nameHelp.textContent=(typeof MP!=='undefined'&&MP.connected)?'⏳ Alterando o nome na sala…':'✅ Nome salvo para sua próxima entrada.';
   });
   for(const [key,values] of Object.entries(choices)){
    const label=document.createElement('label');label.textContent=labels[key];sheet.appendChild(label);
@@ -178,7 +181,16 @@
   }
  }
  button.addEventListener('click',()=>{draw();panel.classList.add('open')});
+ nameButton.addEventListener('click',()=>{draw();panel.classList.add('open');sheet.scrollTop=0;sheet.querySelector('#avatarNameInput')?.focus()});
  panel.addEventListener('click',e=>{if(e.target===panel)panel.classList.remove('open')});
+ window.addEventListener('roube-player-name-updated',event=>{
+  const name=String(event.detail?.name||'').slice(0,20);
+  if(!name)return;
+  nameButton.textContent='✏️ '+name;
+  const text=sheet.querySelector('.avatarNameHelp');if(text)text.textContent='✅ Novo nome: '+name+' (visível para os jogadores da sala)';
+ });
+ const previousName=(()=>{try{return localStorage.getItem('rue3d_mp_name')||''}catch(e){return ''}})();
+ if(previousName)nameButton.textContent='✏️ '+previousName.slice(0,16);
  const horiz=document.createElement('button');horiz.id='horizontalButton';horiz.type='button';horiz.textContent='↔ Horizontal';
  const lock=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();await screen.orientation?.lock?.('landscape')}catch(e){try{await screen.orientation?.lock?.('landscape')}catch(x){}}};
  horiz.addEventListener('click',lock);document.body.appendChild(horiz);
