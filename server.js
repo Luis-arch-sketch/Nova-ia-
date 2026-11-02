@@ -110,6 +110,7 @@ PWA_FILES['/entrance-cinematic.js']=['entrance-cinematic.js','application/javasc
 PWA_FILES['/cutscene-zona-radioativa.html']=['cutscene-zona-radioativa.html','text/html; charset=utf-8'];
 PWA_FILES['/radioactive-cutscene.js']=['radioactive-cutscene.js','application/javascript; charset=utf-8'];
 PWA_FILES['/hud-chat.js']=['hud-chat.js','application/javascript; charset=utf-8'];
+PWA_FILES['/world-detail.js']=['world-detail.js','application/javascript; charset=utf-8'];
 for(const file of ['egg-crack.mp3','egg-suspense.mp3'])PWA_FILES['/audio/'+file]=['audio/'+file,'audio/mpeg'];
 PWA_FILES['/avatar-customizer.js']=['avatar-customizer.js','application/javascript; charset=utf-8'];
 PWA_FILES['/afk-training.js']=['afk-training.js','application/javascript; charset=utf-8'];
@@ -117,7 +118,7 @@ PWA_FILES['/biome-countdown.js']=['biome-countdown.js','application/javascript; 
 for(const file of ['admin-controls.js','player-equipment.js'])PWA_FILES['/'+file]=[file,'application/javascript; charset=utf-8'];
 const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML do avatar inválido');return html.replace('</body>','<script src="/avatar-customizer.js?v=20261102-character-menu5"></script><script src="/afk-training.js?v=20261102-3"></script><script src="/biome-countdown.js?v=20261102-layout5"></script><script src="/admin-controls.js?v=20261102-roles1"></script><script src="/player-equipment.js?v=20261102-bat2"></script></body>')};
 const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261102-menus3"></script></body>')};
-const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-final1"></script></body>');
+const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-final1"></script><script src="/world-detail.js?v=20261102-visual1"></script></body>');
 const RETIRED_ASSETS=new Set(['/halloween-event.js','/halloween-pets.js','/halloween-clowns.js',
  '/audio/halloween-spooky-scary-skeletons.mp3','/audio/clown-dance.webm','/audio/witch-laugh.mp3']);
 const httpServer=http.createServer((req,res)=>{
