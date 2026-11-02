@@ -40,9 +40,20 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    assert(first.imported.loadedTypes>=5,'Cinco modelos diferentes');
    assert(first.worldMeshes>=2,'Cenas GLB instanciadas');
    assert.equal(errors.length,0,'Erros de JavaScript na tela: '+errors.join('; '));
+   // Capturar o cenário 3D, e não a capa/cutscene que encobre a câmera nos screenshots antigos.
+   await page.evaluate(()=>{
+     document.getElementById('roube-capa')?.remove();
+     const movie=document.getElementById('rue-radio-cutscene');
+     if(movie){movie.hidden=true;movie.style.display='none';}
+     if(window.RoubeOvoEntrance?.active)for(let i=0;i<180;i++)window.RoubeOvoEntrance.update(.05);
+   });
+   await page.waitForTimeout(500);
+   require('node:fs').mkdirSync('test-results',{recursive:true});
+   await page.screenshot({path:'test-results/roblox-style-base-android.png'});
    await page.evaluate(()=>{P.z=-65-9*70;P.g.position.z=P.z;});
    await page.waitForFunction(()=>window.RoubeOvoImportedModels?.modelsByBiome[9]>=2,null,{timeout:40000});
    const cherry=await page.evaluate(()=>({types:window.RoubeOvoImportedModels.modelsByBiome[9],visible:sc.children.some(o=>o.name==='Kenney CC0 - 10'&&o.visible&&o.children.length>0)}));
+   await page.waitForTimeout(350);await page.screenshot({path:'test-results/roblox-style-cherry-android.png'});
    assert(cherry.visible,'Bioma das cerejeiras deve renderizar modelos reais');
    console.log('KENNEY CHERRY BLOSSOM '+JSON.stringify(cherry));
  }finally{await browser?.close();server.kill('SIGTERM')}
