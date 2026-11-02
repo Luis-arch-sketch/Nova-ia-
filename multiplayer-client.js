@@ -4,6 +4,18 @@ const mpInvitation=(new URLSearchParams(location.search).get('sala')||'').trim()
 if(/^[A-Z0-9-]{3,12}$/.test(mpInvitation))$('roomCode').value=mpInvitation;
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
 const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:mpInvitation?'join':'quick-join'};
+MP.canAdmin=false;
+const mpPrivateRead=key=>{try{return localStorage.getItem(key)||''}catch{return ''}};
+MP.identity=mpPrivateRead('rue3d_identity_v1');MP.ownerToken=mpPrivateRead('rue3d_owner_token_v1');MP.accessBackup=mpPrivateRead('rue3d_access_backup_v1');
+const mpApplyRole=message=>{
+ MP.owner=message.owner===true;MP.canAdmin=message.canAdmin===true;ownerVerified=MP.owner;adminBadge.visible=MP.owner;
+ for(const [field,key] of [['ownerToken','rue3d_owner_token_v1'],['accessBackup','rue3d_access_backup_v1']])if(typeof message[field]==='string'){MP[field]=message[field];try{localStorage.setItem(key,message[field])}catch{}}
+ if(typeof adminUnlocked!=='undefined'){
+  adminUnlocked=MP.canAdmin;$('adPanel')?.classList?.toggle('locked',!adminUnlocked);
+  if(adminUnlocked){$('adKey').value='';$('adAuthError').textContent='';if(typeof adminUI==='function')adminUI(true)}
+ }
+ if(message.message)toast(message.message);
+};
 const mpStatus=s=>{$('roomStatus').textContent=s;const h=$('mpPresence');if(h&&!MP.connected)h.textContent=s.startsWith('⚠')?'⚠ Multiplayer: '+s:'🌍 '+s};
 // A câmera e o portal realizam uma cena 3D completa, de pelo menos 5,9 segundos.
 const mpEntrance=(show,immediate=false)=>{
@@ -88,7 +100,7 @@ const syncPeerBase=u=>{
 };
 
 const mpDispose=id=>{removePeerBase(id);const v=MP.views.get(id);if(!v)return;sc.remove(v.group);v.materials.forEach(m=>m.dispose());v.geometries.forEach(g=>g.dispose());if(v.texture)v.texture.dispose();MP.views.delete(id)};
-const mpClear=()=>{mpClearWorld();for(const id of [...MP.views.keys()])mpDispose(id);MP.players.clear();MP.baseStates.clear();MP.self='';MP.connected=false;MP.owner=false;MP.protocol=0;if(MP.roomEvent){abuseStop(true);MP.roomEvent=null;}if(MP.pending?.type!=='egg-deposit')MP.pending=null;$('roomPlayerList').textContent='—';};
+const mpClear=()=>{mpClearWorld();for(const id of [...MP.views.keys()])mpDispose(id);MP.players.clear();MP.baseStates.clear();MP.self='';MP.connected=false;mpApplyRole({});MP.protocol=0;if(MP.roomEvent){abuseStop(true);MP.roomEvent=null;}if(MP.pending?.type!=='egg-deposit')MP.pending=null;$('roomPlayerList').textContent='—';};
 const mpBadge=(name,isAdmin)=>{const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=isAdmin?'#5b1f55':'#102448';ctx.fillRect(5,5,502,118);ctx.strokeStyle=isAdmin?'#ff76da':'#73d8ff';ctx.lineWidth=6;ctx.strokeRect(8,8,496,112);ctx.font='bold 46px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=isAdmin?'#ff94e6':'#ffffff';ctx.fillText((isAdmin?'👑 ADMIN':name).slice(0,20),256,65,480);return new T.CanvasTexture(c)};
 const mpBuild=(id,u)=>{const grp=new T.Group(),geoms=[],mats=[];const add=(geom,mat,x,y,z)=>{const m=new T.Mesh(geom,mat);m.position.set(x,y,z);grp.add(m);geoms.push(geom);mats.push(mat);return m};
  add(new T.BoxGeometry(.9,1,.55),new T.MeshLambertMaterial({color:0x48cf9d}),0,1.45,0);
@@ -158,6 +170,15 @@ const mpRename=name=>{
  return mpSend({type:'rename',name});
 };
 const mpDescribeEgg=e=>({id:e.netId,b:e.b,j:e.j,s:e.s,r:e.r,size:e.z,w:e.w,x:e.mesh.position.x,z:e.mesh.position.z,m:Array.isArray(e.m)?e.m:null});
+const mpRequestSpawn=(b,j,size,where,fx,mutations)=>{
+ if(!MP.connected||!MP.canAdmin)return null;
+ b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));size=Math.max(0,Math.min(4,Math.floor(size)));
+ const s=b*8+j;if(!SPC[s]||s===0||s===9)return null;
+ const nest=NS[b*8+j],x=where==='player'?P.x+(Math.random()-.5)*5:(nest?.x||0)+(nest?.e?2.5:0),z=where==='player'?P.z+(Math.random()-.5)*5:(nest?.z||(-65-70*b));
+ const preview={b,j,s,r:RS[j],z:size,m:mutations};
+ if(!mpSend({type:'admin-spawn',eggs:[{b,j,s,size,x:Math.max(-97,Math.min(97,x)),z:Math.max(-937,Math.min(333,z)),m:mutations}]}))return null;
+ if(fx){if(preview.r>=7)rareFx([preview]);else playSnd(preview.r)}return preview;
+};
 const mpRemoveEgg=id=>{
  const e=eggs.find(e=>e.netId===id);if(!e)return;
  if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}
@@ -250,7 +271,7 @@ const mpJoin=(mode='join',retrying=false)=>{
  if(!retrying&&MP.pending?.type==='egg-deposit'&&room!==MP.room){mpStatus('⏳ Aguarde a confirmação do ovo antes de trocar de sala.');return;}
  if(!retrying&&MP.connected){
   let token=MP.tokens.get(room)||'';try{token=token||sessionStorage.getItem('rue3d_mp_token_'+room)||''}catch(e){}
-  MP.joining={room,name};mpEntrance(true);mpStatus('Entrando na sala…');mpSend({type:mode,room,name,token});return;
+  MP.joining={room,name};mpEntrance(true);mpStatus('Entrando na sala…');mpSend({type:mode,room,name,token,identity:MP.identity,ownerToken:MP.ownerToken,accessBackup:MP.accessBackup});return;
  }
  const pending=MP.pending;mpDisconnect(false);MP.pending=pending?.type==='egg-deposit'?pending:null;
  MP.stopped=false;MP.name=name;MP.room=room;if(!retrying)MP.retry=0;
@@ -260,11 +281,13 @@ const mpJoin=(mode='join',retrying=false)=>{
  let ws;try{ws=new WebSocket(mpEndpoint())}catch(e){mpReconnect();return;}
  MP.socket=ws;MP.lastRx=performance.now();mpStatus(retrying?'🔄 Reconectando…':'Conectando ao servidor…');
  MP.connectTimer=setTimeout(()=>{if(MP.socket===ws&&!MP.connected){MP.socket=null;try{ws.close()}catch(e){}mpReconnect();}},15000);
- ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name,token,friend:new URLSearchParams(location.search).get('amigo')||undefined})};
+ ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name,token,friend:new URLSearchParams(location.search).get('amigo')||undefined,identity:MP.identity,ownerToken:MP.ownerToken,accessBackup:MP.accessBackup})};
  ws.onmessage=e=>{if(MP.socket!==ws)return;MP.lastRx=performance.now();let msg;try{msg=JSON.parse(e.data)}catch{return;}
   if(msg.type==='joined'){
    if(MP.connected)mpClear();if(MP.joining){MP.name=MP.joining.name;MP.joining=null;}
    clearTimeout(MP.connectTimer);mpEntrance(false);MP.connected=true;MP.protocol=msg.protocol||1;MP.self=msg.id;MP.room=msg.room;MP.retry=0;MP.lastTx=MP.lastRankTx=0;
+   if(msg.identity){MP.identity=msg.identity;try{localStorage.setItem('rue3d_identity_v1',msg.identity)}catch{}}
+   mpApplyRole(msg);
    $('roomCode').value=msg.room;MP.tokens.set(msg.room,msg.token);try{localStorage.setItem('rue3d_mp_room',msg.room);sessionStorage.setItem('rue3d_mp_token_'+msg.room,msg.token)}catch(e){}
    setHomeBaseSlot(msg.baseSlot);mpPlace(msg.spawn||{x:BASE_HOME.x,z:BASE_HOME.z+8});
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
@@ -272,7 +295,8 @@ const mpJoin=(mode='join',retrying=false)=>{
    mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);
    typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:MP.name}}));
    mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});
-   if(MP.adminPassword)mpSend({type:'admin-auth',password:MP.adminPassword});
+   if(MP.adminPassword&&!MP.owner)mpSend({type:'admin-auth',password:MP.adminPassword});
+   window.RoubeOvoEquipment?.joined();
    if(msg.event)mpRemoteEvent(msg.event);
    if(!MP.pending){try{const p=JSON.parse(sessionStorage.getItem('rue3d_mp_deposit')||'null');if(p?.room===MP.room&&p.type==='egg-deposit')MP.pending=p;}catch(e){}}
    if(MP.pending?.type==='egg-deposit'){const p=MP.pending;if(p.accepted)mpFinishDeposit(p.accepted);else {p.startedAt=performance.now();mpSend({type:p.type,id:p.id,slot:p.slot,requestId:p.requestId,position:mpPosition()});}}
@@ -289,17 +313,26 @@ const mpJoin=(mode='join',retrying=false)=>{
   else if(msg.type==='world-add')for(const d of msg.eggs||[])mpUpsertEgg(d);
   else if(msg.type==='world-remove')mpRemoveEgg(msg.id);
   else if(msg.type==='egg-result')mpEggResult(msg);
+  else if(msg.type==='egg-forced-drop'){
+   if(MP.pending?.id===msg.egg.id){MP.pending=null;mpStorePending()}
+   if(carry?.netId===msg.egg.id){MP.settingRemote=true;try{drop()}finally{MP.settingRemote=false}}
+   mpUpsertEgg(msg.egg);P.stun=Math.max(P.stun||0,.65);P.train=false;
+   toast('🏏 Você foi atingido e soltou o ovo!');
+  }
   else if(msg.type==='base-state')mpApplyBase(msg.id,msg.base);
   else if(msg.type==='event')mpRemoteEvent(msg);
   else if(msg.type==='event-state'){MP.roomEvent=msg.event;if(!msg.event&&ABUSE.active)abuseStop(true);}
   else if(msg.type==='limited-sync'&&MP.protocol<2)syncRoomLimitedEggs(msg.eggs||[]);
-  else if(msg.type==='admin-ok'){MP.owner=true;ownerVerified=true;adminBadge.visible=true;mpStatus('👑 ADMIN autenticado na sala '+MP.room);}
-  else if(msg.type==='error'){MP.joining=null;mpEntrance(false,true);mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);if(!MP.connected){MP.stopped=true;clearTimeout(MP.connectTimer);ws.close();}}
+  else if(msg.type==='admin-ok'||msg.type==='admin-state'){mpApplyRole(msg);MP.adminPassword=null;mpStatus(MP.owner?'👑 Dono autenticado na sala '+MP.room:MP.canAdmin?'Painel autorizado pelo dono.':'Acesso ao painel removido.');}
+  else if(msg.type==='kicked'){MP.stopped=true;clearTimeout(MP.retryTimer);MP.retryTimer=null;save();mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);}
+  else if(msg.type==='error'){if(msg.scope==='admin'){MP.adminPassword=null;const field=$('adAuthError');if(field)field.textContent=msg.message;}MP.joining=null;mpEntrance(false,true);mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);if(!MP.connected){MP.stopped=true;clearTimeout(MP.connectTimer);ws.close();}}
+  window.RoubeOvoAdmin?.incoming(msg);window.RoubeOvoEquipment?.incoming(msg);
  };
  ws.onerror=()=>{if(MP.socket===ws)mpStatus('⚠ Conexão interrompida. Tentando novamente…');};
  ws.onclose=()=>{if(MP.socket===ws){MP.socket=null;clearTimeout(MP.connectTimer);mpClear();mpReconnect();}};
 };
 const mpUpdate=dt=>{
+ window.RoubeOvoEquipment?.update(dt);
  if(!MP.connected)return;
  const now=performance.now();
  if(now-MP.lastRx>35000){MP.socket?.close();return;}

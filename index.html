@@ -200,7 +200,7 @@ const resetOwnerProgressOnce=()=>{
   return true;
  }catch(e){console.warn('Falha ao zerar progresso local do ADMIN:',e);return false}
 };
-const OWNER_RESET_AT_BOOT=resetOwnerProgressOnce();
+const OWNER_RESET_AT_BOOT=false; // Atualizações e login nunca apagam o progresso.
 const KEY='rue3d_v1';
 let S={pid:'p'+Math.random().toString(36).slice(2,9),sp:0,$:0,tm:0,bl:0,tr:-1,own:[],pets:[],inc:[null,null,null,null],idx:{},t:Date.now(),id:1};
 try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d)S=Object.assign(S,d)}catch(e){}
@@ -463,7 +463,7 @@ const aL=lim(-.6,2,0xf1c27d,.28,.9),aR=lim(.6,2,0xf1c27d,.28,.9),lL=lim(-.25,1,0
 aL.rotation.z=-.08;aR.rotation.z=.08;
 /* Coroa ADMIN rosa, flutuando acima da cabeça. Visível só neste aparelho depois da chave válida. */
 let ownerVerified=false;
-try{ownerVerified=localStorage.getItem(ADMIN_DEVICE_KEY)==='yes'}catch(e){}
+// O selo só aparece após a confirmação assinada do servidor.
 const adminBadge=(()=>{
  const c=document.createElement('canvas');c.width=512;c.height=160;
  const g=c.getContext('2d');const grad=g.createLinearGradient(0,22,0,144);
@@ -595,7 +595,7 @@ const syncPets=()=>{dirty=false;const ids=new Set(AP.map(p=>p.id));for(const id 
  AP.forEach((p,k)=>{let o=PM[p.id];if(!o){const c=new T.Color().setHSL((p.s*37%360)/360,.55,.6);if(p.m.length)c.lerp(new T.Color(MUT[p.m[0]][3]),.6);const m=creature(c,p.s===LIMITED_ID?3.6:.8*SZ[p.z][1]);m.rb=p.m.includes(2);o=PM[p.id]={m};if(p.s===LIMITED_ID){o.fire={mesh:m,st:'pet',gr:1};mkLimitedAura(o.fire,true)}}o.k=k;o.x=BASE_HOME.x+((k%6)-2.5)*6;o.z=BASE_HOME.z+14+Math.floor(k/6)*6})};
 /* ===== Loja / menus ===== */
 let open=false,tab=0;
-const TB=['Esteira','Base','Trails','Pets','Index'],bt=(a,t,d)=>'<button data-a="'+a+'"'+(d?' disabled':'')+'>'+t+'</button>';
+const TB=['Esteira','Base','Trails','Pets','Index','🎒 Inventário'],bt=(a,t,d)=>'<button data-a="'+a+'"'+(d?' disabled':'')+'>'+t+'</button>';
 const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p.scrollTop;
  let h='<div style="display:flex;gap:4px;flex-wrap:wrap">'+TB.map((t,i)=>bt('T'+i,t,i===tab)).join('')+bt('x','Fechar')+'</div><p>Dinheiro: <b>$'+moneyView()+'</b> &nbsp; Renda: <b>$'+incomeView()+'/s</b></p>';
  if(tab===0){const n=TM[S.tm],x=TM[S.tm+1],astral=TM[TM.length-1],temAstral=S.tm===TM.length-1;
@@ -607,8 +607,10 @@ const ui=()=>{const p=$('pn');if(!open){p.style.display='none';return}const st=p
  if(tab===3){const by={};S.pets.filter(x=>!REMOVED_BIRDS.has(x.s)).forEach(x=>(by[x.s]=by[x.s]||[]).push(x));h+='<p>'+S.pets.length+' pets. Fusão: 3 da mesma espécie viram 1 (tamanho maior não é garantido).</p>';
   Object.keys(by).forEach(s=>{const l=by[s],c=SPC[s].inc*100;h+='<div class=r><span>'+SPC[s].n+' x'+l.length+', melhor $'+fm(Math.max(...l.map(pinc)))+'/s</span>'+(l.length>=3?bt('f'+s,'Fundir 3 por $'+fm(c),S.$<c):'')+'</div>'})}
  if(tab===4){h+='<p><b>Ordem de poder: Common → Uncommon → Rare → Epic → Legendary → Secret → Eternal → Divine → LIMITED ∞.</b> Legendary é mais fraco que Secret; cada área tem sua progressão própria de renda.</p><p>Descobertos: '+ACTIVE_SPECIES.filter(p=>S.idx[p.id]).length+'/'+ACTIVE_SPECIES.length+'</p><div class=r><span>Testar aviso e som</span><span>'+bt('s7','Secret')+' '+bt('s8','Eternal')+' '+bt('s9','Divine')+'</span></div>';BI.forEach((b,i)=>h+='<p><b>'+b.n+'</b>: '+b.sp.map((n,j)=>!n?'':S.idx[i*8+j]?n:'???').filter(Boolean).join(', ')+'</p>');if(PC)h+=PC.indexHtml(S);}
+ if(tab===5)h+=window.RoubeOvoEquipment?.inventoryHtml()||'<p>Carregando inventário…</p>';
  p.innerHTML=h;p.style.display='block';p.scrollTop=st};
 $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
+ if(a==='equipBat'||a==='unequipBat'){window.RoubeOvoEquipment?.equip(a==='equipBat'?'bat':null);ui();return;}
  if(a[0]==='T')tab=+a[1];else if(a==='x')open=false;
  else if(a==='tm'){const x=TM[S.tm+1];if(x&&S.$>=x[2]){S.$-=x[2];S.tm++;styleTM();beep(660,.2)}}
   else if(a==='astral'){const x=TM[TM.length-1];if(S.tm!==TM.length-1&&S.$>=x[2]){S.$-=x[2];S.tm=TM.length-1;styleTM();beep(950,.3,'triangle');toast('🌌 ESTEIRA ASTRAL EQUIPADA! Treino 1.000.000.000×')}}
@@ -883,71 +885,17 @@ addEventListener('pagehide',save);addEventListener('beforeunload',save);document
 
 /* ===== ADMINISTRADOR: ações conectadas diretamente ao estado real ===== */
 let adminVisible=false,adminUnlocked=false,adminLockGeneration=0,adminTab=0,adminAutoTime=0;
-// A chave é verificada pelo SHA-256; o texto original da senha fica fora do código.
-// Como este jogo é um HTML local, este bloqueio impede acesso casual, mas não substitui um servidor seguro.
-const ADMIN_ACCESS_HASH='7e3b6801a0a17efaf2cdf99eb5622bb8a6a00da502fb1fcff2b81de595877a52';
-// SHA-256 local como alternativa para navegadores que abrem arquivos sem WebCrypto.
-const adminSHA256=message=>{
- const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
-  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
-  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
-  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
-  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
-  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
-  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
-  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
- const H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
- const input=new TextEncoder().encode(message);
- const n=Math.ceil((input.length+9)/64)*64;
- const buffer=new Uint8Array(n);buffer.set(input);buffer[input.length]=0x80;
- const view=new DataView(buffer.buffer),bits=input.length*8;
- view.setUint32(n-8,Math.floor(bits/4294967296));view.setUint32(n-4,bits>>>0);
- const rotr=(x,n)=>(x>>>n)|(x<<(32-n));
- for(let p=0;p<n;p+=64){
-  const w=new Uint32Array(64);
-  for(let i=0;i<16;i++)w[i]=view.getUint32(p+i*4);
-  for(let i=16;i<64;i++){
-   const x=w[i-15],y=w[i-2];
-   const s0=rotr(x,7)^rotr(x,18)^(x>>>3);
-   const s1=rotr(y,17)^rotr(y,19)^(y>>>10);
-   w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0;
-  }
-  let [a,b,c,d,e,f,g,h]=H;
-  for(let i=0;i<64;i++){
-   const s1=rotr(e,6)^rotr(e,11)^rotr(e,25),ch=(e&f)^(~e&g);
-   const t1=(h+s1+ch+K[i]+w[i])>>>0;
-   const s0=rotr(a,2)^rotr(a,13)^rotr(a,22),maj=(a&b)^(a&c)^(b&c);
-   const t2=(s0+maj)>>>0;
-   h=g;g=f;f=e;e=(d+t1)>>>0;d=c;c=b;b=a;a=(t1+t2)>>>0;
-  }
-  const values=[a,b,c,d,e,f,g,h];for(let i=0;i<8;i++)H[i]=(H[i]+values[i])>>>0;
- }
- return H.map(n=>n.toString(16).padStart(8,'0')).join('');
-};
-const adminPasswordValid=async password=>{
- if(globalThis.crypto?.subtle){
-  const bytes=new TextEncoder().encode(password),hash=new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));
-  return Array.from(hash,b=>b.toString(16).padStart(2,'0')).join('')===ADMIN_ACCESS_HASH;
- }
- return adminSHA256(password)===ADMIN_ACCESS_HASH;
-};
+// A chave do dono é verificada exclusivamente pelo servidor.
 const adminLock=()=>{adminLockGeneration++;adminUnlocked=false;$('adPanel').classList.add('locked');$('adKey').value='';$('adAuthError').textContent='';};
 const adminLogin=async e=>{
  e.preventDefault();
  if(adminUnlocked||!adminVisible)return;
- const btn=$('adEnter');if(btn.disabled)return;btn.disabled=true;const generation=adminLockGeneration;
- try{
-   const suppliedKey=$('adKey').value;const matched=await adminPasswordValid(suppliedKey);
-   if(generation!==adminLockGeneration||!adminVisible)return;
-   if(matched){
-      try{localStorage.setItem(ADMIN_DEVICE_KEY,'yes')}catch(e){}
-       // Se o dono entrou por outro dispositivo, zere agora e recarregue do início.
-       if(resetOwnerProgressOnce()){location.reload();return;}
-       adminUnlocked=true;MP.adminPassword=suppliedKey;if(MP.connected)mpSend({type:'admin-auth',password:suppliedKey});$('adPanel').classList.remove('locked');$('adKey').value='';adminTab=0;ownerVerified=true;adminBadge.visible=true;
-      adminMessage='🔓 Acesso autorizado. Painel desbloqueado.';adminUI(true);toast('🔓 Acesso de administrador autorizado!');
-   }else{$('adAuthError').textContent='Chave incorreta. Tente novamente.';$('adKey').value='';$('adKey').focus();}
- }catch(err){if(generation===adminLockGeneration&&adminVisible)$('adAuthError').textContent=err.message||'Falha ao verificar a chave.';}
- finally{btn.disabled=false;}
+ if(typeof MP==='undefined'||!MP.connected){$('adAuthError').textContent='Aguarde conectar à sala para verificar o acesso.';return;}
+ const suppliedKey=$('adKey').value;
+ if(!suppliedKey)return;
+ $('adAuthError').textContent='Verificando seu acesso no servidor…';
+ MP.adminPassword=suppliedKey;
+ if(!mpSend({type:'admin-auth',password:suppliedKey}))$('adAuthError').textContent='Não foi possível conectar ao servidor.';
 };
 
 /* ADMIN ABUSE: efeitos executados no mundo local sem alterar as preferências permanentes */
@@ -962,7 +910,7 @@ const abuseJumpMult=()=>abuseIs('moon')?1.55:1;
 const abuseGuardianHit=g=>{if(P.stun>0||A.god)return;P.stun=.9;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*13;P.vz=Math.cos(a)*13;g.st='ret';toast('😈 Guardião enfurecido te atingiu!');};
 const abuseRecord=txt=>{ABUSE.log.unshift(new Date().toLocaleTimeString('pt-BR')+' • '+txt);ABUSE.log.length=Math.min(ABUSE.log.length,20)};
 const abuseAnnounce=(txt,secs=10)=>{txt=String(txt||'').trim();if(!txt)throw Error('Escreva uma mensagem para anunciar.');$('abMessageText').textContent=txt.slice(0,160);$('abMessage').style.display='block';ABUSE.msgSeconds=Math.max(4,Math.min(30,+secs||10));ABUSE.msgTotal=ABUSE.msgSeconds;abuseRecord('Aviso: '+txt.slice(0,70));beep(880,.25,'triangle',.05)};
-const abuseSpawn=(j,num=1)=>{if(typeof MP!=='undefined'&&MP.connected&&!MP.owner)return 0;const bi=Number(AS.abBiome),loc=Number.isInteger(bi)&&bi>=0&&bi<BI.length?bi:Math.max(0,cb()),where=bi<0?'player':'nest';let n=0;for(let i=0;i<num;i++){const e=adminSpawnEgg(loc,j,Math.floor(Math.random()*SZ.length),where,false);if(e)n++;}return n};
+const abuseSpawn=(j,num=1)=>{if(typeof MP!=='undefined'&&MP.connected&&!MP.canAdmin)return 0;const bi=Number(AS.abBiome),loc=Number.isInteger(bi)&&bi>=0&&bi<BI.length?bi:Math.max(0,cb()),where=bi<0?'player':'nest';let n=0;for(let i=0;i<num;i++){const e=adminSpawnEgg(loc,j,Math.floor(Math.random()*SZ.length),where,false);if(e)n++;}return n};
 // Um pool simples de partículas 3D, até 42 meshes: efeito visual leve em dispositivos Android.
 const abuseColor=id=>({secret:0x32c7ff,eternal:0x8cfbff,divine:0xff54ce,mixed:0xaf57ff,cosmic:0x9355ff,money:0xffcf30,gold:0xffcf30,meteor:0xff5e35,luck:0x39f09d,rainbow:0x6ae5ff,fireworks:0xff8f32,profit2:0xffcf30,profit10:0xffcf30,training:0x40b2ff,speed:0x65d0ff,moon:0xa9a1ff,eclipse:0x6254aa,sun:0xffd965,freeze:0x93eaff,fury:0xff3737,hatch:0xe6ff9a}[id]||0xffffff);
 const ABUSE_GEOM=new T.IcosahedronGeometry(.34,0);
@@ -997,7 +945,7 @@ const abuseRegrow=()=>{if(!abuseIs('luck')){regrow(false);return;}
  try{CFG.rare[7]=1;CFG.rare[8]=.5;CFG.rare[9]=.25;regrow(false)}finally{for(const k of [7,8,9])CFG.rare[k]=old[k]}
 };
 const abuseStop=(manual=false)=>{const e=ABUSE.active;ABUSE.active=null;$('abBanner').style.display='none';if(e){abuseRecord('Terminou: '+e.label);if(manual)ABUSE.queue=[];}
- if(typeof MP!=='undefined'&&MP.connected&&MP.owner&&!MP.settingRemote)mpBroadcastAction(null,'stop');
+ if(typeof MP!=='undefined'&&MP.connected&&MP.canAdmin&&!MP.settingRemote)mpBroadcastAction(null,'stop');
  if(!manual&&ABUSE.queue.length){const next=ABUSE.queue.shift();abuseStart(next.id,next.settings,true);return;}
  if(e)toast('✅ Evento encerrado • bônus temporários removidos');};
 const abuseStart=(id,settings=null,keepQueue=false)=>{
@@ -1017,7 +965,7 @@ const abuseStart=(id,settings=null,keepQueue=false)=>{
  abuseWave();
  abuseFlash(abuseColor(id),14);
  toast('🔥 '+e.label+' INICIADO!');beep(660,.18,'triangle',.05);
- if(typeof MP!=='undefined'&&MP.connected&&MP.owner&&!MP.settingRemote)mpBroadcastAction(null,'start');
+ if(typeof MP!=='undefined'&&MP.connected&&MP.canAdmin&&!MP.settingRemote)mpBroadcastAction(null,'start');
  if(adminVisible&&adminUnlocked&&adminTab===5)adminUI();
 };
 const abuseMarathon=()=>{ABUSE.queue=[{id:'money',settings:{duration:40,interval:8,wave:3}},{id:'luck',settings:{duration:45,interval:8,wave:2}},{id:'divine',settings:{duration:45,interval:8,wave:2}},{id:'rainbow',settings:{duration:45,interval:8,wave:3}}];abuseStart('secret',{duration:45,interval:7,wave:3},true);abuseRecord('Maratona programada: 5 eventos');};
@@ -1058,7 +1006,7 @@ const rankShow=async()=>{const list=$('rankList'),ticket=++rankRequest;
 };
 const rankToggle=flag=>{$('rankOverlay').style.display=flag?'flex':'none';if(flag){if(adminVisible)toggleAdmin(false);rankShow()}else rankRequest++};
 setInterval(()=>{if($('rankOverlay').style.display==='flex')rankShow()},10000);
-const adminTabs=['Início','Ovos','Pets','Mundo','Config.','🔥 Abuse / Eventos','🏆 Placar','Dados'];
+const adminTabs=['Início','Ovos','Pets','Mundo','Config.','🔥 Abuse / Eventos','🏆 Placar','Dados','👥 Jogadores'];
 const AS={cash:'1000000',speed:'10000',eggBiome:'0',eggSlot:'5',eggSize:'4',eggCount:'1',eggWhere:'nest',eggMutation:'random',limitedCount:'5',petSpecies:'7',petSize:'3',petMutation:'-1',petCount:'1',teleport:'-1',baseLevel:'0',treadLevel:'0',trailLevel:'0',chanceSecret:'10',chanceEternal:'4',chanceDivine:'0.5',resetSeconds:'300',trainMult:'5',moveMult:'1',jumpMult:'1',autoSeconds:'30',abDuration:'90',abWave:'3',abInterval:'7',abBiome:'-1',abAnnouncement:'🔥 Evento especial iniciado!',abGiveMoney:'1000000',rankName:'',rankMoney:'0',rankSpeed:'0',broadcastSeconds:'10',json:''};
 AS.chanceSecret=String(CFG.rare[7]*100);AS.chanceEternal=String(CFG.rare[8]*100);AS.chanceDivine=String(CFG.rare[9]*100);
 AS.resetSeconds=String(CFG.reset);AS.trainMult=String(CFG.train);AS.moveMult=String(A.moveMult);AS.jumpMult=String(A.jumpMult);AS.autoSeconds=String(A.autoSecretEvery);AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));
@@ -1074,7 +1022,7 @@ const adEggsCount=()=>eggs.length+(carry?1:0);
 const adminUI=(resetScroll=false)=>{
  const tabs=$('adTabs'),ct=$('adContent');if(!adminVisible||!adminUnlocked)return;
  const st=resetScroll?0:ct.scrollTop;
- tabs.innerHTML=adminTabs.map((t,i)=>`<button type="button" data-tab="${i}" class="${adminTab===i?'active':''}">${t}</button>`).join('');
+ tabs.innerHTML=adminTabs.map((t,i)=>i===8&&!MP.owner?'':`<button type="button" data-tab="${i}" class="${adminTab===i?'active':''}">${t}</button>`).join('');
  let h='';
  if(adminTab===0){
  h='<h3>📊 Gestão do jogador</h3><p>Valores abaixo mudam imediatamente o jogo e ficam salvos neste navegador.</p>';
@@ -1141,6 +1089,7 @@ const adminUI=(resetScroll=false)=>{
  h+=adCard('Recomeçar do zero',`<p>Apaga o progresso deste jogo e as preferências de admin salvas neste navegador.</p><div class="adControls">${adBtn('resetGame','Reiniciar progresso','danger')}</div>`);
  h+='</div>';
  }
+ if(adminTab===8)h=window.RoubeOvoAdmin?.render()||'<p>Carregando jogadores…</p>';
  ct.innerHTML=h+`<div class="adStatus" role="status">${adEsc(adminMessage)}</div>`;ct.scrollTop=st;
 };
 const toggleAdmin=force=>{
@@ -1159,13 +1108,13 @@ const toggleAdmin=force=>{
 const adStatus=msg=>{adminMessage=msg;toast(msg);const el=$('adContent').querySelector('.adStatus');if(el)el.textContent=msg};
 const adFinish=msg=>{save();saveAdmin();recalc();upGates();upHud();adminUI();adStatus(msg)};
 const adminSpawnEgg=(b,j,z,where='nest',fx=true,mutations=null)=>{
- if(typeof MP!=='undefined'&&MP.connected&&!MP.owner)return null;
+ if(typeof MP!=='undefined'&&MP.connected){if(!MP.canAdmin)return null;return mpRequestSpawn(b,j,z,where,fx,mutations);}
  if(eggs.filter(e=>e.s!==LIMITED_ID).length>=200)return null;
  b=Math.max(0,Math.min(BI.length-1,Math.floor(b)));j=Math.max(0,Math.min(7,Math.floor(j)));z=Math.max(0,Math.min(4,Math.floor(z)));
  if(REMOVED_BIRDS.has(b*8+j))return null;const e=newEgg(b,j),n=NS[b*8+j];e.m=mutations===null?null:[...new Set((Array.isArray(mutations)?mutations:[]).filter(v=>Number.isInteger(v)&&MUT[v]))];e.z=z;e.w=+((1+j*.9)*SZ[z][1]*2).toFixed(1);e.mesh=eggMesh(e);e.base=e.mesh.scale.clone();e.gr=1;e.st='nest';e.nest=null;
  if(where==='nest'&&!n.e){n.e=e;e.nest=n;e.mesh.position.set(n.x,.45+e.base.y,n.z)}
  else {let x,zp;if(where==='player'){x=P.x+(Math.random()-.5)*5;zp=P.z+(Math.random()-.5)*5}else{x=n.x+2.5+(Math.random()-.5)*4;zp=n.z+(Math.random()-.5)*6}e.mesh.position.set(Math.max(-97,Math.min(97,x)),.45+e.base.y,Math.max(-936,Math.min(49,zp)));e.st='caido'}
- eggs.push(e);if(AUR[e.r])mkAura(e);if(typeof MP!=='undefined'&&MP.connected&&MP.owner)mpSend({type:'admin-spawn',eggs:[mpDescribeEgg(e)]});if(fx){if(e.r>=7)rareFx([e]);else playSnd(e.r)}return e;
+ eggs.push(e);if(AUR[e.r])mkAura(e);if(typeof MP!=='undefined'&&MP.connected&&MP.canAdmin)mpSend({type:'admin-spawn',eggs:[mpDescribeEgg(e)]});if(fx){if(e.r>=7)rareFx([e]);else playSnd(e.r)}return e;
 };
 const WORLD_LIMITED_KEY='rue3d_limited_world_v1';
 const persistLimitedWorld=()=>{
@@ -1207,21 +1156,20 @@ const syncRoomLimitedEggs=list=>{
  for(const p of list)if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
 };
 const adminSpawnLimited=(count=1,silent=false,nearPlayer=false)=>{
- if(MP.connected&&!MP.owner)throw Error('Autentique o ADMIN na sala antes de invocar ovos.');
+ if(MP.connected&&!MP.canAdmin)throw Error('Autentique o ADMIN na sala antes de invocar ovos.');
  if(!Number.isSafeInteger(count)||count<1||count>100)throw Error('Escolha de 1 a 100 LIMITED por comando. Repita à vontade!');
  const centerZ=-65-70*(BI.length-1);
- let first=null;
+ let first=null;const requested=[];
  for(let k=0;k<count;k++){
   const serial=Number.isSafeInteger(S.limitedSerial)?S.limitedSerial:0;
   S.limitedSerial=serial+1;
   // Espalha os ovos na última área em posições diferentes.
   const x=nearPlayer?P.x+3+(k%5)*3:-84+(serial%15)*12,z=nearPlayer?P.z+4+Math.floor(k/5)*3:centerZ-30+(Math.floor(serial/15)%6)*11;
-  const e=makeLimitedEgg(x,z);if(!first)first=e;
+  requested.push({x,z});const e=MP.connected?{s:LIMITED_ID,r:10,z:4,m:[]}:makeLimitedEgg(x,z);if(!first)first=e;
  }
  persistLimitedWorld();
- if(MP.connected&&MP.owner){
-  const recent=eggs.filter(e=>e.s===LIMITED_ID).slice(-count);
-  mpSend({type:'admin-limited',eggs:recent.map(e=>({x:e.mesh.position.x,z:e.mesh.position.z}))});
+ if(MP.connected&&MP.canAdmin){
+  mpSend({type:'admin-limited',eggs:requested});
  }
  if(!silent){
   rareFx([first]);abuseFlash(0xff5918,LIMITED_LOW_FX?5:12);
@@ -1240,7 +1188,7 @@ const manageLimitedAuras=dt=>{
   else if(e.aura)disposeLimitedAura(e);
  }
 };
-const adminClearEggs=()=>{if(MP.connected&&!MP.owner)throw Error('Autentique o ADMIN na sala antes de limpar os ovos.');for(const e of eggs){sc.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null);persistLimitedWorld();if(MP.connected&&MP.owner)mpSend({type:'admin-clear'})};
+const adminClearEggs=()=>{if(MP.connected&&!MP.canAdmin)throw Error('Autentique o ADMIN na sala antes de limpar os ovos.');for(const e of eggs){sc.remove(e.mesh);if(e.aura){if(e.s===LIMITED_ID)disposeLimitedAura(e);else sc.remove(e.aura)}if(e.nest)e.nest.e=null}eggs.length=0;NS.forEach(n=>n.e=null);persistLimitedWorld();if(MP.connected&&MP.canAdmin)mpSend({type:'admin-clear'})};
 const adminGivePet=(s,z,m=[])=>{s=Math.max(0,Math.min(SPC.length-1,s));z=Math.max(0,Math.min(3,z));if(REMOVED_BIRDS.has(s))return null;const p={id:S.id++,s,z,w:+((1+SPC[s].r*.9)*SZ[z][1]*2).toFixed(1),m:[...m]};S.pets.push(p);S.idx[s]=1;return p};
 const adminTele=b=>{P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.y=0;P.x=b<0?BASE_HOME.x:0;P.z=b<0?BASE_HOME.z+8:-65-70*Math.min(BI.length-1,b);return b<0?'base':BI[b].n};
 const adValidNumber=(key,min=0,max=1e100)=>{const raw=String(AS[key]??'').trim(),v=Number(raw);if(!raw||!Number.isFinite(v)||v<min||v>max)throw Error(`Valor inválido para ${key}.`);return v};
@@ -1263,7 +1211,7 @@ const adminRestore=obj=>{
  for(const id in PM){sc.remove(PM[id].m);if(PM[id].fire?.aura)sc.remove(PM[id].fire.aura);delete PM[id]}
  styleTM();AS.baseLevel=String(S.bl);AS.treadLevel=String(S.tm);AS.trailLevel=String(Math.max(0,S.tr));recalc();saveAdmin();save();return S.pets.length;
 };
-const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;let msg='Alteração aplicada!';try{if(act.startsWith('rankDel:')){const key=decodeURIComponent(act.slice(8));LEAD=LEAD.filter(p=>p.name!==key);rankSave();rankShow();adFinish('Jogador removido do placar');return;}if(act.startsWith('ab_')){abuseStart(act.slice(3));adFinish('🔥 Evento iniciado: '+ABUSE.active.label);return;}
+const adminHandle=async act=>{if(!adminVisible||!adminUnlocked)return;if(act.startsWith('moderate:')){window.RoubeOvoAdmin?.handle(act);return;}let msg='Alteração aplicada!';try{if(act.startsWith('rankDel:')){const key=decodeURIComponent(act.slice(8));LEAD=LEAD.filter(p=>p.name!==key);rankSave();rankShow();adFinish('Jogador removido do placar');return;}if(act.startsWith('ab_')){abuseStart(act.slice(3));adFinish('🔥 Evento iniciado: '+ABUSE.active.label);return;}
  switch(act){
  case 'abStop':abuseStop(true);msg='Evento encerrado';break;
  case 'abRandom':abuseStart(['secret','eternal','divine','mixed','cosmic','money','profit2','profit10','training','speed','hatch','luck','rainbow','gold','meteor','moon','eclipse','sun','freeze','fury','fireworks'][Math.floor(Math.random()*21)]);msg='Evento surpresa iniciado';break;
@@ -1361,7 +1309,7 @@ const mpAutomaticStart=()=>{if(!MP.connected&&!MP.socket&&!MP.stopped)mpJoin(MP.
 addEventListener('roube-start-game',()=>setTimeout(mpAutomaticStart,40));
 setTimeout(()=>{if(!$('roube-capa'))mpAutomaticStart()},300);
 // Seus eventos são transmitidos pela rede somente após verificação do ADMIN no servidor.
-const mpBroadcastAction=(action,kind)=>{if(!MP.connected||!MP.owner||MP.settingRemote)return; if(kind==='start'&&ABUSE.active){const e=ABUSE.active;mpSend({type:'admin-event',action:'start',id:e.id,settings:{duration:e.duration,interval:e.interval,wave:e.wave}})}else if(kind==='stop')mpSend({type:'admin-event',action:'stop'});else if(kind==='announce')mpSend({type:'admin-announce',text:String(action).slice(0,160),seconds:10});};
+const mpBroadcastAction=(action,kind)=>{if(!MP.connected||!MP.canAdmin||MP.settingRemote)return; if(kind==='start'&&ABUSE.active){const e=ABUSE.active;mpSend({type:'admin-event',action:'start',id:e.id,settings:{duration:e.duration,interval:e.interval,wave:e.wave}})}else if(kind==='stop')mpSend({type:'admin-event',action:'stop'});else if(kind==='announce')mpSend({type:'admin-announce',text:String(action).slice(0,160),seconds:10});};
 const recoverMovement=()=>{
  save();P.train=false;P.stun=0;P.vx=P.vy=P.vz=0;P.x=BASE_HOME.x;P.y=0;P.z=BASE_HOME.z+8;P.pitch=.45;P.yaw=0;
  const ids=[jp,cp];jp=cp=null;J.x=J.y=0;Object.keys(K).forEach(k=>K[k]=0);
@@ -1393,4 +1341,4 @@ upGates();upHud();cam.position.set(0,6,17);
 toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'Joystick à esquerda para andar, arraste à direita para girar a câmera. Perto de um ovo, toque em Ação e leve-o ao círculo amarelo da base.');
 // Aguardar os scripts de frutas, animais e chocagem antes do primeiro frame.
 addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
-</script><script src="/multiplayer-client.js?v=20261102-mutations3"></script><script src="/entrance-cinematic.js?v=20261031-cutscene3d-1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
+</script><script src="/multiplayer-client.js?v=20261102-shared-bat4"></script><script src="/entrance-cinematic.js?v=20261031-cutscene3d-1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>

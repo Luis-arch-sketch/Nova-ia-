@@ -2,7 +2,8 @@
 const crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const {World,LIMITED,baseSpawn,finite,meetingSpawn}=require('./multiplayer-world.cjs');
-module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
+const {swingBat}=require('./player-combat.cjs');
+module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
  const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:16384});
  const position=(ws,p)=>{
   if(!p||!finite(p.x,-99,99)||!finite(p.y,-1,2000)||!finite(p.z,-945,333)||!finite(p.yaw,-100,100))return false;
@@ -13,14 +14,28 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
   if(m.type==='egg-deposit'&&ok){ws.session.receipts.set(m.requestId,reply);if(ws.session.receipts.size>100)ws.session.receipts.delete(ws.session.receipts.keys().next().value)}
   send(ws,reply);return reply;
  };
- wss.on('connection',ws=>{
+ const roleState=ws=>({owner:!!ws.owner,canAdmin:!!ws.admin,role:ws.owner?'owner':ws.admin?'operator':'player'});
+ const applyRole=(ws,owner=false)=>{ws.owner=owner;ws.admin=owner||access.role(ws.principal)==='operator'};
+ const listModeration=ws=>{
+  if(!ws.owner)return;
+  send(ws,{type:'moderation-list',players:[...wss.clients].filter(p=>p.room&&p.readyState===WebSocket.OPEN).map(p=>({id:p.id,name:p.name,room:p.room,principal:p.principal,...roleState(p)})),blocked:access.state.blocked,grants:access.state.grants,backup:access.backup()});
+ };
+ wss.on('connection',(ws,req)=>{
+  const identity=access.cookie(req)||access.newIdentity();
   Object.assign(ws,{id:crypto.randomUUID(),room:null,admin:false,heldEgg:null,name:'',x:0,y:0,z:8,yaw:0,lastMove:0,failedAdminCount:0,alive:true,rateAt:Date.now(),rateCount:0});
+  ws.principal=identity.id;ws.identityToken=identity.token;ws.cookieIdentity=!!access.cookie(req);ws.owner=false;ws.weapon=null;
   const joinTimer=setTimeout(()=>{if(!ws.room)ws.close(1008,'Escolha uma sala')},20000);joinTimer.unref();
   ws.on('pong',()=>{ws.alive=true});
   ws.on('message',raw=>{
    const now=Date.now();if(now-ws.rateAt>=1000){ws.rateAt=now;ws.rateCount=0}if(++ws.rateCount>100){ws.close(1008,'Muitas mensagens');return}
    let m;try{m=JSON.parse(String(raw));if(!m||typeof m!=='object'||Array.isArray(m))return}catch{return}
    if(m.type==='join'||m.type==='quick-join'||m.type==='create-server'){
+    if(!ws.cookieIdentity&&!ws.room){
+     const remembered=access.identity(m.identity);
+     const resumed=typeof m.token==='string'?sessions.get(m.token)?.principal:null;
+     if(remembered||resumed){ws.principal=remembered||resumed;ws.identityToken=access.sign({kind:'player',id:ws.principal})}
+    }
+    if((access.kicks.get(ws.principal)||0)>now){send(ws,{type:'kicked',message:'Você foi expulso pelo dono. Aguarde para entrar novamente.'});ws.close(4003,'Expulso pelo dono');return}
     const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?openPublicRoom():String(m.room||'').trim().toUpperCase();
     const name=String(m.name||'').trim();
     if(!/^[A-Z0-9-]{3,12}$/.test(room)||name.length<2||name.length>20||/[\u0000-\u001f\u007f]/.test(name)||/^admin$/i.test(name)){error(ws,'Nome ou código de sala inválido');return}
@@ -35,9 +50,10 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
     const anchor=[...peers(room)].filter(p=>p!==ws&&p.readyState===WebSocket.OPEN).find(p=>p.id===m.friend)||[...peers(room)].find(p=>p!==ws&&p.readyState===WebSocket.OPEN);
     leave(ws);clearTimeout(joinTimer);
     const session=resume||{token:crypto.randomBytes(24).toString('hex'),id:crypto.randomUUID(),receipts:new Map()};
-    Object.assign(session,{room,slot:baseSlot,active:true,expiresAt:Infinity});sessions.set(session.token,session);
+    Object.assign(session,{room,slot:baseSlot,active:true,expiresAt:Infinity,principal:ws.principal});sessions.set(session.token,session);
     const spawn=resume?.position||(anchor?meetingSpawn(anchor,baseSlot-1):{...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0});
     Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,training:false,baseState:null,heldEgg:null});
+    applyRole(ws,access.resumeOwner(ws.principal,m.ownerToken,m.accessBackup));
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
     if(!roomWorlds.has(room))roomWorlds.set(room,new World(now));
     const world=roomWorlds.get(room);world.emptyAt=0;world.tick(now);
@@ -46,7 +62,7 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
       const home={...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0};
       Object.assign(ws,home);Object.assign(spawn,home);
      }
-    send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,room,baseSlot,spawn,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event});
+    send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,identity:ws.identityToken,room,baseSlot,spawn,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event,...roleState(ws),accessBackup:ws.owner?access.backup():undefined});
     broadcastPresence(room);return;
    }
    if(m.type==='ping'){send(ws,{type:'pong',serverNow:now});return}
@@ -69,6 +85,23 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
    }
    const world=roomWorlds.get(ws.room);if(!world)return;
    if(m.type==='world-request'){send(ws,world.snapshot(now));return}
+   if(m.type==='equip'){
+    if(m.weapon!==null&&m.weapon!=='bat')return;
+    ws.weapon=m.weapon;send(ws,{type:'equipment',weapon:ws.weapon});broadcastPresence(ws.room);return;
+   }
+   if(m.type==='bat-swing'){
+    const hit=swingBat(ws,peers(ws.room),world,now);
+    send(ws,{type:'bat-result',ok:hit.ok,hit:!!hit.target,message:hit.reason||''});
+    if(!hit.ok)return;
+    broadcast(ws.room,{type:'combat-swing',id:ws.id});
+    if(hit.egg){
+     send(hit.target,{type:'egg-forced-drop',egg:hit.egg,by:ws.id});
+     broadcast(ws.room,{type:'world-add',eggs:[hit.egg]});
+     broadcast(ws.room,{type:'combat-hit',id:ws.id,target:hit.target.id,eggId:hit.egg.id});
+     broadcastPresence(ws.room);
+    }
+    return;
+   }
    if(m.type==='stats'){
     if(!finite(m.money,0,1e100)||!finite(m.speed,0,1e100))return;
     ws.money=m.money;ws.speed=m.speed;
@@ -126,11 +159,30 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
     const egg=world.drop(ws);broadcast(ws.room,{type:'event',kind:'limited-drop',egg},ws);broadcast(ws.room,{type:'world-add',eggs:[egg]});broadcastPresence(ws.room);return;
    }
    if(m.type==='admin-auth'){
-    if(!ADMIN_HASH){error(ws,'ADMIN_PASSWORD_HASH ausente no servidor');return}
+    const denied=message=>send(ws,{type:'error',scope:'admin',message});
+    if(access.blocked(ws.principal)){denied('Seu acesso ao painel foi bloqueado pelo dono.');return}
+    if(!ADMIN_HASH){denied('ADMIN_PASSWORD_HASH ausente no servidor');return}
     const hash=crypto.createHash('sha256').update(String(m.password||'').slice(0,256)).digest('hex');
-    if(!sameHex(hash,ADMIN_HASH)){ws.failedAdminCount++;error(ws,'Acesso de administrador recusado');if(ws.failedAdminCount>=5)ws.close(1008,'Muitas tentativas');return}
-    if([...peers(ws.room)].some(p=>p!==ws&&p.admin)){error(ws,'Já existe ADMIN nesta sala');return}
-    ws.admin=true;ws.failedAdminCount=0;send(ws,{type:'admin-ok'});broadcastPresence(ws.room);return;
+    if(!sameHex(hash,ADMIN_HASH)){ws.failedAdminCount++;denied('Acesso de administrador recusado');if(ws.failedAdminCount>=5)ws.close(1008,'Muitas tentativas');return}
+    const claim=access.claimOwner(ws.principal);if(claim.error){denied(claim.error);return}
+    ws.owner=true;ws.admin=true;ws.failedAdminCount=0;send(ws,{type:'admin-ok',...roleState(ws),ownerToken:claim.token,accessBackup:access.backup()});broadcastPresence(ws.room);return;
+   }
+   if(m.type==='moderation-list'){listModeration(ws);return}
+   if(m.type==='moderate'){
+    if(!ws.owner){error(ws,'Somente o dono pode expulsar jogadores ou mudar o acesso ao painel.');return}
+    const target=[...wss.clients].find(p=>p.room&&p.id===m.id);
+    const record=target||[...access.state.blocked,...access.state.grants].find(p=>p.id===m.principal);
+    const principal=target?.principal||record?.id;
+    if(!record||!principal){error(ws,'Jogador não encontrado. Atualize a lista.');return}
+    if(principal===access.state.ownerId){error(ws,'O dono não pode ser expulso nem perder seu acesso.');return}
+    if(m.action==='kick'){
+     if(!target)return;
+     access.kicks.set(principal,now+30000);send(target,{type:'kicked',message:'Você foi expulso pelo dono deste jogo.'});leave(target);target.close(4003,'Expulso pelo dono');
+    }else{
+     const changed=access.change(m.action,principal,record.name);if(changed.error){error(ws,changed.error);return}
+     for(const client of wss.clients)if(client.room&&client.principal===principal){applyRole(client);send(client,{type:'admin-state',...roleState(client),message:client.admin?'O dono liberou seu acesso ao painel.':'O dono removeu seu acesso ao painel.'});broadcastPresence(client.room)}
+    }
+    send(ws,{type:'moderation-result',ok:true,action:m.action,name:record.name,accessBackup:access.backup()});listModeration(ws);return;
    }
    if(!ws.admin)return;
    if(m.type==='admin-event'){
@@ -171,8 +223,10 @@ module.exports=({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,p
      broadcast(room,world.snapshot(now));
     }
    if([...peers(room)].some(p=>p.dirtyMove)){for(const p of peers(room))p.dirtyMove=false;broadcastPresence(room)}
+   if(now-(world.lastSnapshot||0)>6000){world.lastSnapshot=now;broadcast(room,world.snapshot(now))}
   }
   for(const [token,s] of sessions)if(!s.active&&now>s.expiresAt)sessions.delete(token);
+  for(const [id,until] of access.kicks)if(now>until)access.kicks.delete(id);
  },100);updates.unref();
  const heartbeat=setInterval(()=>{for(const ws of wss.clients){if(!ws.alive){ws.terminate();continue}ws.alive=false;try{ws.ping()}catch{ws.terminate()}}},15000);heartbeat.unref();
  wss.on('close',()=>{clearInterval(updates);clearInterval(heartbeat)});

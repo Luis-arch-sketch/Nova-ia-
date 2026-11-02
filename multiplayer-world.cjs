@@ -2,6 +2,7 @@
 const crypto=require('node:crypto');
 const LIMITED=104,REMOVED=new Set([0,9]),RARITIES=[0,1,2,3,4,7,8,9];
 const SIZES=[.8,1,1.4,1.9,12/1.8],CHANCES={2:.4,3:.3,4:.2,7:.1,8:.04,9:.005};
+const MUTATION_CHANCES=[.08,.04,.015,.06,.01,.015,.015,.01];
 const baseSpawn=slot=>({x:[0,52,-52][slot%3],z:8+Math.floor(slot/3)*56});
 const finite=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
 // Colocar o visitante diante da câmera do amigo, onde ambos podem se enxergar.
@@ -22,7 +23,7 @@ class World {
   if(this.eggs.size>=400||REMOVED.has(species))return null;
   const collected=species>=105&&species<129,tier=collected?Math.floor((species-105)/4):0;
   const egg={id:crypto.randomUUID(),b,j,s:species,r:species===LIMITED?10:collected?11+tier:RARITIES[j],size,
-   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,m:mutations===null?null:[...new Set((Array.isArray(mutations)?mutations:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<8))],grownAt:now,expiresAt:species===LIMITED?null:now+this.reset};
+   w:species===LIMITED?1:+((collected?3+tier*2:1+j*.9)*SIZES[size]*2).toFixed(1),x,z,nest,m:mutations===null?MUTATION_CHANCES.flatMap((chance,i)=>this.random()<chance?[i]:[]):[...new Set((Array.isArray(mutations)?mutations:[]).filter(v=>Number.isInteger(v)&&v>=0&&v<8))],grownAt:now,expiresAt:species===LIMITED?null:now+this.reset};
   this.eggs.set(egg.id,egg);return egg;
  }
  size(){const n=this.random()*100;return n<50?0:n<85?1:n<97?2:3;}

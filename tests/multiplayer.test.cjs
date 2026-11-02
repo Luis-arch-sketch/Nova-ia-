@@ -23,7 +23,7 @@ const open=()=>new Promise((resolve,reject)=>{
 
 test('Multiplayer: sala isolada, limpeza LIMITED e reconciliação de coleta', {timeout:20000},async()=>{
  const child=spawn(process.execPath,['server.js'],{
-   env:{...process.env,PORT:String(PORT),ADMIN_PASSWORD_HASH:crypto.createHash('sha256').update(secret).digest('hex')},
+   env:{...process.env,PORT:String(PORT),MODERATION_FILE:require('node:path').join(require('node:os').tmpdir(),'roube-test-'+process.pid+'-'+crypto.randomUUID()+'.json'),ADMIN_PASSWORD_HASH:crypto.createHash('sha256').update(secret).digest('hex')},
    stdio:['ignore','pipe','pipe']
  });
  const clients=[];let stderr='';

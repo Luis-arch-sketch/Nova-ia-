@@ -4,8 +4,10 @@ const {WebSocket}=require('ws');
 const {LIMITED}=require('./multiplayer-world.cjs');
 const previewPort=process.argv.indexOf('--port');
 const PORT=Number(process.env.PORT||(previewPort>=0?process.argv[previewPort+1]:3000)),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map(),roomWorlds=new Map(),sessions=new Map();
+const {PlayerAccess}=require('./player-access.cjs');
+const access=new PlayerAccess(process.env.PLAYER_ACCESS_SECRET||crypto.randomBytes(32).toString('hex'),process.env.MODERATION_FILE||path.join(__dirname,'data','player-access.json'));
 const send=(ws,o)=>{if(ws.readyState!==WebSocket.OPEN)return;try{if(ws.bufferedAmount>1024*1024){ws.terminate();return}ws.send(JSON.stringify(o))}catch{ws.terminate()}};
-const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0,admin:ws.admin,baseSlot:ws.baseSlot,carrying:ws.heldEgg||null,training:!!ws.training,avatar:ws.avatar||null});
+const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0,admin:!!ws.owner,role:ws.owner?'owner':ws.admin?'operator':'player',weapon:ws.weapon||null,baseSlot:ws.baseSlot,carrying:ws.heldEgg||null,training:!!ws.training,avatar:ws.avatar||null});
 const peers=room=>rooms.get(room)||new Set();
 // Salas sob demanda, sem um número máximo definido de salas.
 // A lotação continua em 16 por sala; salas vazias são removidas automaticamente.
@@ -35,7 +37,7 @@ const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r),world=roomWor
  const egg=world?.drop(ws);
  if(egg){broadcast(r,{type:'world-add',eggs:[egg]},ws);if(egg.s===LIMITED)broadcast(r,{type:'event',kind:'limited-drop',egg},ws)}
  if(ws.session){ws.session.position={x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0};ws.session.active=false;ws.session.expiresAt=Date.now()+120000;}
- p?.delete(ws);ws.room=null;ws.admin=false;ws.baseSlot=null;
+ p?.delete(ws);ws.room=null;ws.admin=false;ws.owner=false;ws.weapon=null;ws.baseSlot=null;
  if(p?.size===0){rooms.delete(r);if(world)world.emptyAt=Date.now()}else broadcastPresence(r);
 };
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):min};
@@ -110,7 +112,8 @@ for(const file of ['egg-crack.mp3','egg-suspense.mp3'])PWA_FILES['/audio/'+file]
 PWA_FILES['/avatar-customizer.js']=['avatar-customizer.js','application/javascript; charset=utf-8'];
 PWA_FILES['/afk-training.js']=['afk-training.js','application/javascript; charset=utf-8'];
 PWA_FILES['/biome-countdown.js']=['biome-countdown.js','application/javascript; charset=utf-8'];
-const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML do avatar inválido');return html.replace('</body>','<script src="/avatar-customizer.js?v=20261102-character-menu5"></script><script src="/afk-training.js?v=20261102-3"></script><script src="/biome-countdown.js?v=20261102-layout5"></script></body>')};
+for(const file of ['admin-controls.js','player-equipment.js'])PWA_FILES['/'+file]=[file,'application/javascript; charset=utf-8'];
+const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML do avatar inválido');return html.replace('</body>','<script src="/avatar-customizer.js?v=20261102-character-menu5"></script><script src="/afk-training.js?v=20261102-3"></script><script src="/biome-countdown.js?v=20261102-layout5"></script><script src="/admin-controls.js?v=20261102-roles1"></script><script src="/player-equipment.js?v=20261102-bat1"></script></body>')};
 const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261102-menus3"></script></body>')};
 const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8'))))))));
 const RETIRED_ASSETS=new Set(['/halloween-event.js','/halloween-pets.js','/halloween-clowns.js',
@@ -149,7 +152,7 @@ const httpServer=http.createServer((req,res)=>{
   stream.pipe(res);return;
  }
  if(u.pathname==='/api/leaderboard'){
-  const players=[...rooms].flatMap(([room,clients])=>[...clients].filter(ws=>ws.readyState===WebSocket.OPEN&&!ws.admin).map(ws=>({name:ws.name,money:Number.isFinite(ws.money)?ws.money:0,speed:Number.isFinite(ws.speed)?ws.speed:0})));
+  const players=[...rooms].flatMap(([room,clients])=>[...clients].filter(ws=>ws.readyState===WebSocket.OPEN&&!ws.owner).map(ws=>({name:ws.name,money:Number.isFinite(ws.money)?ws.money:0,speed:Number.isFinite(ws.speed)?ws.speed:0})));
   players.sort((a,b)=>b.money-a.money||b.speed-a.speed);
   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}).end(JSON.stringify({players:players.slice(0,50),total:players.length}));return;
  }
@@ -176,12 +179,14 @@ const httpServer=http.createServer((req,res)=>{
   stream.pipe(res);return;
  }
  if(u.pathname==='/'||u.pathname==='/index.html'){
+  const identity=access.cookie(req)||access.newIdentity();
+  if(!access.cookie(req))res.setHeader('Set-Cookie','rue_player='+identity.token+'; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax'+(req.headers['x-forwarded-proto']==='https'?'; Secure':''));
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}).end(gameHtml);
   return;
  }
  res.writeHead(404).end('Not found');
 });
-const wss=require('./multiplayer-network.cjs')({httpServer,ADMIN_HASH,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom});
+const wss=require('./multiplayer-network.cjs')({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom});
 // Verificacao de integracao: dois clientes WebSocket reais, duas bases e movimento sincronizado.
 // A sala QA-* e temporaria e e removida no final, sem afetar os jogadores.
 const testMultiplayer=async()=>{

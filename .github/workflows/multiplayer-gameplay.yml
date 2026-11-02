@@ -1,0 +1,43 @@
+name: Roube um Ovo - Dono e roubo com bastao
+on:
+  push:
+    branches: [roube-um-ovo-3d-multiplayer]
+    paths:
+      - 'server.js'
+      - 'index.html'
+      - 'multiplayer-*.cjs'
+      - 'multiplayer-client.js'
+      - 'player-*.cjs'
+      - 'player-equipment.js'
+      - 'admin-controls.js'
+      - 'tests/roles-combat*'
+      - '.github/workflows/multiplayer-gameplay.yml'
+  workflow_dispatch:
+jobs:
+  shared-world-and-owner:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias de teste
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Testar servidor e progresso
+        run: npm test
+      - name: Jogar com dois navegadores e roubar o mesmo ovo
+        run: node tests/roles-combat-browser.cjs
+      - name: Capturas de verificacao
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dono-inventario-roubo
+          path: test-results/roles-combat/*.png
+          if-no-files-found: ignore
+          retention-days: 7

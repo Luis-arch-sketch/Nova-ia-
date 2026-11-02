@@ -10,7 +10,7 @@ function connect(){return new Promise((resolve,reject)=>{
 });}
 async function join(ws,room,name,token){ws.sendJSON({type:'join',room,name,token});return ws.next(m=>m.type==='joined');}
 test('rede: 16 bases, sala cheia preserva sala anterior, eventos para novos jogadores e validação de pacotes', {timeout:15000},async()=>{
- const srv=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(PORT),ADMIN_PASSWORD_HASH:crypto.createHash('sha256').update(secret).digest('hex')},stdio:['ignore','ignore','pipe']}),clients=[];
+ const srv=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(PORT),MODERATION_FILE:require('node:path').join(require('node:os').tmpdir(),'roube-test-'+process.pid+'-'+crypto.randomUUID()+'.json'),ADMIN_PASSWORD_HASH:crypto.createHash('sha256').update(secret).digest('hex')},stdio:['ignore','ignore','pipe']}),clients=[];
  let log='';srv.stderr.on('data',d=>log+=d);
  try{
   for(let n=0;n<100;n++){try{if((await fetch('http://127.0.0.1:'+PORT+'/health')).ok)break}catch{}if(srv.exitCode!==null)throw Error(log);await pause(30)}
