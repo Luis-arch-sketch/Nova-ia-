@@ -43,7 +43,7 @@ try{
   const state=await page.evaluate(()=>{
    const c=document.querySelector('#c');
    const ctx=c.getContext('webgl2')||c.getContext('webgl')||c.getContext('experimental-webgl');
-   const keys=['bam','bRank','roomButton','bm','bf','bj','ba','recoverBtn','avatarOpen','playerNameOpen'];
+   const keys=['bam','bRank','roomButton','bm','bf','bj','ba','recoverBtn','avatarOpen'];
    const controls=keys.map(id=>({id,exists:!!document.getElementById(id)}));
    const species=(window.RoubeOvoVisuals?.species?.flat()?.filter(Boolean).length||0)+1; // 102 comuns + LIMITED ∞
    const visuals=window.RoubeOvoVisuals;
@@ -73,13 +73,43 @@ try{
    assert(retired.emptySlots&&retired.hasNoRemovedEggs&&retired.blockedSpawns,'Pato e pintinho devem ficar fora dos ninhos e do spawn');
    assert.equal(retired.activeIndexSize,127,'103 espécies principais + 24 animais adicionais da coleção');
    assert.deepEqual(retired.forestOrder,['Dog','Galinha','Burrowing Owl','Guaxinim'],'Coruja terceira e guaxinim quarto');
-  assert(state.controls.every(e=>e.exists),'Every old button remains');
+  assert(state.controls.every(e=>e.exists),'Controles do jogo disponíveis');
+  assert.equal(await page.locator('#playerNameOpen').count(),0,'Troca de nome fica dentro de Personagens');
   assert(state.canvasSize[0]>100&&state.canvasSize[1]>100,'Canvas area');
   assert(state.sceneElements>50,'Scene detail');
   assert(state.avatarParts>=20,'O personagem deve ter roupa, mochila, cabelo e rosto detalhados');
   assert(state.webgl,'WebGL context created');
   assert(state.renderer?.calls>0,'Three.js must render at least one call');
   assert.equal(errors.length,0,'Game JavaScript runtime errors: '+JSON.stringify(errors));
+
+  // O aviso inteiro permanece abaixo dos controles, inclusive ao girar o celular.
+  const profileLayout=async()=>{
+   await page.waitForFunction(()=>{
+    const banner=document.getElementById('rue-biome-countdown').getBoundingClientRect();
+    const ids=['top','avatarOpen','rue-live-hud'];
+    return banner.width>0&&banner.left>=0&&banner.right<=innerWidth&&banner.bottom<=innerHeight&&ids.every(id=>{
+     const rect=document.getElementById(id).getBoundingClientRect();
+     return !rect.width||banner.left>=rect.right||banner.right<=rect.left||banner.top>=rect.bottom||banner.bottom<=rect.top;
+    });
+   },null,{timeout:5000});
+  };
+  await profileLayout();
+  if(mobile){
+   await page.setViewportSize({width:852,height:393});await profileLayout();
+   await page.screenshot({path:'test-results/android-admin-abuse-landscape.png'});
+   await page.setViewportSize({width:393,height:852});await profileLayout();
+  }
+  const profileBefore=await page.evaluate(()=>({pid:S.pid,speed:S.sp,money:S.$,pets:S.pets.map(p=>p.id),inc:S.inc.map(e=>e?.s??null)}));
+  await page.locator('#avatarOpen').click();
+  await page.getByLabel('👤 Nome do jogador (2 a 20 caracteres)').fill(mobile?'TesteAndroid':'TesteDesktop');
+  await page.locator('#avatarPanel').getByRole('button',{name:'💾 Trocar nome',exact:true}).click();
+  await page.waitForFunction(name=>MP.name===name,mobile?'TesteAndroid':'TesteDesktop');
+  assert.equal(await page.locator('#avatarNameInput').inputValue(),mobile?'TesteAndroid':'TesteDesktop');
+  const profileAfter=await page.evaluate(()=>({pid:S.pid,speed:S.sp,money:S.$,pets:S.pets.map(p=>p.id),inc:S.inc.map(e=>e?.s??null)}));
+  assert.deepEqual(profileAfter,profileBefore,'Trocar nome preserva o progresso');
+  await page.screenshot({path:'test-results/'+mode+'-personagens-nome.png'});
+  await page.locator('#avatarPanel .avatarClose').click();
+  await profileLayout();
 
   // Jogo padrão restaurado: ADMIN e jogador comum usam a mesma esteira inicial.
   const treadmill=await page.evaluate(()=>{
