@@ -346,7 +346,7 @@ try{
      partBorderCollision(p,oldZ,oldX);
      return {name,free:p.x===x&&p.z===z};
     });
-    const meshes=sc.children.filter(o=>o.isMesh&&o.material?.color?.getHex?.()===0xc89b5a);
+    const meshes=BASE_GROUP.children.find(o=>o.name==='Orange rails base pen')?.children.filter(o=>o.isMesh)||[];
     const front={x:-12.4,z:-10};
     const left={x:-19.1,z:8};
     const center={x:0,z:-10};
@@ -360,7 +360,7 @@ try{
    }finally{EGG_NIGHT.phase=oldPhase}
   });
   assert(fenceDay.openAreas.every(x=>x.free),'As 13 divisões permanecem abertas durante o dia');
-  assert.equal(fenceDay.fenceMeshCount,5,'As cinco partes da cerca original da base estão visíveis');
+  assert(fenceDay.fenceMeshCount>=25,'As cinco seções de cerca laranja com postes e trilhos permanecem visíveis');
   assert(fenceDay.fencePosts>0&&fenceDay.frontStopped&&fenceDay.leftStopped,
     'A cerca da base possui colisão nas laterais e na frente');
   assert(fenceDay.centralEntranceOpen,'Portão central permite entrar e sair da base');
