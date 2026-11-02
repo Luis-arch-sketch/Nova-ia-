@@ -48,10 +48,10 @@ test('as 16 bases aceitam depósito somente no círculo do próprio jogador',()=
 });
 test('cronômetros usam o servidor, preservam ovos carregados e respeitam 9 + 3 segundos',()=>{
  const w=new World(1000,()=>.99),egg=[...w.eggs.values()][0],p={x:egg.x,z:egg.z,heldEgg:null};
- w.take(p,egg.id,1001);assert.equal(w.tick(300999),false);
- assert.equal(w.tick(301000),true);assert.equal(w.phase,'night');assert.equal(w.until,310000);assert.equal(p.heldEgg.id,egg.id);
- assert.equal(w.tick(310000),true);assert.equal(w.phase,'unlock');assert.equal(w.until,313000);
- w.tick(313000);assert.equal(w.phase,'day');assert.equal(w.nextReset,613000);
+ w.take(p,egg.id,1001);assert.equal(w.tick(120999),false);
+ assert.equal(w.tick(121000),true);assert.equal(w.phase,'night');assert.equal(w.until,130000);assert.equal(p.heldEgg.id,egg.id);
+ assert.equal(w.tick(130000),true);assert.equal(w.phase,'unlock');assert.equal(w.until,133000);
+ w.tick(133000);assert.equal(w.phase,'day');assert.equal(w.nextReset,253000);
  assert.equal(w.eggs.has(egg.id),false,'a renovação não duplica o ovo carregado');
 });
 test('geração inicial não despeja ovos raros e o limite do mapa é aplicado',()=>{
