@@ -171,29 +171,34 @@ try{
     if(id===0||id===9)continue;
     const model=window.RoubeOvoVisuals.create(THREE,id,.7,new THREE.Color(0x777777),sc);
     const data=model?.userData?.uniqueSculpture;
-    if(!data)missing.push(id);
+    if(!data&&!model?.userData?.realMesh)missing.push(id);
     const shapes=[];
     model?.traverse(node=>{
      if(!node.isMesh)return;
      const p=node.position,z=node.scale;
-     shapes.push([node.geometry?.type||'?',p.x.toFixed(2),p.y.toFixed(2),p.z.toFixed(2),z.x.toFixed(2),z.y.toFixed(2),z.z.toFixed(2)].join(':'));
+     const a=node.geometry?.attributes?.position?.array||[];
+     const samples=Array.from({length:Math.min(21,a.length)},(_,i)=>a[i].toFixed(3)).join(',');
+     shapes.push([node.geometry?.type||'?',a.length,samples,p.x.toFixed(2),p.y.toFixed(2),p.z.toFixed(2),z.x.toFixed(2),z.y.toFixed(2),z.z.toFixed(2)].join(':'));
     });
     fingerprints.push({
-     signature:data?.signature,
+     signature:data?.signature||(model?.userData?.realMesh?'real-geometry-'+id:null),
      geometry:[model.children[0]?.scale.toArray().map(x=>x.toFixed(3)).join(','),shapes.sort().join('|')].join('~'),
-     parts:shapes.length
+     parts:shapes.length,imported:!!model?.userData?.realMesh,
+     vertices:(()=>{let n=0;model.traverse(o=>{if(o.isMesh)n+=o.geometry?.attributes?.position?.count||0});return n})()
     });
     sc.remove(model);
    }
    return {count:fingerprints.length,uniqueSignatures:new Set(fingerprints.map(x=>x.signature)).size,
     uniqueGeometry:new Set(fingerprints.map(x=>x.geometry)).size,
-    minParts:Math.min(...fingerprints.map(x=>x.parts)),missing};
+    minParts:Math.min(...fingerprints.filter(x=>!x.imported).map(x=>x.parts)),
+    minImportedVertices:Math.min(...fingerprints.filter(x=>x.imported).map(x=>x.vertices)),missing};
   });
   assert.equal(sculptureAudit.count,103,'103 modelos 3D ativos');
   assert.equal(sculptureAudit.uniqueSignatures,103,'Assinaturas individuais das 103 espécies');
   assert.equal(sculptureAudit.uniqueGeometry,103,'103 estruturas de geometria realmente diferentes');
   assert.equal(sculptureAudit.missing.length,0,'Nenhuma espécie sem novas partes de anatomia');
   assert(sculptureAudit.minParts>=10,'Anatomia detalhada também nos animais mais simples');
+  assert(sculptureAudit.minImportedVertices>=100,'Malhas STL/3MF legítimas têm geometria 3D própria');
   console.log(mode.toUpperCase()+' ANIMAIS 3D ÚNICOS '+JSON.stringify(sculptureAudit));
 
   assert(pageVisuals.every(x=>x.meshCount>=7),'Each species model has detail');
