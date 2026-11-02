@@ -195,6 +195,40 @@ try{
  const old=window.RoubeOvoWorldDetail;
  if(old?.fallbackWorld)old.fallbackWorld.visible=false;
  if(old?.fallbackBase)old.fallbackBase.visible=false;
+ // O foco das áreas do original são guardiões grandes, não montes de casinhas.
+ if(typeof GD!=='undefined'&&Array.isArray(GD)){
+   GD.forEach((guardian,i)=>{
+     if(i===3||!guardian?.m)return;
+     guardian.m.scale.multiplyScalar(1.34);
+   });
+ }
+ if(typeof raccoonGuard!=='undefined'&&raccoonGuard?.m)raccoonGuard.m.scale.multiplyScalar(1.20);
+ // Placas de velocidade posicionadas perto dos ninhos, semelhantes ao jogo Roblox.
+ const boardWood=new T.MeshLambertMaterial({color:0x7b421e});
+ const boardFrame=new T.MeshLambertMaterial({color:0xb76525});
+ for(let b=0;b<Math.min(BI.length,13);b++){
+   const z=-65-70*b,x=15.4;
+   const panel=new T.Group();panel.position.set(x,0,z+16);root.add(panel);
+   for(const xx of [-2.6,2.6]){
+     const post=new T.Mesh(new T.BoxGeometry(.40,3.5,.36),boardWood);
+     post.position.set(xx,1.75,0);panel.add(post);
+   }
+   const frame=new T.Mesh(new T.BoxGeometry(6.2,2.6,.31),boardFrame);
+   frame.position.set(0,3.25,.03);panel.add(frame);
+   const boardCanvas=document.createElement('canvas');boardCanvas.width=512;boardCanvas.height=224;
+   const g=boardCanvas.getContext('2d');
+   g.fillStyle='#b87536';g.fillRect(0,0,512,224);
+   g.strokeStyle='#633914';g.lineWidth=15;g.strokeRect(8,8,496,208);
+   g.fillStyle='#ffe7a1';g.textAlign='center';g.textBaseline='middle';
+   g.font='bold 46px sans-serif';g.fillText(BI[b].n,256,66,478);
+   g.font='bold 36px sans-serif';
+   g.fillText(BI[b].req?'SPEED '+(typeof fm==='function'?fm(BI[b].req):BI[b].req):'SPEED LIVRE',256,154,465);
+   const tex=new T.CanvasTexture(boardCanvas);
+   const face=new T.Mesh(new T.PlaneGeometry(5.7,2.35),
+      new T.MeshBasicMaterial({map:tex,transparent:false,side:T.DoubleSide}));
+   face.position.set(0,3.25,.21);panel.add(face);
+ }
+ result.guardiansEnhanced=true;result.speedSigns=Math.min(BI.length,13);
  // O original é colorido, com sol forte e céu azul. O tempo/noite do jogo permanece.
  if(typeof sun!=='undefined')sun.intensity=Math.max(1.1,sun.intensity);
  sc.traverse(o=>{if(o.isHemisphereLight)o.intensity=Math.max(1.04,o.intensity)});
