@@ -84,7 +84,7 @@ const mpDraw=()=>{
  if($('mpPresence').textContent!==text)$('mpPresence').textContent=text;
  const button=$('mpFindFriend');if(button){button.disabled=!MP.connected||!others.length;button.textContent=others.length?'👥 Encontrar amigo':'👥 Esperando amigo';}
 };
-const mpApplyUsers=users=>{const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)mpBuild(u.id,u);syncPeerBase(u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
+const mpApplyUsers=users=>{const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)v=mpBuild(u.id,u);window.RoubeOvoAvatar?.syncRemote(v.group,u.avatar);syncPeerBase(u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
 const mpRemoteEvent=ev=>{if(ev.kind==='event'&&ev.action==='start'&&ev.endsAt&&MP.roomEvent?.endsAt===ev.endsAt&&ABUSE.active?.id===ev.id)return;MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st={...(ev.settings||{duration:60,interval:10,wave:1})};if(ev.endsAt){st.duration=Math.max(.01,(ev.endsAt-Date.now()-MP.clockOffset)/1000);MP.roomEvent=ev;}abuseStart(ev.id,st)}else if(ev.action==='stop'){abuseStop(true);MP.roomEvent=null;}}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){if(MP.protocol>=2)return;
  for(const p of ev.eggs||[])if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
  abuseAnnounce('🔥 O ADMIN invocou o LIMITED ∞ exclusivo nesta sala!',12);abuseFlash(0xff5918,16);
@@ -125,7 +125,7 @@ const mpMeetFriend=id=>{
 };
 const mpGoHome=()=>{
  if(!MP.connected){mpStatus('⚠ Entre em uma sala primeiro.');return false;}
- if(carry){mpStatus('⚠ Leve o ovo até sua base a pé antes de se teleportar.');toast('🥚 Não é possível se teleportar carregando um ovo.');return false;}
+ // Voltar à própria base aceita o ovo carregado; depósito continua validado pelo servidor.
  if(MP.pending||window.RoubeOvoHatching?.active){mpStatus('⏳ Termine a ação do ovo antes de voltar para casa.');return false;}
  return mpSend({type:'go-home'});
 };
@@ -190,7 +190,7 @@ const mpFinishDeposit=reply=>{
  if(!carry){const e=mpUpsertEgg(reply.egg);if(!e)return false;eggs.splice(eggs.indexOf(e),1);if(e.nest?.e===e)e.nest.e=null;sc.remove(e.mesh);P.g.add(e.mesh);carry=e;}
  MP.settingRemote=true;MP.committingReceipt=reply.requestId;
  try{dep(slot);}finally{MP.settingRemote=false;MP.committingReceipt=null;}
- MP.pending=null;mpStorePending();mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState()});return true;
+ MP.pending=null;mpStorePending();mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});return true;
 };
 const mpEggResult=m=>{
  const pending=MP.pending;if(!pending||pending.requestId!==m.requestId)return;
@@ -241,7 +241,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
    mpApplyUsers(msg.players||[]);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
    mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);
-   mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState()});
+   mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});
    if(MP.adminPassword)mpSend({type:'admin-auth',password:MP.adminPassword});
    if(msg.event)mpRemoteEvent(msg.event);
    if(!MP.pending){try{const p=JSON.parse(sessionStorage.getItem('rue3d_mp_deposit')||'null');if(p?.room===MP.room&&p.type==='egg-deposit')MP.pending=p;}catch(e){}}
@@ -251,7 +251,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    const self=msg.players?.find(p=>p.id===MP.self);
    if(carry?.netId&&self&&!self.carrying&&!MP.pending){P.g.remove(carry.mesh);if(carry.aura){if(carry.s===LIMITED_ID)disposeLimitedAura(carry);else sc.remove(carry.aura)}carry=null;}
   }else if(msg.type==='world-sync')mpWorldSync(msg);
-  else if(msg.type==='reposition'){mpPlace(msg.spawn);$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition()});toast(msg.reason==='home'?'🏠 Você voltou para sua base.':'👥 Você e '+msg.name+' estão de frente!');}
+  else if(msg.type==='reposition'){mpPlace(msg.spawn);$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition()});if(msg.reason!=='night')toast(msg.reason==='home'?'🏠 Você voltou para sua base.':'👥 Você e '+msg.name+' estão de frente!');}
   else if(msg.type==='world-add')for(const d of msg.eggs||[])mpUpsertEgg(d);
   else if(msg.type==='world-remove')mpRemoveEgg(msg.id);
   else if(msg.type==='egg-result')mpEggResult(msg);
@@ -272,7 +272,7 @@ const mpUpdate=dt=>{
  if(MP.pending?.accepted)mpFinishDeposit(MP.pending.accepted);
  if(MP.pending&&!MP.pending.accepted&&now-MP.pending.startedAt>8000){MP.socket?.close();return;}
  if(now-MP.lastTx>90){MP.lastTx=now;mpSend({type:'move',...mpPosition(),training:P.train});}
- if(now-(MP.lastRankTx||0)>2000){MP.lastRankTx=now;mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState()});}
+ if(now-(MP.lastRankTx||0)>2000){MP.lastRankTx=now;mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});}
  if(MP.roomEvent&&ABUSE.active){ABUSE.active.left=Math.max(0,(MP.roomEvent.endsAt-Date.now()-MP.clockOffset)/1000);}
  for(const [id,v] of MP.views){const u=MP.players.get(id);if(!u)continue;
   const x=u.x||0,y=u.y||0,z=u.z||0,k=Math.min(1,dt*14);
