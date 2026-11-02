@@ -61,6 +61,9 @@ try{
   await page.screenshot({path:'test-results/'+mode+'.png'});
   console.log(mode.toUpperCase()+' STATE '+JSON.stringify(state));
   assert.equal(state.visualsReady,true,'Visuals must be initialized');
+  const detail=await page.evaluate(()=>window.RoubeOvoWorldDetail||null);
+  assert(detail?.installed&&detail.worldCount>=500&&detail.baseCount>=30,'Casas, jardins e pracinhas devem aparecer no mapa e na base');
+  console.log(mode.toUpperCase()+' CENÁRIO '+JSON.stringify(detail));
   assert.equal(state.species,103,'103 espécies ativas, com pato e pintinho retirados');
   assert.equal(state.biomeCount,13);
    const retired=await page.evaluate(()=>({
@@ -100,6 +103,8 @@ try{
    await page.setViewportSize({width:393,height:852});await profileLayout();
   }
   const profileBefore=await page.evaluate(()=>({pid:S.pid,speed:S.sp,money:S.$,pets:S.pets.map(p=>p.id),inc:S.inc.map(e=>e?.s??null)}));
+  // O trailer automático ocupa a tela de propósito; dispensá-lo só na auditoria dos menus.
+  await page.evaluate(()=>{const trailer=document.getElementById('rue-radio-cutscene');if(trailer){trailer.hidden=true;trailer.querySelector('iframe')?.setAttribute('src','about:blank');}});
   await page.locator('#avatarOpen').click();
   await page.getByLabel('👤 Nome do jogador (2 a 20 caracteres)').fill(mobile?'TesteAndroid':'TesteDesktop');
   await page.locator('#avatarPanel').getByRole('button',{name:'💾 Trocar nome',exact:true}).click();
