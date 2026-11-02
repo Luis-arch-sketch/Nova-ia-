@@ -35,12 +35,15 @@ try{
   page.on('console',m=>{if(m.type()==='error')errors.push('Console: '+m.text())});
   const nav=await page.goto('http://127.0.0.1:'+port+'/',{waitUntil:'domcontentloaded',timeout:45000});
   assert.equal(nav?.status(),200);
-  await page.waitForTimeout(6000);
+  await page.waitForTimeout(1000);
+  // Iniciar pela capa como um jogador real; evita testar o joystick atrás do modal inicial.
+  if(await page.locator('#roube-play').count())await page.locator('#roube-play').click();
+  await page.waitForTimeout(6700);
   assert.equal(await page.evaluate(()=>typeof THREE),'object','Three.js must load');
   const state=await page.evaluate(()=>{
    const c=document.querySelector('#c');
    const ctx=c.getContext('webgl2')||c.getContext('webgl')||c.getContext('experimental-webgl');
-   const keys=['bam','bRank','roomButton','bm','bf','bj','ba','recoverBtn'];
+   const keys=['bam','bRank','roomButton','bm','bf','bj','ba','recoverBtn','avatarOpen','playerNameOpen'];
    const controls=keys.map(id=>({id,exists:!!document.getElementById(id)}));
    const species=(window.RoubeOvoVisuals?.species?.flat()?.filter(Boolean).length||0)+1; // 102 comuns + LIMITED ∞
    const visuals=window.RoubeOvoVisuals;
