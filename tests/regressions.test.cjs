@@ -113,7 +113,7 @@ test('renovação dos ovos: 9 segundos de noite, depois 3 até abrir as áreas',
 test('13 paredes brancas com relógios bloqueiam áreas e coleta noturna',()=>{
  assert(html.includes('color:0xffffff,transparent:true,opacity:.92'));
  assert(html.includes('return{z,bar,timer,l,b,req:b.req}'));
- assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})"));
+ assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=false})"));
  assert(html.includes("GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false})"));
  assert(html.includes("if(EGG_NIGHT.phase==='day')return;"));
  assert(html.includes("if(EGG_NIGHT.phase!=='day')return null"));
@@ -236,7 +236,7 @@ test('cronômetros 9s + 3s: paredes brancas só nas áreas, base com cerca origi
  assert(html.includes("EGG_NIGHT.phase='unlock';EGG_NIGHT.until+=3000"));
  assert(html.includes("[204,10.5,.8]"));
  assert(html.includes("const PART_BORDERS=BI.map((b,i)=>gz(i));"));
- assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})"));
+ assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=false})"));
  assert(html.includes("GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false})"));
  assert(!html.includes("NIGHT_BASE_WALLS"));
  assert(!html.includes("NIGHT_BASE_TIMER"));
@@ -275,7 +275,7 @@ test('só a cerca original da base fica permanente, sem parede branca na base',(
  assert(html.includes('const PART_BORDERS=BI.map((b,i)=>gz(i))'));
  assert(!html.includes('NIGHT_BASE_WALLS'));
  assert(!html.includes('NIGHT_BASE_TIMER'));
- assert(html.includes('GT.forEach(g=>{g.bar.visible=true;g.timer.visible=true;g.timer.set(text)})'));
+ assert(html.includes('GT.forEach(g=>{g.bar.visible=true;g.timer.visible=false})'));
  assert(html.includes('EGG_NIGHT.until=now+9000'));
  assert(html.includes('EGG_NIGHT.until+=3000'));
 });
