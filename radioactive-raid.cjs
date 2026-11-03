@@ -13,7 +13,7 @@ class RadioactiveRaid {
   if(Math.hypot(player.x-this.x,player.z-this.z)>15)return {ok:false,reason:'Chegue mais perto do monstro.'};
   if(this.hp<=0)return {ok:false,reason:'O monstro esta se regenerando.'};
   if(now-(player.lastRaidHit||0)<650)return {ok:false,reason:'Aguarde o proximo golpe.'};
-  player.lastRaidHit=now;const dealt=Math.min(250,this.hp);this.hp-=dealt;
+  player.lastRaidHit=now;const dealt=Math.min(50,this.hp);this.hp-=dealt;
   this.damage.set(player.principal,(this.damage.get(player.principal)||0)+dealt);
   if(this.hp>0)return {ok:true,dealt,defeated:false,awards:[]};
   this.respawnAt=now+30000;
