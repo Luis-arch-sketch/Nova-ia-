@@ -19,18 +19,43 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
    shopDisplay:getComputedStyle(document.getElementById('bm')).display,
    rankDisplay:getComputedStyle(document.getElementById('bRank')).display,
    scene:!!sc.children.find(o=>o.name==='Physical stores, fusion machine and leaderboard'),
-   own:!!BASE_GROUP.children.find(o=>o.name==='Base stations'),
+   own:!!window.RoubeOvoWorldActions?.own&&window.RoubeOvoWorldActions.own.parent===sc.children.find(o=>o.name==='Physical stores, fusion machine and leaderboard'),
    board:window.RoubeOvoWorldActions.ranking.name,
    actions:window.RoubeOvoWorldActions.points.length,
    core:window.RoubeOvoFusionRules.roll(()=>.49)&&!window.RoubeOvoFusionRules.roll(()=>.5),
-   escalation:window.RoubeOvoFusionRules.price(2000,2)>window.RoubeOvoFusionRules.price(2000,1)
+   escalation:window.RoubeOvoFusionRules.price(2000,2)>window.RoubeOvoFusionRules.price(2000,1),
+   plaza:window.RoubeOvoPlaza?.installed&&window.RoubeOvoPlaza.slots===16,
+   floor:!!window.RoubeOvoPlaza?.group.getObjectByName('Rounded Roblox studded base plaza'),
+   layout:window.RoubeOvoWorldActions.points.map(p=>({id:p.id,x:p.x,z:p.z,world:p.world})),
+   initiallyAbsent:PEER_BASES.size===0
   }));
   assert.equal(before.shopDisplay,'none');assert.equal(before.rankDisplay,'none');
   assert(before.scene&&before.own&&before.board.includes('Placar'));assert.equal(before.actions,3);
   assert(before.core&&before.escalation);
+  assert(before.plaza&&before.floor&&before.initiallyAbsent,'Pátio arredondado sem bases fantasmas');
+  assert.deepEqual(before.layout.map(p=>p.id),['trails','fusion','ranking']);
+  assert(before.layout[0].x<before.layout[1].x&&before.layout[0].z===before.layout[1].z,'Loja fica à esquerda da fusão');
+  assert(before.layout.every(p=>p.world),'Loja, fusão e placar são áreas públicas independentes da base individual');
   console.log('ANDROID PHYSICAL STATIONS '+JSON.stringify(before));
+  // As bases de outras pessoas só existem enquanto seus respectivos jogadores
+  // estiverem na sala. A base própria e os obstáculos originais continuam.
+  const presence=await page.evaluate(()=>{
+    const empty=PEER_BASES.size,obstacles=OB.length;
+    const fake={id:'rue-presence-test',name:'Outro Jogador',baseSlot:1,x:52,y:0,z:8,yaw:0,avatar:null};
+    mpApplyUsers([fake]);
+    const joined={bases:PEER_BASES.size,shown:PEER_BASES.has(fake.id),obstacles:OB.length};
+    mpApplyUsers([]);
+    const left={bases:PEER_BASES.size,obstacles:OB.length};
+    return {empty,joined,left};
+  });
+  assert.equal(presence.empty,0,'Sem bases de terceiros quando sozinho');
+  assert.equal(presence.joined.bases,1,'Base nasce quando outro jogador entra');
+  assert(presence.joined.shown&&presence.joined.obstacles>presence.empty,'Base de amigo com colisão');
+  assert.equal(presence.left.bases,0,'Base desaparece quando jogador sai');
+  assert(presence.left.obstacles<presence.joined.obstacles,'Obstáculos de jogador ausente eliminados');
+  console.log('ONLINE ONLY MULTIPLAYER BASES '+JSON.stringify(presence));
   const shop=await page.evaluate(()=>{
-   P.x=BASE_HOME.x+29;P.z=BASE_HOME.z+7;
+   P.x=-66;P.z=-24;
    const hit=window.RoubeOvoWorldActions.interact();
    return {hit,visible:document.getElementById('pn').style.display,trail:document.getElementById('pn').textContent.includes('Equipada:')};
   });
@@ -53,7 +78,7 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   console.log('TRAIL SHOP + INVENTORY SEPARATED ANDROID '+JSON.stringify(separated));
   const opened=await page.evaluate(()=>{
    document.getElementById('pn').style.display='none';
-   P.x=BASE_HOME.x-29;P.z=BASE_HOME.z+7;
+   P.x=-41;P.z=-24;
    const hit=window.RoubeOvoWorldActions.interact();
    return {hit,active:window.RoubeOvoFusion.active,text:document.getElementById('rue-fusion-card').textContent};
   });
