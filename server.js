@@ -137,6 +137,7 @@ PWA_FILES['/world-remake.js']=['world-remake.js','application/javascript; charse
 PWA_FILES['/map-plaza.js']=['map-plaza.js','application/javascript; charset=utf-8'];
 for(const file of ['fusion-rules.js','fusion-system.js','world-activities.js'])PWA_FILES['/'+file]=[file,'application/javascript; charset=utf-8'];
 for(const file of ['egg-crack.mp3','egg-suspense.mp3'])PWA_FILES['/audio/'+file]=['audio/'+file,'audio/mpeg'];
+for(const file of ['raid-punch.ogg','raid-roar.ogg'])PWA_FILES['/audio/'+file]=['audio/'+file,'audio/ogg'];
 PWA_FILES['/avatar-customizer.js']=['avatar-customizer.js','application/javascript; charset=utf-8'];
 PWA_FILES['/afk-training.js']=['afk-training.js','application/javascript; charset=utf-8'];
 PWA_FILES['/biome-countdown.js']=['biome-countdown.js','application/javascript; charset=utf-8'];
