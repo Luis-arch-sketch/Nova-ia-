@@ -144,6 +144,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    }
    if(m.type==='raid-portal'){
     const entering=m.to==='arena',leaving=m.to==='town';
+    if(entering&&raid.hp<=0){send(ws,{type:'raid-error',message:'Portal fechado. Proxima batalha em '+Math.max(1,Math.ceil((raid.respawnAt-now)/1000))+' segundos.'});return}
     if(!entering&&!leaving)return;
     if(now-(ws.lastRaidPortal||0)<1700)return;
     const origin=entering?raidPortal.town:raidPortal.arena;
