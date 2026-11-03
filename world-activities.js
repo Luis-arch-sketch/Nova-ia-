@@ -51,7 +51,7 @@
   const t=label('50% GANHA • 50% PERDE',512,85,10);t.position.set(0,7.55,-1);g.add(t);
  }
  // Placar fixo num cantinho do mapa, global para todos (base independe do slot).
- const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(-80,0,319);root.add(ranking);
+ const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(0,0,327);ranking.rotation.y=Math.PI;root.add(ranking);
  block(ranking,-9,3,0,.8,6,.9,wood);block(ranking,9,3,0,.8,6,.9,wood);
  block(ranking,0,8.8,0,21,12,1.25,metal);
  block(ranking,0,8.8,.78,19.5,10.5,.5,dark);
@@ -90,7 +90,7 @@
  const points=[
   {id:'trails',name:'Loja de Trilhas',world:true,x:-66,z:-24,open:()=>window.RoubeOvoOpenShop?.(2)},
   {id:'fusion',name:'Máquina de Fusão',world:true,x:-41,z:-24,open:()=>window.RoubeOvoFusion?.open()},
-  {id:'ranking',name:'Placar dos Melhores',world:true,x:-80,z:319,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
+  {id:'ranking',name:'Placar dos Melhores',world:true,x:0,z:327,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
  ];
  function closest(){
   let p=null,d=8;
