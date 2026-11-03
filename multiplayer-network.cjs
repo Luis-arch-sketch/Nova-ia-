@@ -4,8 +4,11 @@ const {WebSocketServer,WebSocket}=require('ws');
 const {World,LIMITED,baseSpawn,finite,meetingSpawn}=require('./multiplayer-world.cjs');
 const {swingBat}=require('./player-combat.cjs');
 const MapLayout=require('./world-layout.js');
+const {RadioactiveRaid}=require('./radioactive-raid.cjs');
 module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,refreshRoomLayout,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
  const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:16384});
+ const raid=new RadioactiveRaid();
+ const broadcastAll=message=>{for(const players of rooms.values())for(const client of players)send(client,message)};
  const position=(ws,p)=>{
   if(!p||!finite(p.x,-140,140)||!finite(p.y,-1,2000)||!finite(p.z,-945,350)||!finite(p.yaw,-100,100))return false;
   Object.assign(ws,MapLayout.fit(p,ws.hub));ws.y=p.y;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
@@ -92,6 +95,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     Object.assign(spawn,{x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0});
     send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,identity:ws.identityToken,room,baseSlot:ws.baseSlot,spawn,layout,carrying:ws.heldEgg,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event,...roleState(ws),accessBackup:ws.owner?access.backup():undefined});
     for(const oldRoom of oldRooms)if(oldRoom!==room)broadcastPresence(oldRoom);
+    send(ws,{...raid.state(now),...raid.restore(ws.principal,m.raidWalletToken,access)});
     broadcastPresence(room);return;
    }
    if(m.type==='ping'){send(ws,{type:'pong',serverNow:now});return}
@@ -115,8 +119,34 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    const world=roomWorlds.get(ws.room);if(!world)return;
    if(m.type==='world-request'){send(ws,world.snapshot(now));return}
    if(m.type==='equip'){
-    if(m.weapon!==null&&m.weapon!=='bat')return;
+    if(m.weapon!==null&&m.weapon!=='bat'&&m.weapon!=='radioactive-bat')return;
     ws.weapon=m.weapon;send(ws,{type:'equipment',weapon:ws.weapon});broadcastPresence(ws.room);return;
+   }
+   if(m.type==='raid-hit'){
+    const result=raid.hit(ws,now);
+    if(!result.ok){send(ws,{type:'raid-error',message:result.reason});return}
+    broadcastAll(raid.state(now));
+    if(result.defeated){
+     for(const award of result.awards)for(const client of wss.clients)if(client.room&&client.principal===award.id)
+      send(client,{type:'raid-reward',earned:award.candies,...raid.wallet(award.id,access)});
+     broadcastAll({type:'raid-defeated',by:ws.name});
+    }
+    return;
+   }
+   if(m.type==='raid-buy'){
+    if(now-(ws.lastRaidBuy||0)<350)return;
+    ws.lastRaidBuy=now;
+    if(!position(ws,m.position)||Math.hypot(ws.x-raid.x,ws.z-raid.z)>24){send(ws,{type:'raid-error',message:'Visite a arena para comprar ovos.'});return}
+    if(!raid.canBuy(ws.principal)){send(ws,{type:'raid-error',message:'Voce precisa de mais doces.'});return}
+    const rarity=raid.roll(),spot=MapLayout.fit({x:ws.x+2,z:ws.z+2},ws.hub);
+    const egg=world.add(0,rarity,1,spot.x,spot.z,now,rarity,null,[]);
+    if(!egg){send(ws,{type:'raid-error',message:'O mundo esta cheio de ovos. Tente novamente.'});return}
+    egg.halloween=true;egg.adminSpawned=true;egg.expiresAt=now+600000;
+    raid.spend(ws.principal);
+    broadcastAll({type:'world-add',eggs:[egg]});
+    const label=rarity===7?'Divino':rarity===6?'Eterno':rarity===5?'Secreto':'Surpresa';
+    send(ws,{type:'raid-purchase',rarity:label,egg,...raid.wallet(ws.principal,access)});
+    return;
    }
    if(m.type==='bat-swing'){
     const hit=swingBat(ws,peers(ws.room),world,now);
@@ -273,6 +303,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
   const now=Date.now();
   for(const [room,world] of roomWorlds){
    if(!rooms.has(room)){if(world.emptyAt&&now-world.emptyAt>120000)roomWorlds.delete(room);continue}
+   if(raid.tick(now))broadcastAll(raid.state(now));
    if(world.tick(now)){
      // A renovação noturna não desloca jogadores nem interrompe o treino na esteira.
      broadcast(room,world.snapshot(now));

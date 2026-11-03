@@ -173,7 +173,7 @@ const BI=[
 ].map(b=>({n:b[0],g:b[1],t:b[2],req:b[3],gd:b[4],sp:b[5].split(',')}));
 const SZ=[['Pequeno',.8,1,50],['Médio',1,1.5,35],['Enorme',1.4,3,12],['Gigante',1.9,6,3],['Colossal (12 unidades)',12/1.8,10,0]]; // nome, escala, mult. renda, peso do sorteio
 const MUT=[['Silver',1.2,.08,0xcfd8dc],['Golden',2.5,.04,0xffc400],['Rainbow',3.5,.015,0xff66cc],['Bloom',1.25,.06,0xffa6c9],['Parasite',3,.01,0x7a2fb0],['Fractured',2.75,.015,0x44ddff],['Scrambled',2.75,.015,0xaaff44],['Enchanted',2.8,.01,0x9d6bff]]; // chances são marcadores editáveis
-const TM=[['Treadmill',2,0,0x9aa5b1],['Sci-Fi',5,15e3,0x38e1ff],['Flame',12,25e4,0xff6a1a],['Celebrity',30,5e6,0xff4fd8],['Golden',80,12e7,0xffc400],['Freeze',100,3e9,0x9be8ff],['Lucky Block',200,75e9,0xffe83a],['Hacker',500,2e12,0x22ff66],['Demonic',1000,5e13,0xc4162a],['Angelic',2000,1e15,0xfff5b0],['Esteira Astral',1000000000,1e21,0xa77bff]];
+const TM=[['Treadmill',2,0,0x9aa5b1],['Sci-Fi',5,15e3,0x38e1ff],['Flame',12,25e4,0xff6a1a],['Celebrity',30,5e6,0xff4fd8],['Golden',80,12e7,0xffc400],['Freeze',100,3e9,0x9be8ff],['Lucky Block',200,75e9,0xffe83a],['Hacker',500,2e12,0x22ff66],['Demonic',1000,5e13,0xc4162a],['Angelic',2000,1e15,0xfff5b0],['Esteira Astral',1000000000,1e21,0xa77bff],['Esteira Radioativa',2000000000,2e21,0x70ff87],['Esteira de Plasma',10000000000,1e22,0x49deff],['Esteira Galáctica',50000000000,5e22,0xe185ff]];
 const TR=[['Grey',1.5,2e3,0x9e9e9e],['Green',2,1e5,0x4caf50],['Blue',2.5,2e6,0x2196f3],['Purple',3,5e7,0x9c27b0],['Golden',3.5,1e9,0xffd700],['Red',4,2e10,0xf44336],['Galaxy',5,5e11,0x5b3bd8],['Secret',7,1e13,0x222222],['Eternal',10,2e14,0x66ddff],['Divine',14,5e15,0xfff3a0],['Moonbloom',20,1e17,0xffb8e1]];
 const CAP=[7,7,9,10,11,12,13,14,15,16,17,18],BC=[0,1e3,1e6,75e6,5e8,1e9,5e10,5e11,1e12,25e12,1e14,5e14];
 const SPC=[];BI.forEach((b,i)=>b.sp.forEach((n,j)=>SPC.push({id:SPC.length,n,b:i,r:j,inc:CFG.inc*4**i*(1+1.5*j)})));
@@ -450,7 +450,7 @@ const baseObstacle=(x,z,r=1)=>{const o={x,z,r};OB.push(o);BASE_FENCE_OB.push(o)}
 const IV=[-6,-2,2,6].map(x=>{mk(GY,0x6d7b8d,[1.4,.5,1.4],BASE_GROUP,[x,.25,1.5]);const e=new T.Mesh(GS,new T.MeshLambertMaterial({color:0xffffff}));e.castShadow=true;e.visible=false;e.position.set(x,1.4,1.5);BASE_GROUP.add(e);const l=label('vazio',256,64,3.6);l.position.set(x,3.3,1.5);BASE_GROUP.add(l);return{e,l}});
 const stripe=(()=>{const c=document.createElement('canvas');c.width=8;c.height=64;const g=c.getContext('2d');g.fillStyle='#2a2a33';g.fillRect(0,0,8,64);g.fillStyle='#6a6a85';g.fillRect(0,0,8,8);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(1,6);return t})();
 let TMO=null,fmat,scr;
-const styleTM=()=>{const c=TM[S.tm][3],astral=S.tm===TM.length-1;fmat.color.setHex(c);fmat.emissive.setHex(astral?0x402080:0x000000);scr.emissive.setHex(c);TMO.g.scale.x=1+S.tm*.04;TMO.lab.set(astral?'ESTEIRA ASTRAL x1B':'Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])};
+const styleTM=()=>{const c=TM[S.tm][3],astral=S.tm===10;fmat.color.setHex(c);fmat.emissive.setHex(astral?0x402080:0x000000);scr.emissive.setHex(c);TMO.g.scale.x=1+S.tm*.04;TMO.lab.set(astral?'ESTEIRA ASTRAL x1B':'Sua esteira: '+TM[S.tm][0]+' x'+TM[S.tm][1])};
 const ensureTM=pid=>{if(TMO&&TMO.pid===pid)return TMO; // idempotente: 1 esteira por dono
  if(TMO)sc.remove(TMO.g);const g=new T.Group();g.position.set(-14,0,4);fmat=new T.MeshLambertMaterial();scr=new T.MeshLambertMaterial({color:0x111111});
  mk(GB,fmat,[2.6,.5,6],g,[0,.3,0]);mk(GB,new T.MeshLambertMaterial({map:stripe}),[2,.14,5.6],g,[0,.62,0]);
@@ -623,7 +623,7 @@ $('pn').onclick=e=>{const a=e.target.dataset.a;if(!a)return;
   if(!value||!Number.isFinite(nextMoney)||nextMoney<=S.$)return;
   const animal=S.pets.splice(i,1)[0];S.$=nextMoney;sellSelection=null;recalc();save();upHud();ui();beep(760,.16);toast('💰 '+SPC[animal.s].n+' vendido por $'+fm(value));return;
  }
- if(a==='equipBat'||a==='unequipBat'){window.RoubeOvoEquipment?.equip(a==='equipBat'?'bat':null);ui();return;}
+ if(['equipBat','unequipBat','equipRadioBat','unequipRadioBat'].includes(a)){window.RoubeOvoEquipment?.equip(a==='equipBat'?'bat':a==='equipRadioBat'?'radioactive-bat':null);ui();return;}
  if(a==='mut-off'||a.startsWith('mut-equip:')){window.RoubeOvoMiniMutation?.handleInventory(a);ui();return;}
  if(a[0]==='T'&&menuScope==='inventory'&&[0,1,3,4,5].includes(+a.slice(1)))tab=+a.slice(1);else if(a==='x')open=false;
  else if(a==='tm'){const x=TM[S.tm+1];if(x&&S.$>=x[2]){S.$-=x[2];S.tm++;styleTM();beep(660,.2)}}

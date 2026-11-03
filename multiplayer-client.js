@@ -312,7 +312,7 @@ const mpJoin=(mode='join',retrying=false)=>{
  if(!retrying&&MP.pending?.type==='egg-deposit'&&room!==MP.room){mpStatus('⏳ Aguarde a confirmação do ovo antes de trocar de sala.');return;}
  if(!retrying&&MP.connected){
   let token=MP.tokens.get(room)||'';try{token=token||sessionStorage.getItem('rue3d_mp_token_'+room)||''}catch(e){}
-  MP.joining={room,name};mpEntrance(true);mpStatus('Entrando na sala…');mpSend({type:mode,room,name,token,identity:MP.identity,ownerToken:MP.ownerToken,accessBackup:MP.accessBackup});return;
+  MP.joining={room,name};mpEntrance(true);mpStatus('Entrando na sala…');mpSend({type:mode,room,name,token,identity:MP.identity,ownerToken:MP.ownerToken,accessBackup:MP.accessBackup,raidWalletToken:mpPrivateRead('rue3d_raid_wallet_v1')});return;
  }
  const pending=MP.pending;mpDisconnect(false);MP.pending=pending?.type==='egg-deposit'?pending:null;
  MP.stopped=false;MP.name=name;MP.room=room;if(!retrying)MP.retry=0;
@@ -322,7 +322,7 @@ const mpJoin=(mode='join',retrying=false)=>{
  let ws;try{ws=new WebSocket(mpEndpoint())}catch(e){mpReconnect();return;}
  MP.socket=ws;MP.lastRx=performance.now();mpStatus(retrying?'🔄 Reconectando…':'Conectando ao servidor…');
  MP.connectTimer=setTimeout(()=>{if(MP.socket===ws&&!MP.connected){MP.socket=null;try{ws.close()}catch(e){}mpReconnect();}},15000);
- ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name,token,friend:new URLSearchParams(location.search).get('amigo')||undefined,identity:MP.identity,ownerToken:MP.ownerToken,accessBackup:MP.accessBackup})};
+ ws.onopen=()=>{if(MP.socket===ws)mpSend({type:mode,room,name,token,friend:new URLSearchParams(location.search).get('amigo')||undefined,identity:MP.identity,ownerToken:MP.ownerToken,accessBackup:MP.accessBackup,raidWalletToken:mpPrivateRead('rue3d_raid_wallet_v1')})};
  ws.onmessage=e=>{if(MP.socket!==ws)return;MP.lastRx=performance.now();let msg;try{msg=JSON.parse(e.data)}catch{return;}
   if(msg.type==='joined'){
    if(MP.connected)mpClear();if(MP.joining){MP.name=MP.joining.name;MP.joining=null;}
@@ -370,7 +370,7 @@ const mpJoin=(mode='join',retrying=false)=>{
   else if(msg.type==='session-replaced'){MP.stopped=true;clearTimeout(MP.retryTimer);MP.retryTimer=null;save();mpEntrance(false,true);mpStatus('Esta sessão foi aberta em outra aba.');}
   else if(msg.type==='kicked'){MP.stopped=true;clearTimeout(MP.retryTimer);MP.retryTimer=null;save();mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);}
   else if(msg.type==='error'){if(msg.scope==='admin'){MP.adminPassword=null;const field=$('adAuthError');if(field)field.textContent=msg.message;}MP.joining=null;mpEntrance(false,true);mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);if(!MP.connected){MP.stopped=true;clearTimeout(MP.connectTimer);ws.close();}}
-  window.RoubeOvoAdmin?.incoming(msg);window.RoubeOvoEquipment?.incoming(msg);
+  window.RoubeOvoAdmin?.incoming(msg);window.RoubeOvoEquipment?.incoming(msg);window.RoubeOvoRaid?.incoming(msg);
  };
  ws.onerror=()=>{if(MP.socket===ws)mpStatus('⚠ Conexão interrompida. Tentando novamente…');};
  ws.onclose=()=>{if(MP.socket===ws){MP.socket=null;clearTimeout(MP.connectTimer);mpClear();mpReconnect();}};
