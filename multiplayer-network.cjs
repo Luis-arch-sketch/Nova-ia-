@@ -27,32 +27,54 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
   const joinTimer=setTimeout(()=>{if(!ws.room)ws.close(1008,'Escolha uma sala')},20000);joinTimer.unref();
   ws.on('pong',()=>{ws.alive=true});
   ws.on('message',raw=>{
+   if(ws.replaced)return;
    const now=Date.now();if(now-ws.rateAt>=1000){ws.rateAt=now;ws.rateCount=0}if(++ws.rateCount>100){ws.close(1008,'Muitas mensagens');return}
    let m;try{m=JSON.parse(String(raw));if(!m||typeof m!=='object'||Array.isArray(m))return}catch{return}
    if(m.type==='join'||m.type==='quick-join'||m.type==='create-server'){
+    // Clientes antigos ainda tentam reconectar depois de perder a sessão.
+    // O token aposentado impede que eles derrubem a nova aba em um ciclo.
+    if(typeof m.token==='string'&&sessions.get(m.token)?.replaced){error(ws,'Esta sessão foi substituída por outra aba. Reabra o jogo para jogar aqui.');ws.close(4001,'Sessão substituída');return}
     if(!ws.cookieIdentity&&!ws.room){
      const remembered=access.identity(m.identity);
      const resumed=typeof m.token==='string'?sessions.get(m.token)?.principal:null;
      if(remembered||resumed){ws.principal=remembered||resumed;ws.identityToken=access.sign({kind:'player',id:ws.principal})}
     }
     if((access.kicks.get(ws.principal)||0)>now){send(ws,{type:'kicked',message:'Você foi expulso pelo dono. Aguarde para entrar novamente.'});ws.close(4003,'Expulso pelo dono');return}
-    const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?openPublicRoom():String(m.room||'').trim().toUpperCase();
+    // Uma identidade validada representa uma pessoa, inclusive ao recarregar
+    // antes de a conexão antiga terminar de fechar no celular.
+    const previous=[...wss.clients].filter(p=>p!==ws&&p.room&&p.principal===ws.principal);
+    const current=previous.find(p=>p.session);
+    const room=m.type==='create-server'?newPublicRoom():m.type==='quick-join'?(current?.room||openPublicRoom()):String(m.room||'').trim().toUpperCase();
     const name=String(m.name||'').trim();
     if(!/^[A-Z0-9-]{3,12}$/.test(room)||name.length<2||name.length>20||/[\u0000-\u001f\u007f]/.test(name)||/^admin$/i.test(name)){error(ws,'Nome ou código de sala inválido');return}
     // Validar a sala de destino antes de abandonar a sala atual.
-    if(peers(room).size-(ws.room===room?1:0)>=MAX_ROOM){error(ws,'Sala cheia: máximo 16 jogadores');return}
-    const occupied=new Set([...peers(room)].filter(p=>p!==ws).map(p=>p.baseSlot));
-    const candidate=typeof m.token==='string'?sessions.get(m.token):null;
-    const resume=candidate&&candidate.room===room&&candidate.expiresAt>now&&(!candidate.active||ws.session===candidate)?candidate:null;
+    if(peers(room).size-(ws.room===room?1:0)-previous.filter(p=>p.room===room).length>=MAX_ROOM){error(ws,'Sala cheia: máximo 16 jogadores');return}
+    const occupied=new Set([...peers(room)].filter(p=>p!==ws&&!previous.includes(p)).map(p=>p.baseSlot));
+    const tokenSession=typeof m.token==='string'?sessions.get(m.token):null;
+    const candidate=current?.room===room?current.session:tokenSession;
+    const resume=candidate&&candidate.principal===ws.principal&&candidate.room===room&&candidate.expiresAt>now?candidate:null;
+    const transferring=previous.find(p=>p.session===resume);
+    const state=transferring?{heldEgg:transferring.heldEgg,baseState:transferring.baseState,avatar:transferring.avatar,weapon:transferring.weapon,training:transferring.training}:null;
     const preferred=resume?.slot??(ws.room===room?ws.baseSlot:null);
     const baseSlot=Number.isInteger(preferred)&&!occupied.has(preferred)?preferred:Array.from({length:MAX_ROOM},(_,i)=>i).find(i=>!occupied.has(i));
     if(baseSlot===undefined){error(ws,'Sala sem bases livres');return}
-    const anchor=[...peers(room)].filter(p=>p!==ws&&p.readyState===WebSocket.OPEN).find(p=>p.id===m.friend)||[...peers(room)].find(p=>p!==ws&&p.readyState===WebSocket.OPEN);
+    const otherPlayers=[...peers(room)].filter(p=>p!==ws&&!previous.includes(p)&&p.readyState===WebSocket.OPEN);
+    const anchor=otherPlayers.find(p=>p.id===m.friend)||otherPlayers[0];
+    for(const old of previous){
+     if(old===transferring)old.heldEgg=null; // transfere o ovo, sem duplicar ou largar
+     old.replaced=true;send(old,{type:'session-replaced'});leave(old);
+     old.close(4001,'Sessão transferida');
+    }
     leave(ws);clearTimeout(joinTimer);
     const session=resume||{token:crypto.randomBytes(24).toString('hex'),id:crypto.randomUUID(),receipts:new Map()};
+    if(transferring){
+     sessions.set(session.token,{principal:ws.principal,room,active:false,expiresAt:now+120000,replaced:true});
+     session.token=crypto.randomBytes(24).toString('hex');
+    }
     Object.assign(session,{room,slot:baseSlot,active:true,expiresAt:Infinity,principal:ws.principal});sessions.set(session.token,session);
     const spawn=resume?.position||(anchor?meetingSpawn(anchor,baseSlot-1):{...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0});
     Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,training:false,baseState:null,heldEgg:null});
+    if(state)Object.assign(ws,state);
     applyRole(ws,access.resumeOwner(ws.principal,m.ownerToken,m.accessBackup));
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
     if(!roomWorlds.has(room))roomWorlds.set(room,new World(now));
@@ -62,7 +84,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
       const home={...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0};
       Object.assign(ws,home);Object.assign(spawn,home);
      }
-    send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,identity:ws.identityToken,room,baseSlot,spawn,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event,...roleState(ws),accessBackup:ws.owner?access.backup():undefined});
+    send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,identity:ws.identityToken,room,baseSlot,spawn,carrying:ws.heldEgg,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event,...roleState(ws),accessBackup:ws.owner?access.backup():undefined});
     broadcastPresence(room);return;
    }
    if(m.type==='ping'){send(ws,{type:'pong',serverNow:now});return}
@@ -232,3 +254,4 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  wss.on('close',()=>{clearInterval(updates);clearInterval(heartbeat)});
  return wss;
 };
+

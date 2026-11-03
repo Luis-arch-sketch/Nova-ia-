@@ -7,6 +7,9 @@ on:
       - 'index.html'
       - 'multiplayer-*.cjs'
       - 'multiplayer-client.js'
+      - 'map-plaza.js'
+      - 'world-remake.js'
+      - 'tests/map-presence-browser.cjs'
       - 'player-*.cjs'
       - 'player-equipment.js'
       - 'admin-controls.js'
@@ -34,11 +37,16 @@ jobs:
         run: npm test
       - name: Jogar com dois navegadores e roubar o mesmo ovo
         run: node tests/roles-combat-browser.cjs
+      - name: Conferir paredes, grama e reconexao sem avatar duplicado
+        run: node tests/map-presence-browser.cjs
       - name: Capturas de verificacao
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dono-inventario-roubo
-          path: test-results/roles-combat/*.png
+          path: |
+            test-results/roles-combat/*.png
+            test-results/map-presence/*.png
           if-no-files-found: ignore
           retention-days: 7
+

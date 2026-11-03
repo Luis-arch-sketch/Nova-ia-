@@ -122,7 +122,7 @@ PWA_FILES['/biome-countdown.js']=['biome-countdown.js','application/javascript; 
 for(const file of ['admin-controls.js','player-equipment.js'])PWA_FILES['/'+file]=[file,'application/javascript; charset=utf-8'];
 const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML do avatar inválido');return html.replace('</body>','<script src="/avatar-customizer.js?v=20261102-no-horizontal6"></script><script src="/afk-training.js?v=20261102-3"></script><script src="/biome-countdown.js?v=20261102-layout5"></script><script src="/admin-controls.js?v=20261102-roles1"></script><script src="/player-equipment.js?v=20261102-bat2"></script></body>')};
 const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261102-menus3"></script></body>')};
-const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-skip1"></script><script src="/world-detail.js?v=20261102-visual3"></script><script src="/imported-biomes.js?v=20261102-kenney-glb2"></script><script src="/world-remake.js?v=20261103-original-grass1"></script><script src="/map-plaza.js?v=20261103-wallfix1"></script><script src="/fusion-rules.js?v=20261102-1"></script><script src="/fusion-system.js?v=20261102-1"></script><script src="/world-activities.js?v=20261102-shared3"></script></body>');
+const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-skip1"></script><script src="/world-detail.js?v=20261102-visual3"></script><script src="/imported-biomes.js?v=20261102-kenney-glb2"></script><script src="/world-remake.js?v=20261103-continuous-walls2"></script><script src="/map-plaza.js?v=20261103-continuous-walls2"></script><script src="/fusion-rules.js?v=20261102-1"></script><script src="/fusion-system.js?v=20261102-1"></script><script src="/world-activities.js?v=20261102-shared3"></script></body>');
 const RETIRED_ASSETS=new Set(['/halloween-event.js','/halloween-pets.js','/halloween-clowns.js',
  '/audio/halloween-spooky-scary-skeletons.mp3','/audio/clown-dance.webm','/audio/witch-laugh.mp3']);
 const httpServer=http.createServer((req,res)=>{
@@ -134,7 +134,7 @@ const httpServer=http.createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'})
    .end(JSON.stringify({active:false,serverNow:Date.now(),musicUrl:null,musicRequired:false,eggTypes:[],newAnimals:0}));return;
  }
- if(Object.prototype.hasOwnProperty.call(PWA_FILES,u.pathname)){const a=PWA_FILES[u.pathname],p=path.join(__dirname,a[0]);if(!fs.existsSync(p)){res.writeHead(404).end('Arquivo PWA ausente');return}res.writeHead(200,{'Content-Type':a[1],'Cache-Control':u.pathname==='/hud-chat.js'?'no-store':u.pathname==='/service-worker.js'?'no-cache':'public, max-age=1800','X-Content-Type-Options':'nosniff','Service-Worker-Allowed':'/'});fs.createReadStream(p).pipe(res);return}
+ if(Object.prototype.hasOwnProperty.call(PWA_FILES,u.pathname)){const a=PWA_FILES[u.pathname],p=path.join(__dirname,a[0]);if(!fs.existsSync(p)){res.writeHead(404).end('Arquivo PWA ausente');return}const cache=u.pathname==='/service-worker.js'?'no-cache':a[1].startsWith('application/javascript')&&u.pathname!=='/three.min.js'?'no-store':'public, max-age=1800';res.writeHead(200,{'Content-Type':a[1],'Cache-Control':cache,'X-Content-Type-Options':'nosniff','Service-Worker-Allowed':'/'});fs.createReadStream(p).pipe(res);return}
  if(u.pathname==='/health'){
   res.writeHead(200,{'Content-Type':'application/json','Cache-Control':'no-store'})
     .end(JSON.stringify({ok:true,rooms:rooms.size,multiplayerProtocol:2,revision:process.env.RENDER_GIT_COMMIT||null}));return;
@@ -241,3 +241,4 @@ httpServer.listen(PORT,'0.0.0.0',()=>{
  if(!ADMIN_HASH)console.warn('Configure ADMIN_PASSWORD_HASH para liberar o admin online.');
  if(process.env.MULTIPLAYER_SELF_TEST==='1')setTimeout(testMultiplayer,1200);
 });
+

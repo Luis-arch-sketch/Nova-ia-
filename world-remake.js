@@ -41,14 +41,16 @@ try{
  const wallTexture=cliffTexture();
  const wallMat=new T.MeshLambertMaterial({map:wallTexture,color:0xffffff,side:T.DoubleSide});
  const WALL_HEIGHT=24;
- const wallGeo=new T.PlaneGeometry(32,WALL_HEIGHT);
- const wallInstances=new T.InstancedMesh(wallGeo,wallMat,84);
+ // O corredor termina exatamente na entrada da praça; as peças compartilham
+ // bordas em vez de se sobreporem (evita cintilação e frestas no Android).
+ const sectionLength=(956-48)/30;
+ const wallGeo=new T.PlaneGeometry(sectionLength,WALL_HEIGHT);
+ const wallInstances=new T.InstancedMesh(wallGeo,wallMat,60);
  const mat4=new T.Matrix4(),q=new T.Quaternion(),vec=new T.Vector3(),vscale=new T.Vector3(1,1,1);
  let n=0;
  for(const side of [-1,1]){
-   for(let i=0;i<42;i++){
-     const z=338-16-i*31;
-     if(z<-954)break;
+   for(let i=0;i<30;i++){
+     const z=-48-sectionLength*(i+.5);
      q.setFromAxisAngle(new T.Vector3(0,1,0),side*Math.PI/2);
      mat4.compose(vec.set(side*102.2,WALL_HEIGHT/2,z),q,vscale);
      wallInstances.setMatrixAt(n++,mat4);
@@ -59,12 +61,12 @@ try{
  wallInstances.name='Tall terracotta canyon (instanced)';
  cliffGroup.add(wallInstances);result.cliffSections=n;
  // A faixa verde no topo é visível do chão, como na referência.
- const topMat=new T.MeshLambertMaterial({color:0x49e330});
- const topGeo=new T.BoxGeometry(2.7,.8,31);
+ const topMat=new T.MeshLambertMaterial({color:0x62b746});
+ const topGeo=new T.BoxGeometry(2.7,.8,sectionLength);
  const tops=new T.InstancedMesh(topGeo,topMat,n);
  let k=0;
- for(const side of [-1,1])for(let i=0;i<42;i++){
-   const z=338-16-i*31;if(z<-954)break;
+ for(const side of [-1,1])for(let i=0;i<30;i++){
+   const z=-48-sectionLength*(i+.5);
    mat4.compose(vec.set(side*102.2,WALL_HEIGHT+.4,z),new T.Quaternion(),vscale);
    tops.setMatrixAt(k++,mat4);
  }
@@ -175,3 +177,4 @@ try{
  window.RoubeOvoMapRebuild={installed:false,error:String(error)};
 }
 })();
+
