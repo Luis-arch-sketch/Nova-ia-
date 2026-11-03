@@ -90,6 +90,24 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   assert(success.text.includes('SUCESSO'));
   console.log('FUSION SUCCESS 50PCT '+JSON.stringify({remaining:success.remaining,attempts:success.attempts,cost:success.cost,newEgg:{s:success.newEgg.s,z:success.newEgg.z},pageErrors:errors}));
   assert.equal(errors.length,0,errors.join('\n'));
+  const manifest=await fetch(base+'/manifest.webmanifest').then(r=>r.json());
+  assert.equal(manifest.orientation,'landscape','O aplicativo instalado deve abrir deitado');
+  const enterPage=await context.newPage();
+  await enterPage.addInitScript(()=>{
+   window.__startOrientation=[];
+   Object.defineProperty(Element.prototype,'requestFullscreen',{configurable:true,value:function(){window.__startOrientation.push('fullscreen');return Promise.resolve()}});
+   if(typeof ScreenOrientation!=='undefined'){
+    Object.defineProperty(ScreenOrientation.prototype,'lock',{configurable:true,value:function(direction){window.__startOrientation.push('lock:'+direction);return Promise.resolve()}});
+   }
+  });
+  await enterPage.goto(base+'/?test=landscape-automatic',{waitUntil:'domcontentloaded'});
+  await enterPage.locator('#roube-play').click();
+  await enterPage.waitForFunction(()=>window.__startOrientation?.includes('lock:landscape'),null,{timeout:7000});
+  const orientation=await enterPage.evaluate(()=>({calls:window.__startOrientation,cover:!!document.getElementById('roube-capa')}));
+  assert.deepEqual(orientation.calls.slice(0,2),['fullscreen','lock:landscape'],'Primeiro toque JOGAR AGORA entra em tela cheia e tenta girar');
+  assert.equal(orientation.cover,false);
+  console.log('ANDROID AUTO LANDSCAPE AT PLAY '+JSON.stringify({orientation,manifest:manifest.orientation}));
+  await enterPage.close();
   await context.close();
  }finally{await browser?.close();server.kill('SIGTERM')}
 })().catch(e=>{console.error(e);process.exitCode=1});
