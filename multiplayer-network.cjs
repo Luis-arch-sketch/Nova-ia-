@@ -162,6 +162,22 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     const spawn=meetingSpawn(friend);Object.assign(ws,spawn,{training:false});
     send(ws,{type:'reposition',spawn,friend:friend.id,name:friend.name});broadcastPresence(ws.room);return;
    }
+   // Mutacoes equipadas sao aplicadas apenas em ovos reais proximos.
+   if(m.type==='egg-mutate'){
+    const requestId=typeof m.requestId==='string'?m.requestId:'';
+    const answer=(ok,egg=null)=>send(ws,{type:'egg-mutate-result',ok,requestId,id:m.id,mutation:m.mutation,egg});
+    if(!/^[A-Za-z0-9-]{8,80}$/.test(requestId))return;
+    if(ws.session.receipts.has(requestId)){send(ws,ws.session.receipts.get(requestId));return}
+    if(!Number.isInteger(m.mutation)||m.mutation<0||m.mutation>=8||!position(ws,m.position)){answer(false);return}
+    const egg=world.eggs.get(m.id);
+    if(!egg||egg.s===LIMITED||world.phase!=='day'||Math.hypot(egg.x-ws.x,egg.z-ws.z)>5||
+       (Array.isArray(egg.m)&&egg.m.includes(m.mutation))){answer(false);return}
+    egg.m=Array.isArray(egg.m)?[...egg.m,m.mutation]:[m.mutation];
+    const reply={type:'egg-mutate-result',ok:true,requestId,id:egg.id,mutation:m.mutation,egg};
+    ws.session.receipts.set(requestId,reply);
+    if(ws.session.receipts.size>100)ws.session.receipts.delete(ws.session.receipts.keys().next().value);
+    send(ws,reply);broadcast(ws.room,{type:'world-add',eggs:[egg]},ws);return;
+   }
    if(['egg-take','egg-drop','egg-deposit'].includes(m.type)){
     if(typeof m.requestId!=='string'||!/^[A-Za-z0-9-]{8,80}$/.test(m.requestId))return;
     if(m.type==='egg-deposit'&&ws.session.receipts.has(m.requestId)){send(ws,ws.session.receipts.get(m.requestId));return}
