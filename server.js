@@ -8,7 +8,7 @@ const PORT=Number(process.env.PORT||(previewPort>=0?process.argv[previewPort+1]:
 const {PlayerAccess}=require('./player-access.cjs');
 const access=new PlayerAccess(process.env.PLAYER_ACCESS_SECRET||crypto.randomBytes(32).toString('hex'),process.env.MODERATION_FILE||path.join(__dirname,'data','player-access.json'));
 const send=(ws,o)=>{if(ws.readyState!==WebSocket.OPEN)return;try{if(ws.bufferedAmount>1024*1024){ws.terminate();return}ws.send(JSON.stringify(o))}catch{ws.terminate()}};
-const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0,admin:!!ws.owner,role:ws.owner?'owner':ws.admin?'operator':'player',weapon:ws.weapon||null,baseSlot:ws.baseSlot,carrying:ws.heldEgg||null,training:!!ws.training,avatar:ws.avatar||null});
+const publicUser=ws=>({id:ws.id,name:ws.name,x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0,admin:!!ws.owner,role:ws.owner?'owner':ws.admin?'operator':'player',weapon:ws.weapon||null,baseSlot:ws.baseSlot,carrying:ws.heldEgg||null,training:!!ws.training,avatar:ws.avatar||null,voice:!!ws.voiceEnabled});
 const peers=room=>rooms.get(room)||new Set();
 // Salas sob demanda, sem um número máximo definido de salas.
 // A lotação continua em 16 por sala; salas vazias são removidas automaticamente.
@@ -126,6 +126,7 @@ for(const file of ['egg-hatching.js','egg-hatching.css'])PWA_FILES['/'+file]=[fi
 PWA_FILES['/multiplayer-client.js']=['multiplayer-client.js','application/javascript; charset=utf-8'];
 PWA_FILES['/mutation-minigame.js']=['mutation-minigame.js','application/javascript; charset=utf-8'];
 PWA_FILES['/radioactive-arena.js']=['radioactive-arena.js','application/javascript; charset=utf-8'];
+PWA_FILES['/voice-chat.js']=['voice-chat.js','application/javascript; charset=utf-8'];
 PWA_FILES['/entrance-cinematic.js']=['entrance-cinematic.js','application/javascript; charset=utf-8'];
 PWA_FILES['/cutscene-zona-radioativa.html']=['cutscene-zona-radioativa.html','text/html; charset=utf-8'];
 PWA_FILES['/radioactive-cutscene.js']=['radioactive-cutscene.js','application/javascript; charset=utf-8'];
@@ -144,7 +145,7 @@ const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML
 const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261102-menus3"></script></body>')};
 let gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-skip1"></script><script src="/world-detail.js?v=20261102-visual3"></script><script src="/imported-biomes.js?v=20261102-kenney-glb2"></script><script src="/world-remake.js?v=20261103-compact-U1"></script><script src="/map-plaza.js?v=20261103-compact-U1"></script><script src="/fusion-rules.js?v=20261102-1"></script><script src="/fusion-system.js?v=20261102-1"></script><script src="/world-activities.js?v=20261103-compact-U1"></script></body>');
 // Evento especial: um minigame repetivel para ganhar e aplicar mutacoes reais.
-gameHtml=gameHtml.replace('</body>','<script src="/mutation-minigame.js?v=20261103-1430-2"></script><script src="/radioactive-arena.js?v=20261103-raid1"></script></body>');
+gameHtml=gameHtml.replace('</body>','<script src="/mutation-minigame.js?v=20261103-1430-2"></script><script src="/radioactive-arena.js?v=20261103-raid1"></script><script src="/voice-chat.js?v=20261103-voice1"></script></body>');
 const RETIRED_ASSETS=new Set(['/halloween-event.js','/halloween-pets.js','/halloween-clowns.js',
  '/audio/halloween-spooky-scary-skeletons.mp3','/audio/clown-dance.webm','/audio/witch-laugh.mp3']);
 const httpServer=http.createServer((req,res)=>{

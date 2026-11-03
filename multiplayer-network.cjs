@@ -27,7 +27,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  wss.on('connection',(ws,req)=>{
   const identity=access.cookie(req)||access.newIdentity();
   Object.assign(ws,{id:crypto.randomUUID(),room:null,admin:false,heldEgg:null,name:'',x:0,y:0,z:8,yaw:0,lastMove:0,failedAdminCount:0,alive:true,rateAt:Date.now(),rateCount:0});
-  ws.principal=identity.id;ws.identityToken=identity.token;ws.cookieIdentity=!!access.cookie(req);ws.owner=false;ws.weapon=null;
+  ws.principal=identity.id;ws.identityToken=identity.token;ws.cookieIdentity=!!access.cookie(req);ws.owner=false;ws.weapon=null;ws.voiceEnabled=false;
   const joinTimer=setTimeout(()=>{if(!ws.room)ws.close(1008,'Escolha uma sala')},20000);joinTimer.unref();
   ws.on('pong',()=>{ws.alive=true});
   ws.on('message',raw=>{
@@ -79,7 +79,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     }
     Object.assign(session,{room,slot:baseSlot,active:true,expiresAt:Infinity,principal:ws.principal});sessions.set(session.token,session);
     const spawn=resume?.position||(anchor?meetingSpawn(anchor,baseSlot-1):{...baseSpawn(baseSlot,otherPlayers.length+1),y:0,yaw:0,cameraYaw:0});
-    Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,home:resume?.home||null,training:false,baseState:null,heldEgg:null});
+    Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,home:resume?.home||null,training:false,baseState:null,heldEgg:null,voiceEnabled:false});
     if(state)Object.assign(ws,state);
     applyRole(ws,access.resumeOwner(ws.principal,m.ownerToken,m.accessBackup));
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
@@ -100,6 +100,25 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    }
    if(m.type==='ping'){send(ws,{type:'pong',serverNow:now});return}
    if(!ws.room)return;
+   if(m.type==='voice-state'){
+    if(typeof m.enabled!=='boolean')return;
+    ws.voiceEnabled=m.enabled;
+    broadcast(ws.room,{type:'voice-presence',id:ws.id,enabled:ws.voiceEnabled},ws);
+    broadcastPresence(ws.room);return;
+   }
+   if(m.type==='voice-signal'){
+    if(!ws.voiceEnabled||typeof m.target!=='string'||!m.signal||typeof m.signal!=='object')return;
+    const remote=[...peers(ws.room)].find(p=>p!==ws&&p.id===m.target&&p.voiceEnabled);
+    if(!remote)return;
+    const s=m.signal;
+    if((s.type==='offer'||s.type==='answer')&&typeof s.sdp==='string'&&s.sdp.length<14000)
+     send(remote,{type:'voice-signal',from:ws.id,signal:{type:s.type,sdp:s.sdp}});
+    else if(s.type==='candidate'&&typeof s.candidate?.candidate==='string'&&s.candidate.candidate.length<1600){
+     const ice=s.candidate;
+     send(remote,{type:'voice-signal',from:ws.id,signal:{type:'candidate',candidate:{candidate:ice.candidate,sdpMid:typeof ice.sdpMid==='string'?ice.sdpMid.slice(0,24):null,sdpMLineIndex:Number.isInteger(ice.sdpMLineIndex)?ice.sdpMLineIndex:0}}});
+    }
+    return;
+   }
    // Chat de texto: apenas membros conectados a esta mesma sala recebem a mensagem.
    // Nome e sala saem da sessao validada pelo servidor; o cliente nunca os escolhe no pacote.
    if(m.type==='rename'){

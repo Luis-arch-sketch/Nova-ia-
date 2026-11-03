@@ -121,7 +121,7 @@ const syncPeerBase=u=>{
 };
 
 const mpDispose=id=>{removePeerBase(id);const v=MP.views.get(id);if(!v)return;sc.remove(v.group);v.materials.forEach(m=>m.dispose());v.geometries.forEach(g=>g.dispose());if(v.texture)v.texture.dispose();MP.views.delete(id)};
-const mpClear=()=>{mpClearWorld();for(const id of [...MP.views.keys()])mpDispose(id);for(const id of [...PEER_BASES.keys()])removePeerBase(id);MP.players.clear();MP.baseStates.clear();MP.self='';MP.connected=false;mpApplyRole({});MP.protocol=0;if(MP.roomEvent){abuseStop(true);MP.roomEvent=null;}if(MP.pending?.type!=='egg-deposit')MP.pending=null;$('roomPlayerList').textContent='—';};
+const mpClear=()=>{window.RoubeOvoVoiceChat?.stop();mpClearWorld();for(const id of [...MP.views.keys()])mpDispose(id);for(const id of [...PEER_BASES.keys()])removePeerBase(id);MP.players.clear();MP.baseStates.clear();MP.self='';MP.connected=false;mpApplyRole({});MP.protocol=0;if(MP.roomEvent){abuseStop(true);MP.roomEvent=null;}if(MP.pending?.type!=='egg-deposit')MP.pending=null;$('roomPlayerList').textContent='—';};
 const mpBadge=(name,isAdmin)=>{const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=isAdmin?'#5b1f55':'#102448';ctx.fillRect(5,5,502,118);ctx.strokeStyle=isAdmin?'#ff76da':'#73d8ff';ctx.lineWidth=6;ctx.strokeRect(8,8,496,112);ctx.font='bold 46px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=isAdmin?'#ff94e6':'#ffffff';ctx.fillText((isAdmin?'👑 ADMIN':name).slice(0,20),256,65,480);return new T.CanvasTexture(c)};
 const mpBuild=(id,u)=>{const grp=new T.Group(),geoms=[],mats=[];const add=(geom,mat,x,y,z)=>{const m=new T.Mesh(geom,mat);m.position.set(x,y,z);grp.add(m);geoms.push(geom);mats.push(mat);return m};
  add(new T.BoxGeometry(.9,1,.55),new T.MeshLambertMaterial({color:0x48cf9d}),0,1.45,0);
@@ -333,7 +333,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    MP.baseSlot=msg.baseSlot;mpApplyLayout(msg.layout);setHomeBaseSlot(msg.baseSlot);mpPlace(msg.spawn||{x:BASE_HOME.x,z:BASE_HOME.z+8});
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
    if(msg.carrying){MP.settingRemote=true;try{const e=mpUpsertEgg(msg.carrying);if(e&&!carry)take(e)}finally{MP.settingRemote=false}}
-   mpApplyUsers(msg.players||[],msg.layout);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
+   mpApplyUsers(msg.players||[],msg.layout);window.RoubeOvoVoiceChat?.onPlayers(msg.players||[]);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
    mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);
    typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:MP.name}}));
    mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});
@@ -347,7 +347,7 @@ const mpJoin=(mode='join',retrying=false)=>{
    typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:msg.name}}));
    try{localStorage.setItem('rue3d_mp_name',msg.name)}catch(e){}
   }else if(msg.type==='players'){
-   mpApplyUsers(msg.players||[],msg.layout);
+   mpApplyUsers(msg.players||[],msg.layout);window.RoubeOvoVoiceChat?.onPlayers(msg.players||[]);
    const self=msg.players?.find(p=>p.id===MP.self);
    if(carry?.netId&&self&&!self.carrying&&!MP.pending){P.g.remove(carry.mesh);if(carry.aura){if(carry.s===LIMITED_ID)disposeLimitedAura(carry);else sc.remove(carry.aura)}carry=null;}
   }else if(msg.type==='world-sync')mpWorldSync(msg);
@@ -370,7 +370,7 @@ const mpJoin=(mode='join',retrying=false)=>{
   else if(msg.type==='session-replaced'){MP.stopped=true;clearTimeout(MP.retryTimer);MP.retryTimer=null;save();mpEntrance(false,true);mpStatus('Esta sessão foi aberta em outra aba.');}
   else if(msg.type==='kicked'){MP.stopped=true;clearTimeout(MP.retryTimer);MP.retryTimer=null;save();mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);}
   else if(msg.type==='error'){if(msg.scope==='admin'){MP.adminPassword=null;const field=$('adAuthError');if(field)field.textContent=msg.message;}MP.joining=null;mpEntrance(false,true);mpStatus('⚠ '+msg.message);toast('⚠ '+msg.message);if(!MP.connected){MP.stopped=true;clearTimeout(MP.connectTimer);ws.close();}}
-  window.RoubeOvoAdmin?.incoming(msg);window.RoubeOvoEquipment?.incoming(msg);window.RoubeOvoRaid?.incoming(msg);
+  window.RoubeOvoAdmin?.incoming(msg);window.RoubeOvoEquipment?.incoming(msg);window.RoubeOvoRaid?.incoming(msg);window.RoubeOvoVoiceChat?.incoming(msg);
  };
  ws.onerror=()=>{if(MP.socket===ws)mpStatus('⚠ Conexão interrompida. Tentando novamente…');};
  ws.onclose=()=>{if(MP.socket===ws){MP.socket=null;clearTimeout(MP.connectTimer);mpClear();mpReconnect();}};
