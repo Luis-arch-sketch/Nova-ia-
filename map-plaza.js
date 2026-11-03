@@ -85,18 +85,28 @@
   const topFace=new T.MeshLambertMaterial({color:0x54da34});
   let curvedSections=0;
   const edge=trace.getSpacedPoints(96);
+  // Um único draw call para todos os paredões, outro para as bordas.
+  // Muito mais leve que mais de 140 malhas individuais nos celulares Android.
+  const wallInstances=new T.InstancedMesh(new T.PlaneGeometry(1,28),wallFace,edge.length);
+  const trimInstances=new T.InstancedMesh(new T.BoxGeometry(1,.75,2),topFace,edge.length);
+  const matrix4=new T.Matrix4(),yAxis=new T.Vector3(0,1,0);
+  const pos=new T.Vector3(),orient=new T.Quaternion(),scale3=new T.Vector3();
   for(let i=0;i<edge.length-1;i++){
    const a=edge[i],b=edge[i+1],az=-a.y,bz=-b.y;
    if((az+bz)/2<12)continue; // Passagem aberta: saída para os biomas e máquinas.
    const dx=b.x-a.x,dz=bz-az,length=Math.hypot(dx,dz);
    if(length<.1)continue;
    const angle=-Math.atan2(dz,dx),x=(a.x+b.x)/2,z=(az+bz)/2;
-   const wall=new T.Mesh(new T.PlaneGeometry(length+.10,28),wallFace);
-   wall.position.set(x,14.2,z);wall.rotation.y=angle;wall.receiveShadow=true;
-   curvedWalls.add(wall);
-   const trim=new T.Mesh(new T.BoxGeometry(length+.1,.75,2),topFace);
-   trim.rotation.y=angle;trim.position.set(x,28.55,z);curvedWalls.add(trim);
+   orient.setFromAxisAngle(yAxis,angle);scale3.set(length+.10,1,1);
+   matrix4.compose(pos.set(x,14.2,z),orient,scale3);
+   wallInstances.setMatrixAt(curvedSections,matrix4);
+   matrix4.compose(pos.set(x,28.55,z),orient,scale3);
+   trimInstances.setMatrixAt(curvedSections,matrix4);
    curvedSections++;
+  }
+  for(const mesh of [wallInstances,trimInstances]){
+   mesh.count=curvedSections;mesh.instanceMatrix.needsUpdate=true;mesh.frustumCulled=false;
+   curvedWalls.add(mesh);
   }
 
   // Caminho visual suavemente sinuoso; mantém a passagem de guardiões e ovos.
