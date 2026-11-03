@@ -340,6 +340,7 @@ const mpJoin=(mode='join',retrying=false)=>{
   else if(msg.type==='reposition'){const training=P.train;if(msg.reason==='layout'){MP.baseSlot=msg.baseSlot;mpApplyLayout(msg.layout)}mpPlace(msg.spawn);if(msg.reason==='layout')P.train=training;$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition(),training:P.train});if(!['night','layout'].includes(msg.reason))toast(msg.reason==='home'?'🏠 Você voltou para sua base.':'👥 Você e '+msg.name+' estão de frente!');}
   else if(msg.type==='world-add')for(const d of msg.eggs||[])mpUpsertEgg(d);
   else if(msg.type==='world-remove')mpRemoveEgg(msg.id);
+  else if(msg.type==='egg-mutate-result'){if(msg.ok&&msg.egg)mpUpsertEgg(msg.egg);window.dispatchEvent(new CustomEvent('roube-egg-mutate-result',{detail:msg}));}
   else if(msg.type==='egg-result')mpEggResult(msg);
   else if(msg.type==='egg-forced-drop'){
    if(MP.pending?.id===msg.egg.id){MP.pending=null;mpStorePending()}
