@@ -28,7 +28,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  wss.on('connection',(ws,req)=>{
   const identity=access.cookie(req)||access.newIdentity();
   Object.assign(ws,{id:crypto.randomUUID(),room:null,admin:false,heldEgg:null,name:'',x:0,y:0,z:8,yaw:0,lastMove:0,failedAdminCount:0,alive:true,rateAt:Date.now(),rateCount:0});
-  ws.principal=identity.id;ws.identityToken=identity.token;ws.cookieIdentity=!!access.cookie(req);ws.owner=false;ws.weapon=null;ws.voiceEnabled=false;
+  ws.principal=identity.id;ws.identityToken=identity.token;ws.cookieIdentity=!!access.cookie(req);ws.owner=false;ws.weapon=null;ws.voiceEnabled=false;ws.inRaid=false;ws.raidHp=300;
   const joinTimer=setTimeout(()=>{if(!ws.room)ws.close(1008,'Escolha uma sala')},20000);joinTimer.unref();
   ws.on('pong',()=>{ws.alive=true});
   ws.on('message',raw=>{
@@ -156,7 +156,8 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     }
     const destination=entering?raidPortal.arrivalArena:raidPortal.arrivalTown;
     const spawn={...MapLayout.fit(destination,ws.hub),y:0,yaw:0,cameraYaw:0};
-    ws.lastRaidPortal=now;Object.assign(ws,spawn,{training:false,dirtyMove:true});
+    ws.lastRaidPortal=now;ws.inRaid=entering;ws.raidHp=300;Object.assign(ws,spawn,{training:false,dirtyMove:true});
+    send(ws,{type:'raid-player-hp',hp:300,maxHp:300});
     if(ws.session)ws.session.position={...spawn};
     send(ws,{type:'reposition',reason:entering?'raid-enter':'raid-exit',spawn});
     broadcastPresence(ws.room);return;
@@ -340,9 +341,22 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  // Um pacote por sala a cada 100 ms, sem multiplicar o tráfego por cada movimento.
  const updates=setInterval(()=>{
   const now=Date.now();
+  if(raid.tick(now))broadcastAll(raid.state(now));
+  const combatants=[...wss.clients].filter(p=>p.room&&p.readyState===WebSocket.OPEN);
+  for(const event of raid.attacks(now,combatants)){
+   if(event.type==='raid-attack'){broadcastAll(event);continue}
+   const victim=combatants.find(p=>p.id===event.id);if(!victim)continue;
+   send(victim,event);
+   if(event.dead){
+    const spawn={...MapLayout.fit(raidPortal.arrivalTown,victim.hub),y:0,yaw:0,cameraYaw:0};
+    victim.inRaid=false;victim.raidHp=300;Object.assign(victim,spawn,{training:false,dirtyMove:true});
+    if(victim.session)victim.session.position={...spawn};
+    send(victim,{type:'reposition',reason:'raid-death',spawn});
+    broadcastPresence(victim.room);
+   }
+  }
   for(const [room,world] of roomWorlds){
    if(!rooms.has(room)){if(world.emptyAt&&now-world.emptyAt>120000)roomWorlds.delete(room);continue}
-   if(raid.tick(now))broadcastAll(raid.state(now));
    if(world.tick(now)){
      // A renovação noturna não desloca jogadores nem interrompe o treino na esteira.
      broadcast(room,world.snapshot(now));
