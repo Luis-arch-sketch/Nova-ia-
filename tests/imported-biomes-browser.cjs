@@ -22,10 +22,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await page.waitForFunction(()=>window.RoubeOvoMapRebuild?.installed===true,null,{timeout:15000});
    const map=await page.evaluate(()=>window.RoubeOvoMapRebuild);
    console.log('ORIGINAL STYLE ARCHITECTURE '+JSON.stringify(map));
-   assert(map.oldGroundHidden>=25,'Pisos antigos devem ser substituídos por studs Roblox');
+   assert(map.originalTerrainPreserved&&map.oldGroundHidden===0,'A grama original deve permanecer sem pisos sobrepostos');
    assert(map.oldFenceHidden===5,'As cinco paredes da cerca devem virar trilhos laranja');
    assert(map.oldWallsHidden>=6,'Muralhas baixas devem ser substituídas');
-   assert(map.cliffSections>=70&&map.groundTiles>=16,'Paredões e chão reformulados por completo');
+   assert(map.cliffSections>=2&&map.groundTiles===0,'Paredões contínuos sem adicionar placas por cima da grama');
    assert(map.fenceSections===5,'Portão aberto e cercas com vãos corretos');
    await page.waitForFunction(()=>window.RoubeOvoImportedModels?.requestedTypes>=8,null,{timeout:15000});
    try{await page.waitForFunction(()=>window.RoubeOvoImportedModels?.loadedTypes>=5,null,{timeout:40000});}
@@ -58,3 +58,4 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    console.log('KENNEY CHERRY BLOSSOM '+JSON.stringify(cherry));
  }finally{await browser?.close();server.kill('SIGTERM')}
 })().catch(e=>{console.error(e);process.exitCode=1});
+

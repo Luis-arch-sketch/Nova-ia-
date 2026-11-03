@@ -45,6 +45,7 @@ function connect(port){return new Promise((resolve,reject)=>{
  ws.on('message',raw=>{const m=JSON.parse(String(raw)),i=waiters.findIndex(w=>w.predicate(m));if(i<0)inbox.push(m);else{const w=waiters.splice(i,1)[0];clearTimeout(w.timer);w.resolve(m)}});
  ws.next=predicate=>{const i=inbox.findIndex(predicate);if(i>=0)return Promise.resolve(inbox.splice(i,1)[0]);return new Promise((resolve,reject)=>{const w={predicate,resolve};w.timer=setTimeout(()=>reject(Error('Sem resposta esperada')),3000);waiters.push(w)})};
  ws.sendJSON=m=>ws.send(JSON.stringify(m));ws.once('open',()=>resolve(ws));ws.once('error',reject);
+ ws.discard=predicate=>{for(let i=inbox.length-1;i>=0;i--)if(predicate(inbox[i]))inbox.splice(i,1)};
 });}
 test('servidor libera retorno à base com ovo sem permitir encontrar amigo carregando', {timeout:12000},async()=>{
  const port=3106,srv=spawn(process.execPath,['server.js'],{env:{...process.env,PORT:String(port)},stdio:['ignore','ignore','pipe']}),clients=[];let log='';srv.stderr.on('data',d=>log+=d);
@@ -59,6 +60,10 @@ test('servidor libera retorno à base com ovo sem permitir encontrar amigo carre
   a.sendJSON({type:'egg-drop',id:egg.id,requestId:'drop-test-123',position});assert.equal((await a.next(m=>m.type==='egg-result')).ok,true);
   a.sendJSON({type:'go-home'});const home=await a.next(m=>m.type==='reposition');assert.equal(home.reason,'home');assert.equal(home.spawn.x,0);assert.equal(home.spawn.z,8);
   b.sendJSON({type:'go-home'});const second=await b.next(m=>m.type==='reposition');assert.equal(second.spawn.x,52);assert.equal(second.spawn.z,8);
+  // Reposition chega depois do drop: retire snapshots anteriores que podem
+  // ter sido transmitidos enquanto o ovo ainda estava sendo carregado.
+  a.discard(m=>m.type==='world-sync');
   a.sendJSON({type:'world-request'});const world=await a.next(m=>m.type==='world-sync');assert.equal(world.eggs.filter(e=>e.id===egg.id).length,1,'nenhum ovo perdido ou duplicado');
  }finally{clients.forEach(ws=>ws.terminate());srv.kill('SIGTERM')}
 });
+
