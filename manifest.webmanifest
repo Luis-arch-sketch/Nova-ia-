@@ -13,7 +13,7 @@
   ],
   "background_color": "#101b32",
   "theme_color": "#ffc933",
-  "orientation": "any",
+  "orientation": "landscape",
   "icons": [
     {
       "src": "/icone-capa-oficial-192.png",
