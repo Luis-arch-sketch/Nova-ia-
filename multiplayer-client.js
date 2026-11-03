@@ -145,7 +145,21 @@ const mpDraw=()=>{
  const button=$('mpFindFriend');if(button){button.disabled=!MP.connected||!others.length;button.textContent=others.length?'👥 Encontrar amigo':'👥 Esperando amigo';}
 };
 const mpApplyUsers=(users,layout)=>{const self=users.find(u=>u.id===MP.self);if(self)MP.baseSlot=self.baseSlot;if(layout)mpApplyLayout(layout);const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)v=mpBuild(u.id,u);window.RoubeOvoAvatar?.syncRemote(v.group,u.avatar);syncPeerBase(u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
-const mpRemoteEvent=ev=>{if(ev.kind==='event'&&ev.action==='start'&&ev.endsAt&&MP.roomEvent?.endsAt===ev.endsAt&&ABUSE.active?.id===ev.id)return;MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st={...(ev.settings||{duration:60,interval:10,wave:1})};if(ev.endsAt){st.duration=Math.max(.01,(ev.endsAt-Date.now()-MP.clockOffset)/1000);MP.roomEvent=ev;}abuseStart(ev.id,st)}else if(ev.action==='stop'){abuseStop(true);MP.roomEvent=null;}}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){if(MP.protocol>=2)return;
+const mpRemoteEvent=ev=>{if(ev.kind==='event'&&ev.action==='start'&&ev.endsAt&&MP.roomEvent?.endsAt===ev.endsAt&&ABUSE.active?.id===ev.id)return;MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st={...(ev.settings||{duration:60,interval:10,wave:1})};if(ev.endsAt){st.duration=Math.max(.01,(ev.endsAt-Date.now()-MP.clockOffset)/1000);MP.roomEvent=ev;}abuseStart(ev.id,st)}else if(ev.action==='stop'){abuseStop(true);MP.roomEvent=null;}}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='admin-egg-spawn'){
+ const spawned=Array.isArray(ev.eggs)?ev.eggs:[];
+ if(spawned.length){
+  const now=Date.now(),grouped=now-(MP.eggSpawnNoticeAt||0)<1200;
+  MP.eggSpawnNoticeCount=(grouped?(MP.eggSpawnNoticeCount||0):0)+spawned.length;
+  MP.eggSpawnNoticeAt=now;
+  const e=spawned[0],count=MP.eggSpawnNoticeCount;
+  const mods=Array.isArray(e.m)?e.m.filter(i=>MUT[i]).map(i=>MUT[i][0]):[];
+  const label=RAR[e.r]||'especial',animal=SPC[e.s]?.n||'especial';
+  const detail=mods.length?' • Mutações: '+mods.join(', '):'';
+  const message='🥚 ADMIN spawnou '+count+' ovo'+(count===1?'':'s')+'! '+label+' '+animal+detail;
+  if(!grouped)abuseAnnounce(message,10);
+  else {const labelEl=$('abMessageText');if(labelEl)labelEl.textContent=message;ABUSE.msgSeconds=ABUSE.msgTotal=10;$('abMessage').style.display='block';}
+ }
+}else if(ev.kind==='limited'){if(MP.protocol>=2)return;
  for(const p of ev.eggs||[])if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
  abuseAnnounce('🔥 O ADMIN invocou o LIMITED ∞ exclusivo nesta sala!',12);abuseFlash(0xff5918,16);
 }else if(ev.kind==='limited-clear'){clearRoomLimitedEggs()}

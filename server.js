@@ -32,7 +32,12 @@ const listPublicRooms=requested=>{
  const n=Number(requested),page=Number.isSafeInteger(n)?Math.max(0,Math.min(n,pages-1)):0;
  return {rooms:all.slice(page*20,(page+1)*20),total,players:all.reduce((n,r)=>n+r.count,0),page,pages};
 };
-const broadcast=(room,obj,except=null)=>{for(const c of peers(room))if(c!==except)send(c,obj)};
+// Os ovos e eventos pertencem ao mundo compartilhado: todos os jogadores veem os mesmos IDs.
+const broadcast=(room,obj,except=null)=>{
+ const global=obj&&(obj.type==='world-add'||obj.type==='world-remove'||obj.type==='world-sync'||obj.type==='event');
+ const audiences=global?rooms.values():[peers(room)];
+ for(const players of audiences)for(const c of players)if(c!==except)send(c,obj);
+};
 const refreshRoomLayout=room=>{
  const players=[...peers(room)].sort((a,b)=>a.baseSlot-b.baseSlot),layout=MapLayout.state(players.length);
  players.forEach((ws,slot)=>{

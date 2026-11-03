@@ -79,7 +79,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     if(state)Object.assign(ws,state);
     applyRole(ws,access.resumeOwner(ws.principal,m.ownerToken,m.accessBackup));
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
-    if(!roomWorlds.has(room))roomWorlds.set(room,new World(now));
+    if(!roomWorlds.has(room))roomWorlds.set(room,roomWorlds.values().next().value||new World(now)); // Um mundo de ovos único, mesmo entre salas
     const world=roomWorlds.get(room);world.emptyAt=0;world.tick(now);
     const layout=refreshRoomLayout(room);
     if(!resume&&anchor)Object.assign(ws,meetingSpawn(anchor,ws.baseSlot-1));
@@ -246,8 +246,12 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    }
    if(m.type==='admin-spawn'){
     const input=Array.isArray(m.eggs)?m.eggs.slice(0,10):[],eggs=[];
-    for(const e of input)if(e&&Number.isInteger(e.b)&&e.b>=0&&e.b<13&&Number.isInteger(e.j)&&e.j>=0&&e.j<8&&Number.isInteger(e.size)&&e.size>=0&&e.size<5&&finite(e.x,-97,97)&&finite(e.z,-937,333)&&Number.isInteger(e.s)&&((e.s===e.b*8+e.j)||(e.s>=105&&e.s<129))){const egg=world.add(e.b,e.j,e.size,e.x,e.z,now,e.s,null,e.m);if(egg)eggs.push(egg)}
-    if(eggs.length)broadcast(ws.room,{type:'world-add',eggs});return;
+    for(const e of input)if(e&&Number.isInteger(e.b)&&e.b>=0&&e.b<13&&Number.isInteger(e.j)&&e.j>=0&&e.j<8&&Number.isInteger(e.size)&&e.size>=0&&e.size<5&&finite(e.x,-97,97)&&finite(e.z,-937,333)&&Number.isInteger(e.s)&&((e.s===e.b*8+e.j)||(e.s>=105&&e.s<129))){const egg=world.add(e.b,e.j,e.size,e.x,e.z,now,e.s,null,e.m);if(egg){egg.adminSpawned=true;egg.expiresAt=now+600000;eggs.push(egg)}}
+    if(eggs.length){
+     broadcast(ws.room,{type:'world-add',eggs});
+     broadcast(ws.room,{type:'event',kind:'admin-egg-spawn',eggs:eggs.map(e=>({s:e.s,b:e.b,j:e.j,r:e.r,m:e.m})),by:ws.name});
+    }
+    return;
    }
    if(m.type==='admin-clear'||m.type==='admin-limited-clear'){
     for(const [id,e] of world.eggs)if(m.type==='admin-clear'||e.s===LIMITED)world.eggs.delete(id);

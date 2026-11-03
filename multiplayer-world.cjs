@@ -29,7 +29,7 @@ class World {
  size(){const n=this.random()*100;return n<50?0:n<85?1:n<97?2:3;}
  regrow(first,now){
   // Ovos abandonados e ninhos antigos expiram a cada ciclo; LIMITED e ovos carregados ficam preservados.
-  if(!first)for(const [id,e] of this.eggs)if(e.s!==LIMITED)this.eggs.delete(id);
+  if(!first)for(const [id,e] of this.eggs)if(e.s!==LIMITED&&!(e.adminSpawned&&e.expiresAt>now))this.eggs.delete(id);
   const occupied=new Set([...this.eggs.values()].map(e=>e.nest));
   const spawn=(b,j)=>{const n=b*8+j;if(occupied.has(n)||REMOVED.has(n))return;
    const a=j/8*Math.PI*2;let size=this.size();if(!first&&this.random()<.32)size=Math.min(4,size+1);
