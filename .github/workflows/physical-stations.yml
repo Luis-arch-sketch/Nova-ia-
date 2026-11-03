@@ -6,6 +6,8 @@ on:
       - 'fusion-rules.js'
       - 'fusion-system.js'
       - 'world-activities.js'
+      - 'map-plaza.js'
+      - 'multiplayer-client.js'
       - 'tests/physical-stations-browser.cjs'
       - '.github/workflows/physical-stations.yml'
   workflow_dispatch:
