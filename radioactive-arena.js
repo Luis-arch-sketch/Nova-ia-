@@ -65,7 +65,7 @@
  const roar=new Audio('/audio/raid-roar.ogg'),punch=new Audio('/audio/raid-punch.ogg');
  roar.volume=.68;punch.volume=.72;roar.preload=punch.preload='auto';
  const sound=a=>{if(!near())return;try{a.currentTime=0;a.play().catch(()=>{})}catch{}};
- let attackUntil=0,raidHp=300;
+ let attackUntil=0,raidHp=300,chargeAnimation=null;
  function attackVisual(m){
   if(!near())return;
   if(m.phase==='warn'){
@@ -77,7 +77,7 @@
     sound(roar);toast('☢ CORRIDA SUPREMA! Desvie da linha!');
    }else if(m.kind==='spin'){blast.material.color.setHex(0xda86ff);toast('☢ Giro do monstro! Afaste-se!')}
    else{blast.material.color.setHex(0xff9944);toast('☢ Soco no chão! Fuja da área!')}
-  }else{sound(punch);if(m.kind==='spin')mob.rotation.y+=1.4;if(m.kind==='slam')mob.scale.setScalar(1.08)}
+  }else{sound(punch);if(m.kind==='spin')mob.rotation.y+=1.4;if(m.kind==='slam')mob.scale.setScalar(1.08);if(m.kind==='charge')chargeAnimation={time:Date.now(),dx:m.dx,dz:m.dz}}
  }
  function tintSky(){if(near()){bg.lerp(new T.Color(0x50ad39),.9);sc.fog.color.copy(bg)}}
  const css=document.createElement('style');css.textContent='#rue-raid-ui{position:fixed;z-index:59;right:calc(9px + env(safe-area-inset-right,0px));bottom:calc(155px + env(safe-area-inset-bottom,0px));padding:10px;width:min(246px,58vw);background:#11291fee;color:white;border:2px solid #b1f778;border-radius:15px;font:700 12px system-ui;display:none;box-shadow:0 4px 18px #0009}#rue-raid-ui strong{font-size:15px}#rue-raid-ui p{margin:7px 0}#rue-raid-ui button{width:100%;min-height:42px;margin-top:7px;padding:8px 5px;border-radius:10px;border:0;background:#abf586;color:#112910;font:900 12px system-ui}#rue-raid-buy{background:#ffcb7d!important}#rue-raid-ui button:disabled{opacity:.5}#rue-raid-life{height:11px;border-radius:6px;background:#3e5039;overflow:hidden}#rue-raid-life span{display:block;height:100%;background:#b6ff86;width:100%}';document.head.appendChild(css);
@@ -113,6 +113,7 @@
   hit.disabled=!show||state.hp<=0||Date.now()<nextHit;buy.disabled=!show||state.candies<state.eggPrice;
   mob.visible=state.hp>0;mob.rotation.y+=.035;mob.position.y=Math.sin(Date.now()/550)*.13;
   if(Date.now()>attackUntil){blast.visible=dash.visible=false;mob.scale.setScalar(1)}
+  if(chargeAnimation){const t=(Date.now()-chargeAnimation.time)/450;if(t>=1){chargeAnimation=null;mob.position.x=mob.position.z=0}else{mob.position.x=chargeAnimation.dx*28*t;mob.position.z=chargeAnimation.dz*28*t}}
   const hp=document.getElementById('rue-raid-player-hp');if(hp)hp.textContent='❤️ Sua vida: '+raidHp+' / 300';
   updatePortals();
  }
