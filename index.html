@@ -890,7 +890,7 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(EGG_NIGHT.phase==='day'&&Date.now()/1e3>=nextReset)startEggNight();
  updateEggNight();
  if(EGG_NIGHT.phase==='night')nite=Math.min(1,nite+dt*2);else nite=Math.max(0,nite-dt*1.4);
- bg.copy(day).lerp(nit,A.night?1:nite*.92);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.28:1-.73*nite);abuseSky(dt)
+ bg.copy(day).lerp(nit,A.night?1:nite*.92);sc.fog.color.copy(bg);sun.intensity=.9*(A.night?.28:1-.73*nite);abuseSky(dt);window.RoubeOvoRaid?.tintSky?.()
  if(A.autoSecret){adminAutoTime+=dt;if(adminAutoTime>=Math.max(5,+A.autoSecretEvery||30)){adminAutoTime=0;if(eggs.filter(e=>e.s!==LIMITED_ID).length<190)adminSpawnEgg(Math.floor(Math.random()*BI.length),5,Math.floor(Math.random()*SZ.length),'nest',false)}}else adminAutoTime=0;
   if(A.autoHatch||abuseIs('hatch')){for(let i=0;i<S.inc.length;i++)if(S.inc[i])hatch(i,true)}
   if(tt>0){tt-=dt;if(tt<=0)$('ms').style.opacity=0}
