@@ -3,6 +3,8 @@
  * para quem está online; a fileira de trás e as laterais formam a praça em U. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.RoubeOvoLayout=api;})(typeof globalThis==='object'?globalThis:this,function(){
  const capacity=16,corridorHalfWidth=52,entranceZ=-40,shops={fusion:{x:-46,z:-24},sell:{x:-26,z:-24},trails:{x:46,z:-24}};
+ // Entrada ao lado da loja de trilhas e saída segura perto da arena radioativa.
+ const raidPortal={town:{x:42,z:-10},arena:{x:17,z:-285},arrivalArena:{x:8,z:-284},arrivalTown:{x:35,z:-10}};
  const count=n=>Math.max(1,Math.min(capacity,Math.floor(Number(n)||1)));
  function slots(n){
   n=count(n);const sideRows=Math.ceil(Math.max(0,n-5)/2),backZ=sideRows*48;
@@ -22,5 +24,5 @@
   curve({x:w,z:-40},{x:w,z:-40},{x:24,z:-40});points.push({x:52.2,z:-40});return points;
  }
  function contains(p,h){if(p.z<entranceZ)return Math.abs(p.x)<=corridorHalfWidth&&p.z>=-938;const edge=outline(h);let inside=false;for(let i=0,j=edge.length-1;i<edge.length;j=i++){const a=edge[i],b=edge[j];if((a.z>p.z)!==(b.z>p.z)&&p.x<(b.x-a.x)*(p.z-a.z)/(b.z-a.z)+a.x)inside=!inside}return inside;}
- return {capacity,corridorHalfWidth,entranceZ,shops,slots,hub,state,limits,fit,base,outline,contains};
+ return {capacity,corridorHalfWidth,entranceZ,shops,raidPortal,slots,hub,state,limits,fit,base,outline,contains};
 });
