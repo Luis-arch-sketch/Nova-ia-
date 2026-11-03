@@ -8,6 +8,7 @@ const {RadioactiveRaid}=require('./radioactive-raid.cjs');
 module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,refreshRoomLayout,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
  const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:16384});
  const raid=new RadioactiveRaid();
+ const raidPortal=MapLayout.raidPortal;
  const broadcastAll=message=>{for(const players of rooms.values())for(const client of players)send(client,message)};
  const position=(ws,p)=>{
   if(!p||!finite(p.x,-140,140)||!finite(p.y,-1,2000)||!finite(p.z,-945,350)||!finite(p.yaw,-100,100))return false;
@@ -140,6 +141,24 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    if(m.type==='equip'){
     if(m.weapon!==null&&m.weapon!=='bat'&&m.weapon!=='radioactive-bat')return;
     ws.weapon=m.weapon;send(ws,{type:'equipment',weapon:ws.weapon});broadcastPresence(ws.room);return;
+   }
+   if(m.type==='raid-portal'){
+    const entering=m.to==='arena',leaving=m.to==='town';
+    if(!entering&&!leaving)return;
+    if(now-(ws.lastRaidPortal||0)<1700)return;
+    const origin=entering?raidPortal.town:raidPortal.arena;
+    if(Math.hypot(ws.x-origin.x,ws.z-origin.z)>6){
+     send(ws,{type:'raid-error',message:'Chegue perto do portal para atravessar.'});return;
+    }
+    if(ws.heldEgg){
+     send(ws,{type:'raid-error',message:'Guarde ou solte seu ovo antes de entrar no portal.'});return;
+    }
+    const destination=entering?raidPortal.arrivalArena:raidPortal.arrivalTown;
+    const spawn={...MapLayout.fit(destination,ws.hub),y:0,yaw:0,cameraYaw:0};
+    ws.lastRaidPortal=now;Object.assign(ws,spawn,{training:false,dirtyMove:true});
+    if(ws.session)ws.session.position={...spawn};
+    send(ws,{type:'reposition',reason:entering?'raid-enter':'raid-exit',spawn});
+    broadcastPresence(ws.room);return;
    }
    if(m.type==='raid-hit'){
     const result=raid.hit(ws,now);
