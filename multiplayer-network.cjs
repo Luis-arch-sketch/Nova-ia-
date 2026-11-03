@@ -19,7 +19,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  const applyRole=(ws,owner=false)=>{ws.owner=owner;ws.admin=owner||access.role(ws.principal)==='operator'};
  const listModeration=ws=>{
   if(!ws.owner)return;
-  send(ws,{type:'moderation-list',players:[...wss.clients].filter(p=>p.room&&p.readyState===WebSocket.OPEN).map(p=>({id:p.id,name:p.name,room:p.room,principal:p.principal,...roleState(p)})),blocked:access.state.blocked,grants:access.state.grants,backup:access.backup()});
+  send(ws,{type:'moderation-list',players:[...wss.clients].filter(p=>p.room&&p.readyState===WebSocket.OPEN).map(p=>({id:p.id,name:p.name,room:p.room,principal:p.principal,...roleState(p)})),blocked:access.state.blocked,grants:access.state.grants,banned:access.state.banned,backup:access.backup()});
  };
  wss.on('connection',(ws,req)=>{
   const identity=access.cookie(req)||access.newIdentity();
@@ -40,6 +40,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
      const resumed=typeof m.token==='string'?sessions.get(m.token)?.principal:null;
      if(remembered||resumed){ws.principal=remembered||resumed;ws.identityToken=access.sign({kind:'player',id:ws.principal})}
     }
+    if(access.banned(ws.principal)){send(ws,{type:'kicked',message:'Você foi expulso por violar regras do jogo.'});ws.close(4003,'Banido do jogo');return}
     if((access.kicks.get(ws.principal)||0)>now){send(ws,{type:'kicked',message:'Você foi expulso pelo dono. Aguarde para entrar novamente.'});ws.close(4003,'Expulso pelo dono');return}
     // Uma identidade validada representa uma pessoa, inclusive ao recarregar
     // antes de a conexão antiga terminar de fechar no celular.
@@ -215,7 +216,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    if(m.type==='moderate'){
     if(!ws.owner){error(ws,'Somente o dono pode expulsar jogadores ou mudar o acesso ao painel.');return}
     const target=[...wss.clients].find(p=>p.room&&p.id===m.id);
-    const record=target||[...access.state.blocked,...access.state.grants].find(p=>p.id===m.principal);
+    const record=target||[...access.state.blocked,...access.state.grants,...access.state.banned].find(p=>p.id===m.principal);
     const principal=target?.principal||record?.id;
     if(!record||!principal){error(ws,'Jogador não encontrado. Atualize a lista.');return}
     if(principal===access.state.ownerId){error(ws,'O dono não pode ser expulso nem perder seu acesso.');return}
@@ -224,7 +225,13 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
      access.kicks.set(principal,now+30000);send(target,{type:'kicked',message:'Você foi expulso pelo dono deste jogo.'});leave(target);target.close(4003,'Expulso pelo dono');
     }else{
      const changed=access.change(m.action,principal,record.name);if(changed.error){error(ws,changed.error);return}
-     for(const client of wss.clients)if(client.room&&client.principal===principal){applyRole(client);send(client,{type:'admin-state',...roleState(client),message:client.admin?'O dono liberou seu acesso ao painel.':'O dono removeu seu acesso ao painel.'});broadcastPresence(client.room)}
+     for(const client of wss.clients)if(client.room&&client.principal===principal){
+      if(m.action==='ban'){
+       send(client,{type:'kicked',message:'Você foi expulso por violar regras do jogo.'});leave(client);client.close(4003,'Banido do jogo');
+      }else{
+       applyRole(client);send(client,{type:'admin-state',...roleState(client),message:client.admin?'O dono liberou seu acesso ao painel.':'O dono removeu seu acesso ao painel.'});broadcastPresence(client.room);
+      }
+     }
     }
     send(ws,{type:'moderation-result',ok:true,action:m.action,name:record.name,accessBackup:access.backup()});listModeration(ws);return;
    }
