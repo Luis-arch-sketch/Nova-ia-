@@ -42,7 +42,7 @@
   '<button type="button" id="rue-mini-play">▶️ JOGAR AGORA</button>'+
   '<button type="button" id="rue-mini-prizes" class="alt">🧬 Usar mutações ('+prizes+')</button>';
   $('rue-mini-play').onclick=start;
-  $('rue-mini-prizes').onclick=inventory;
+  $('rue-mini-prizes').onclick=()=>{stop();cover.hidden=true;window.RoubeOvoOpenShop?.(5)};
   wireClose();
  }
  function wireClose(){$('rue-mini-close').onclick=()=>{stop();cover.hidden=true}};
@@ -79,43 +79,96 @@
   if(typeof beep==='function')beep(1020,.28,'triangle',.05);
   home('🎉 +1 mutação '+names()[mutation][0]+'! Jogue novamente para ganhar mais!');
  }
- function inventory(message=''){
-  stop();view='inventory';
-  const b=bag(),targets=[];
-  S.inc.forEach((e,i)=>{if(e)targets.push({value:'egg:'+i,label:'🥚 Incubadora '+(i+1)+' · '+(SPC[e.s]?.n||'Ovo'),ref:e})});
-  S.pets.forEach((p,i)=>{if(p)targets.push({value:'pet:'+i,label:'🐾 '+(SPC[p.s]?.n||'Animal')+' #'+(i+1),ref:p})});
-  const opts=b.map((n,i)=>'<option value="'+i+'">'+esc(names()[n][0])+' x'+names()[n][1]+'</option>').join('');
-  const targetOpts=targets.map(t=>'<option value="'+t.value+'">'+esc(t.label)+'</option>').join('');
-  card.innerHTML=header()+
-   '<p>🎁 <b>'+b.length+' mutações guardadas</b> · 🏆 '+wins()+' vitórias. Cada nova vitória acrescenta outra mutação ao seu inventário!</p>'+
-   (message?'<p style="color:#a9ffca">'+esc(message)+'</p>':'')+
-   (b.length?'<label>Qual mutação usar?</label><select id="rue-mini-mutation">'+opts+'</select>':'<p>Jogue para conseguir sua primeira mutação!</p>')+
-   (targets.length?'<label>Aplicar em qual ovo ou animal?</label><select id="rue-mini-target-select">'+targetOpts+'</select>':'<p>Pegue um ovo e coloque na incubadora, ou choque um animal, para aplicar suas mutações.</p>')+
-   (b.length&&targets.length?'<button id="rue-mini-apply" type="button">🧬 APLICAR MUTAÇÃO</button>':'')+
-   '<button id="rue-mini-again" class="alt" type="button">▶️ Jogar de novo</button>';
-  wireClose();$('rue-mini-again').onclick=start;
-  if($('rue-mini-apply'))$('rue-mini-apply').onclick=()=>{
-   const bagIndex=Number($('rue-mini-mutation').value),target= $('rue-mini-target-select').value;
-   const tok=S.miniMutationBag[bagIndex],entry=targets.find(t=>t.value===target);
-   if(!entry||!Number.isInteger(tok)||!names()[tok]){inventory('⚠ Escolha uma mutação e um ovo ou animal.');return}
-   const current=Array.isArray(entry.ref.m)?entry.ref.m:[];
-   if(current.includes(tok)){inventory('💡 Esse ovo ou animal já tem '+names()[tok][0]+'. Escolha outra mutação ou outro alvo.');return}
-   const previous=current.slice(),prevBag=bag().slice();
-   entry.ref.m=[...current,tok];
-   S.miniMutationBag.splice(bagIndex,1);
-   if(typeof save==='function'&&!save()){
-    entry.ref.m=previous;S.miniMutationBag=prevBag;inventory('⚠ Falha ao salvar. Seu prêmio foi mantido.');return;
-   }
-   if(typeof recalc==='function')recalc();
-   if(typeof upHud==='function')upHud();
-   if(typeof MP!=='undefined'&&MP.connected&&typeof mpSend==='function'&&typeof mpBaseState==='function')mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});
-   if(typeof toast==='function')toast('🧬 '+names()[tok][0]+' aplicada!');
-   inventory('✅ '+names()[tok][0]+' aplicada com sucesso!');
-  };
+
+ // As mutacoes sao itens do inventario comum, em vez de uma loja separada.
+ const equipped=()=>{
+  const i=S.miniMutationEquipIndex;
+  return Number.isInteger(i)&&i>=0&&i<bag().length&&names()[bag()[i]]?{index:i,mutation:bag()[i]}:null;
+ };
+ function inventoryHtml(){
+  const b=bag(),active=equipped();
+  return '<section class="rue-mini-bag" style="border:1px solid #a780ef;border-radius:13px;padding:10px;margin-top:12px;background:#42296d22">'+
+   '<strong>🧬 Mutações ('+b.length+')</strong>'+
+   (b.length?b.map((n,i)=>'<div class="r" style="gap:10px"><span>'+esc(names()[n][0])+' x'+names()[n][1]+
+   '</span><button type="button" data-a="mut-equip:'+i+'" style="background:'+(active?.index===i?'#8eeac5':'#ffdb83')+'">'+
+   (active?.index===i?'✅ Equipada':'Equipar')+'</button></div>').join(''):'<p>Seu inventário de mutações está vazio.</p>')+
+   (active?'<button type="button" data-a="mut-off" style="background:#bacaf0">Desequipar</button>':'')+'</section>';
  }
+ function handleInventory(action){
+  if(action==='mut-off'){S.miniMutationEquipIndex=-1;save();return true;}
+  if(!action.startsWith('mut-equip:'))return false;
+  const index=Number(action.slice('mut-equip:'.length));
+  if(!Number.isInteger(index)||!names()[bag()[index]])return true;
+  S.miniMutationEquipIndex=equipped()?.index===index?-1:index;
+  save();return true;
+ }
+ // O botao aparece apenas na proximidade de um ovo e com mutacao equipada.
+ const applyButton=document.createElement('button');
+ applyButton.type='button';applyButton.id='rue-mini-world-apply';applyButton.hidden=true;
+ applyButton.style.cssText='position:fixed;bottom:calc(15px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:61;background:linear-gradient(110deg,#7e4ac5,#ffcf6f);border:2px solid #fff5cb;color:white;text-shadow:0 1px 3px #241335;font:900 13px system-ui;padding:12px 17px;max-width:55vw;border-radius:16px;box-shadow:0 7px 22px #0009;white-space:nowrap;touch-action:manipulation';
+ document.body.appendChild(applyButton);
+ let pending=null;
+ function nearest(){
+  const active=equipped();
+  if(!active||typeof P==='undefined'||typeof eggs==='undefined'||typeof carry!=='undefined'&&carry)return null;
+  let closest=null,range=5;
+  for(const egg of eggs){
+   if(!egg?.mesh||egg.gr<1||(typeof MP!=='undefined'&&MP.connected&&!egg.netId))continue;
+   if(Array.isArray(egg.m)&&egg.m.includes(active.mutation))continue;
+   const distance=Math.hypot(P.x-egg.mesh.position.x,P.z-egg.mesh.position.z);
+   if(distance<range){range=distance;closest=egg;}
+  }
+  return closest;
+ }
+ function updateApplyButton(){
+  const hidden=!!pending||!cover.hidden||$('roube-capa')!==null||
+    $('pn')?.style.display==='block'||$('adWrap')?.style.display==='flex'||
+    window.RoubeOvoHatching?.active;
+  const egg=!hidden?nearest():null,active=equipped();
+  applyButton.hidden=!egg||!active;
+  if(egg&&active){
+   applyButton.textContent='🧬 Aplicar '+names()[active.mutation][0];
+   applyButton.dataset.egg=egg.netId||'';
+  }
+ }
+ const consume=(index,mutation)=>{
+  if(bag()[index]!==mutation)return false;
+  const before=bag().slice(),old=S.miniMutationEquipIndex;
+  S.miniMutationBag.splice(index,1);S.miniMutationEquipIndex=-1;
+  if(!save()){S.miniMutationBag=before;S.miniMutationEquipIndex=old;return false}
+  if(typeof beep==='function')beep(940,.16,'triangle',.045);
+  if($('pn')?.style.display==='block'&&typeof ui==='function')ui();
+  return true;
+ };
+ applyButton.onclick=()=>{
+  if(pending)return;
+  const item=equipped(),egg=nearest();if(!item||!egg)return;
+  const mutation=item.mutation,index=item.index;
+  if(typeof MP!=='undefined'&&MP.connected){
+   if(!egg.netId||typeof mpSend!=='function'||typeof mpPosition!=='function')return;
+   const requestId=crypto.randomUUID?.()||('mut-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+   pending={requestId,index,mutation,id:egg.netId};
+   if(!mpSend({type:'egg-mutate',id:egg.netId,mutation,requestId,position:mpPosition()})){pending=null;return}
+   setTimeout(()=>{if(pending?.requestId===requestId){pending=null;updateApplyButton()}},7000);
+  }else{
+   const old=Array.isArray(egg.m)?egg.m.slice():[];
+   egg.m=[...old,mutation];
+   if(!consume(index,mutation)){egg.m=old;return}
+   if(typeof eggMutationMark==='function')eggMutationMark(egg.mesh,egg.m);
+  }
+  updateApplyButton();
+ };
+ addEventListener('roube-egg-mutate-result',e=>{
+  const msg=e.detail;
+  if(!pending||msg?.requestId!==pending.requestId)return;
+  const p=pending;pending=null;
+  if(msg.ok&&msg.id===p.id&&msg.mutation===p.mutation)consume(p.index,p.mutation);
+  updateApplyButton();
+ });
+ setInterval(updateApplyButton,200);
  launch.onclick=()=>{if(window.RoubeOvoHatching?.active)return;cover.hidden=false;home()};
  cover.addEventListener('pointerdown',e=>{if(e.target===cover){stop();cover.hidden=true}});
  addEventListener('roube-start-game',()=>{launch.style.display='block'});
  addEventListener('DOMContentLoaded',()=>setTimeout(()=>{if(!$('roube-capa'))launch.style.display='block'},700));
- window.RoubeOvoMiniMutation={open:()=>launch.click(),getWins:wins,getStored:()=>bag().length};
+ window.RoubeOvoMiniMutation={open:()=>launch.click(),inventoryHtml,handleInventory,getWins:wins,getStored:()=>bag().length};
 })();
