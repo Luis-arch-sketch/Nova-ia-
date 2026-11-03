@@ -5,19 +5,19 @@
  if(window.RoubeOvoVoiceChat)return;
  const state={active:false,starting:false,stream:null,peers:new Map(),muted:new Set(),present:new Set()};
  const css=document.createElement('style');
- css.textContent='#rue-voice-btn{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:47;border:2px solid #d9f2ff;border-radius:100px;padding:10px 12px;background:#244968;color:white;min-height:43px;font:bold 13px system-ui;box-shadow:0 3px 14px #0009}#rue-voice-btn.active{background:#247f57}#rue-voice-btn:disabled{opacity:.5}#rue-voice-list{position:fixed;left:calc(10px + env(safe-area-inset-left,0px));bottom:calc(123px + env(safe-area-inset-bottom,0px));z-index:48;width:min(280px,80vw);max-height:35vh;overflow:auto;border:1px solid #8ddcfa;border-radius:12px;background:#122b40f4;color:#fff;padding:9px;font:12px system-ui;display:none}#rue-voice-list strong{display:block;margin:4px}#rue-voice-list button{padding:8px;background:#375970;color:white;border:1px solid #8ebad1;border-radius:8px;margin:4px 0;min-height:38px;width:100%}body.rue-panel-visible #rue-voice-btn,body.rue-panel-visible #rue-voice-list{display:none!important}';
+ css.textContent='#rue-voice-btn{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:100;border:2px solid #d9f2ff;border-radius:100px;padding:10px 12px;background:#244968;color:white;min-height:43px;font:bold 13px system-ui;box-shadow:0 3px 14px #0009}#rue-voice-btn.active{background:#247f57}#rue-voice-btn:disabled{opacity:.5}#rue-voice-list{position:fixed;left:calc(10px + env(safe-area-inset-left,0px));bottom:calc(123px + env(safe-area-inset-bottom,0px));z-index:101;width:min(280px,80vw);max-height:35vh;overflow:auto;border:1px solid #8ddcfa;border-radius:12px;background:#122b40f4;color:#fff;padding:9px;font:12px system-ui;display:none}#rue-voice-list strong{display:block;margin:4px}#rue-voice-list button{padding:8px;background:#375970;color:white;border:1px solid #8ebad1;border-radius:8px;margin:4px 0;min-height:38px;width:100%}body.rue-panel-visible #rue-voice-list{display:none!important}';
  document.head.appendChild(css);
  const toggle=document.createElement('button');toggle.id='rue-voice-btn';toggle.type='button';toggle.textContent='🎤 Ativar voz';toggle.setAttribute('aria-label','Ativar conversa por voz na sala');document.body.appendChild(toggle);
  const list=document.createElement('section');list.id='rue-voice-list';list.setAttribute('aria-label','Controles do chat de voz');document.body.appendChild(list);
  const signal=(target,signal)=>mpSend({type:'voice-signal',target,signal});
  const closePeer=id=>{const p=state.peers.get(id);if(!p)return;state.peers.delete(id);try{p.pc.close()}catch{}try{p.audio.pause();p.audio.srcObject=null;p.audio.remove()}catch{}};
  const draw=()=>{
-  toggle.textContent=state.starting?'⏳ Microfone…':state.active?'🎙️ Voz ligada':'🎤 Ativar voz';
+  toggle.textContent=state.starting?'⏳ Microfone…':state.active?'🎙️ Voz ligada':'🎤 Chat de voz';
   toggle.classList.toggle('active',state.active);
   toggle.disabled=state.starting||!MP.connected||!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection;
   if(!state.active){list.style.display='none';return}
   list.innerHTML='';
-  const title=document.createElement('strong');title.textContent='🎧 Voz da sala • toque para silenciar';list.appendChild(title);
+  const title=document.createElement('strong');title.textContent='🎧 Voz global da sala • qualquer distância';list.appendChild(title);
   const others=[...MP.players.values()].filter(p=>p.id!==MP.self&&p.voice);
   if(!others.length){const p=document.createElement('p');p.textContent='Mais ninguém está usando voz agora.';list.appendChild(p)}
   for(const peer of others){
@@ -40,7 +40,7 @@
   const peer={pc,audio,ice:[],offering:false};state.peers.set(id,peer);
   for(const track of state.stream?.getAudioTracks()||[])pc.addTrack(track,state.stream);
   pc.onicecandidate=e=>{if(e.candidate)signal(id,{type:'candidate',candidate:e.candidate.toJSON()})};
-  pc.ontrack=e=>{audio.srcObject=e.streams[0]||(new MediaStream([e.track]));audio.muted=state.muted.has(id);audio.play().catch(()=>{})};
+  pc.ontrack=e=>{audio.srcObject=e.streams[0]||(new MediaStream([e.track]));audio.muted=state.muted.has(id);audio.volume=1;audio.play().catch(()=>{toast('🎧 Toque no chat de voz para liberar o som.')})};
   pc.onconnectionstatechange=()=>{if(['failed','closed'].includes(pc.connectionState))closePeer(id)};
   return peer;
  };
@@ -100,6 +100,7 @@
   finally{state.starting=false;draw()}
  }
  toggle.addEventListener('click',()=>{
+  for(const p of state.peers.values())p.audio.play().catch(()=>{});
   if(state.active){stop();return}
   start().then(()=>{if(state.active)list.style.display='block'});
  });
