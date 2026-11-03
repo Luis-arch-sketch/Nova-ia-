@@ -42,7 +42,7 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
   await owner.locator('[data-admin="moderate:grant:'+opId+'"]').click();
   await other.waitForFunction(()=>MP.canAdmin&&!MP.owner);assert.equal(await other.evaluate(()=>adminBadge.visible),false);
   await owner.locator('#adClose').click();
-  await other.locator('#bm').click();await other.getByRole('button',{name:'🎒 Inventário',exact:true}).click();
+  await other.locator('#bInv').click();
   await other.getByRole('button',{name:'Equipar bastão',exact:true}).click();
   await other.screenshot({path:'test-results/roles-combat/desktop-inventory-bat.png'});
   await other.getByRole('button',{name:'Fechar',exact:true}).click();
