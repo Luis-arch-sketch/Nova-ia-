@@ -125,8 +125,6 @@
  #avatarSheet .avatarNameRow input{flex:1;min-width:0;min-height:40px;background:#f5faff;color:#15233c;border-radius:9px;padding:8px;font-size:15px}
  #avatarSheet .avatarNameRow button{background:#ffdd83;color:#20243b;min-height:40px;padding:8px}
  #avatarSheet .avatarNameHelp{font-size:12px;color:#c5e1ff;min-height:16px}
- #horizontalButton{position:fixed;bottom:calc(9px + env(safe-area-inset-bottom,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:52;background:#ffdd83;color:#1a2b37;min-height:34px;display:none;font-size:12px}
- @media(orientation:portrait) and (pointer:coarse){#horizontalButton{display:block}}
  @media(max-height:460px){
   #avatarOpen{font-size:11px;padding:5px 8px;min-height:30px}
   #avatarSheet{max-height:90dvh}#avatarSheet .avatarOptions button{min-height:33px}
@@ -200,7 +198,6 @@
   const input=sheet.querySelector('#avatarNameInput');if(input)input.value=name;
   const text=sheet.querySelector('.avatarNameHelp');if(text)text.textContent='✅ Novo nome: '+name+' (visível para os jogadores da sala)';
  });
- const horiz=document.createElement('button');horiz.id='horizontalButton';horiz.type='button';horiz.textContent='↔ Horizontal';
- const lock=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();await screen.orientation?.lock?.('landscape')}catch(e){try{await screen.orientation?.lock?.('landscape')}catch(x){}}};
- horiz.addEventListener('click',lock);document.body.appendChild(horiz);
+ // Orientação em paisagem é solicitada ao tocar em JOGAR AGORA, sem controle extra.
+
 })();
