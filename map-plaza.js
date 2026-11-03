@@ -55,6 +55,50 @@
   const border=new T.LineLoop(new T.BufferGeometry().setFromPoints(borderPoints),
     new T.LineBasicMaterial({color:0xd6ff8e,transparent:true,opacity:.95}));
   border.name='Curved plaza outline';frame.add(border);
+
+  // Substitui visualmente as laterais retas da antiga área das bases por
+  // uma borda 3D acompanhando a planta arredondada. O corredor dos biomas
+  // continua com as suas muralhas originais. Obstáculos ficam intocados.
+  const mapArchitecture=sc.getObjectByName('RoubeOvoMap - original-inspired architecture');
+  const formerCliffs=mapArchitecture?.getObjectByName('Terracotta high canyon walls');
+  let straightHidden=0;
+  if(formerCliffs){
+   const matrix=new T.Matrix4(),position=new T.Vector3(),rotation=new T.Quaternion(),scale=new T.Vector3();
+   formerCliffs.children.forEach(inst=>{
+    if(!inst.isInstancedMesh)return;
+    for(let i=0;i<inst.count;i++){
+     inst.getMatrixAt(i,matrix);matrix.decompose(position,rotation,scale);
+     if(position.z>-58){
+      scale.set(.00001,.00001,.00001);
+      matrix.compose(position,rotation,scale);
+      inst.setMatrixAt(i,matrix);
+      straightHidden++;
+     }
+    }
+    inst.instanceMatrix.needsUpdate=true;
+   });
+  }
+  const curvedWalls=new T.Group();
+  curvedWalls.name='Curved terracotta courtyard walls';root.add(curvedWalls);
+  const oldFace=formerCliffs?.children.find(x=>x.isInstancedMesh&&x.geometry?.type==='PlaneGeometry')?.material;
+  const wallFace=oldFace||new T.MeshLambertMaterial({color:0xe1a16f,side:T.DoubleSide});
+  const topFace=new T.MeshLambertMaterial({color:0x54da34});
+  let curvedSections=0;
+  const edge=trace.getSpacedPoints(96);
+  for(let i=0;i<edge.length-1;i++){
+   const a=edge[i],b=edge[i+1],az=-a.y,bz=-b.y;
+   if((az+bz)/2<12)continue; // Passagem aberta: saída para os biomas e máquinas.
+   const dx=b.x-a.x,dz=bz-az,length=Math.hypot(dx,dz);
+   if(length<.1)continue;
+   const angle=-Math.atan2(dz,dx),x=(a.x+b.x)/2,z=(az+bz)/2;
+   const wall=new T.Mesh(new T.PlaneGeometry(length+.10,28),wallFace);
+   wall.position.set(x,14.2,z);wall.rotation.y=angle;wall.receiveShadow=true;
+   curvedWalls.add(wall);
+   const trim=new T.Mesh(new T.BoxGeometry(length+.1,.75,2),topFace);
+   trim.rotation.y=angle;trim.position.set(x,28.55,z);curvedWalls.add(trim);
+   curvedSections++;
+  }
+
   // Caminho visual suavemente sinuoso; mantém a passagem de guardiões e ovos.
   const route=new T.Group();route.name='Winding public arrival walkway';root.add(route);
   const nodes=[[-1,-131],[8,-111],[10,-97],[0,-79],[-8,-65],[-3,-51],[0,-42],[5,-29],[0,-13]];
@@ -90,7 +134,7 @@
   if(slots.some(p=>Math.abs(p.x)>74||p.z<0||p.z>285))throw Error('Slots fora do pátio');
   window.RoubeOvoPlaza={installed:true,version:'20261102-rounded-plaza-v1',
     shape:'rounded-wide-base-forecourt-and-winding-biome-connector',
-    slots:slots.length,visibleEmptyPeerBases:false,sharedShops:true,
+    slots:slots.length,visibleEmptyPeerBases:false,sharedShops:true,straightWallsHidden:straightHidden,curvedWallSections:curvedSections,
     servicePositions:[[-66,-24],[-41,-24]],group:root};
  }catch(err){
   console.error('Praça curvada:',err);
