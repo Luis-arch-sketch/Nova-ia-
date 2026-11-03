@@ -5,7 +5,7 @@
 (()=>{
  if(window.RoubeOvoWorldActions)return;
  const root=new T.Group();root.name='Physical stores, fusion machine and leaderboard';sc.add(root);
- const own=new T.Group();own.name='Base stations';BASE_GROUP.add(own);
+ const own=new T.Group();own.name='Shared public stations';root.add(own);
  const metal=new T.MeshLambertMaterial({color:0x353b53,metalness:.35});
  const dark=new T.MeshLambertMaterial({color:0x151d33});
  const cyan=new T.MeshLambertMaterial({color:0x67e3fb,emissive:0x216276});
@@ -25,7 +25,7 @@
  }
  // Loja de trilhas: balcão, letreiro, esteira luminosa e mascote de brilho ciano.
  {
-  const g=new T.Group();g.position.set(29,0,7);g.name='Loja de trilhas';own.add(g);
+  const g=new T.Group();g.position.set(-66,0,-24);g.name='Loja de trilhas';own.add(g);
   circle(g,0,.13,0,5.2,metal);circle(g,0,.34,0,4.55,cyan);
   block(g,0,1.15,0,7,1.7,3.1,dark);
   block(g,0,2.15,1.2,6.8,.25,.30,cyan);
@@ -36,7 +36,7 @@
   const l=label('APERTE AÇÃO • TRILHAS',512,90,10);l.position.set(0,7.35,0);g.add(l);
  }
  // Máquina de fusão: câmara, três encaixes reais para ovos e energia roxa.
- const fusionObject=new T.Group();fusionObject.position.set(-29,0,7);fusionObject.name='Máquina de fusão 50%';own.add(fusionObject);
+ const fusionObject=new T.Group();fusionObject.position.set(-41,0,-24);fusionObject.name='Máquina de fusão 50%';own.add(fusionObject);
  {
   const g=fusionObject;
   circle(g,0,.19,0,5.1,dark);circle(g,0,.41,0,4.55,violet);
@@ -51,7 +51,7 @@
   const t=label('50% GANHA • 50% PERDE',512,85,10);t.position.set(0,7.55,-1);g.add(t);
  }
  // Placar fixo num cantinho do mapa, global para todos (base independe do slot).
- const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(-77,0,52);root.add(ranking);
+ const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(-80,0,319);root.add(ranking);
  block(ranking,-9,3,0,.8,6,.9,wood);block(ranking,9,3,0,.8,6,.9,wood);
  block(ranking,0,8.8,0,21,12,1.25,metal);
  block(ranking,0,8.8,.78,19.5,10.5,.5,dark);
@@ -88,9 +88,9 @@
  }
  refresh();setInterval(refresh,15000);
  const points=[
-  {id:'trails',name:'Loja de Trilhas',x:29,z:7,open:()=>window.RoubeOvoOpenShop?.(2)},
-  {id:'fusion',name:'Máquina de Fusão',x:-29,z:7,open:()=>window.RoubeOvoFusion?.open()},
-  {id:'ranking',name:'Placar dos Melhores',world:true,x:-77,z:52,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
+  {id:'trails',name:'Loja de Trilhas',world:true,x:-66,z:-24,open:()=>window.RoubeOvoOpenShop?.(2)},
+  {id:'fusion',name:'Máquina de Fusão',world:true,x:-41,z:-24,open:()=>window.RoubeOvoFusion?.open()},
+  {id:'ranking',name:'Placar dos Melhores',world:true,x:-80,z:319,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
  ];
  function closest(){
   let p=null,d=8;
