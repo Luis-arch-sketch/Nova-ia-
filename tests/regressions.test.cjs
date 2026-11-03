@@ -31,7 +31,7 @@ test('cinco novos mobs derivados dos STL e 3MF carregam localmente e preservam s
  assert(server.includes("'+userMobsSource+'"));
  const animals=fs.readFileSync('animals3d.js','utf8');
  assert(animals.includes('RoubeOvoUserMobs?.has(id)'));
- assert(html.includes("<button id=bm>Loja</button>"));
+ assert(html.includes('id=bm hidden aria-hidden="true"'));assert(html.includes('id=bInv type="button">🎒 Inventário</button>'));
  assert(html.includes("['Esteira Astral',1000000000,1e21,0xa77bff]"));
 });
 test('mobs corrigidos usam malhas suavizadas e Kitsune é a guardiã visível',()=>{
@@ -55,7 +55,7 @@ test('mobs corrigidos usam malhas suavizadas e Kitsune é a guardiã visível',(
  assert(server.includes("'+polishedMobsSource+'"));
  assert(animal.includes('if(g?.userData?.customUpdate)'));
  assert(html.includes("'Cerejeiras',0xf3a6c8,0xff7eb6,2.5e9,'Kitsune'"));
- assert(html.includes("<button id=bm>Loja</button>"));
+ assert(html.includes('id=bm hidden aria-hidden="true"'));assert(html.includes('id=bInv type="button">🎒 Inventário</button>'));
 });
 test('103 animais, auras e som preservados',()=>{
  assert(html.includes('const REMOVED_BIRDS=new Set([0,9])'));
