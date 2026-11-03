@@ -2,7 +2,7 @@
 // Arena de evento separada do novo bioma. Apenas renderiza o estado validado pelo servidor.
 (()=>{
  if(window.RoubeOvoRaid)return;
- const T=THREE,location3d={x:0,z:-300},state={hp:10000,maxHp:10000,respawnAt:0,candies:0,eggPrice:80};
+ const T=THREE,location3d={x:0,z:-300},state={hp:10000,maxHp:10000,respawnAt:0,portalOpen:true,candies:0,eggPrice:80};
  const portals=window.RoubeOvoLayout?.raidPortal||{town:{x:42,z:-10},arena:{x:17,z:-285}};
  // Portais físicos: a entrada fica ao lado da loja de trilhas e a saída na arena.
  function buildPortal(pos,title,color){
@@ -48,7 +48,8 @@
    const spot=portals[where],touching=MP.connected&&Math.hypot(P.x-spot.x,P.z-spot.z)<3.3;
    // Só dispara ao ENTRAR na área do portal (evita teleporte em loop).
    if(touching&&!previousNear[where]&&now>=lastPortalAt&&!adminVisible&&!open&&!window.RoubeOvoHatching?.active){
-    if(typeof carry!=='undefined'&&carry){toast('🥚 Guarde ou solte o ovo para usar o portal.');}
+    if(where==='town'&&!state.portalOpen){toast('🔒 Portal bloqueado! Próxima batalha em '+Math.max(1,Math.ceil((state.respawnAt-now-(MP.clockOffset||0))/1000))+'s.');}
+    else if(typeof carry!=='undefined'&&carry){toast('🥚 Guarde ou solte o ovo para usar o portal.');}
     else if(!MP.pending){
      mpSend({type:'move',...mpPosition(),training:false});
      if(mpSend({type:'raid-portal',to:where==='town'?'arena':'town'}))lastPortalAt=now+2200;
@@ -57,7 +58,8 @@
    previousNear[where]=touching;
   }
   const glow=.74+.18*Math.sin(now/300);
-  entrance.center.material.opacity=glow*.42;exit.center.material.opacity=glow*.42;
+  entrance.center.material.opacity=(state.portalOpen?glow*.42:.09);exit.center.material.opacity=glow*.42;
+  entrance.rim.material.color.setHex(state.portalOpen?0x4cf27d:0xff5d5d);
   entrance.rim.rotation.z+=.015;exit.rim.rotation.z-=.015;
  }
  hit.onclick=()=>{if(!MP.connected||!near()||Date.now()<nextHit)return;nextHit=Date.now()+650;mpSend({type:'move',...mpPosition(),training:false});mpSend({type:'raid-hit'})};
@@ -72,7 +74,7 @@
  }
  setInterval(refresh,120);
  window.RoubeOvoRaid={incoming(m){
-  if(m.type==='raid-state'){state.hp=m.hp;state.maxHp=m.maxHp||10000;state.respawnAt=m.respawnAt||0;state.eggPrice=m.eggPrice||80}
+  if(m.type==='raid-state'){state.hp=m.hp;state.maxHp=m.maxHp||10000;state.respawnAt=m.respawnAt||0;state.portalOpen=!!m.portalOpen;state.eggPrice=m.eggPrice||80}
   if(['raid-state','raid-reward','raid-purchase'].includes(m.type)){
    if(Number.isSafeInteger(m.candies))state.candies=m.candies;
    if(m.raidWalletToken)try{localStorage.setItem('rue3d_raid_wallet_v1',m.raidWalletToken)}catch{}
