@@ -26,6 +26,8 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
    escalation:window.RoubeOvoFusionRules.price(2000,2)>window.RoubeOvoFusionRules.price(2000,1),
    plaza:window.RoubeOvoPlaza?.installed&&window.RoubeOvoPlaza.slots===16,
    floor:!!window.RoubeOvoPlaza?.group.getObjectByName('Rounded Roblox studded base plaza'),
+   curvedWalls:window.RoubeOvoPlaza?.curvedWallSections,
+   straightHidden:window.RoubeOvoPlaza?.straightWallsHidden,
    layout:window.RoubeOvoWorldActions.points.map(p=>({id:p.id,x:p.x,z:p.z,world:p.world})),
    initiallyAbsent:PEER_BASES.size===0
   }));
@@ -33,6 +35,8 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   assert(before.scene&&before.own&&before.board.includes('Placar'));assert.equal(before.actions,3);
   assert(before.core&&before.escalation);
   assert(before.plaza&&before.floor&&before.initiallyAbsent,'Pátio arredondado sem bases fantasmas');
+  assert(before.curvedWalls>24&&before.straightHidden>20,'Muralhas da praça acompanham o contorno em vez das laterais retas');
+  assert(before.layout[2].x===0&&before.layout[2].z===327,'Placar no fim arredondado, fora das bases');
   assert.deepEqual(before.layout.map(p=>p.id),['trails','fusion','ranking']);
   assert(before.layout[0].x<before.layout[1].x&&before.layout[0].z===before.layout[1].z,'Loja fica à esquerda da fusão');
   assert(before.layout.every(p=>p.world),'Loja, fusão e placar são áreas públicas independentes da base individual');
