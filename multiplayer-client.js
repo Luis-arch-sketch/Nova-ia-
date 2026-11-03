@@ -5,6 +5,7 @@ if(/^[A-Z0-9-]{3,12}$/.test(mpInvitation))$('roomCode').value=mpInvitation;
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
 const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:mpInvitation?'join':'quick-join'};
 MP.canAdmin=false;
+MP.baseSlot=0;
 const mpPrivateRead=key=>{try{return localStorage.getItem(key)||''}catch{return ''}};
 MP.identity=mpPrivateRead('rue3d_identity_v1');MP.ownerToken=mpPrivateRead('rue3d_owner_token_v1');MP.accessBackup=mpPrivateRead('rue3d_access_backup_v1');
 const mpApplyRole=message=>{
@@ -37,13 +38,19 @@ const mpEndpoint=()=>{
 };
 const mpSend=o=>{try{if(MP.socket?.readyState===WebSocket.OPEN&&MP.socket.bufferedAmount<131072){MP.socket.send(JSON.stringify(o));return true}}catch(e){}return false;};
 
-const setHomeBaseSlot=slot=>{
+const setHomeBaseSlot=(slot,preservePosition=false)=>{
  const home=BASE_SLOTS[Number.isInteger(slot)?slot:0]||BASE_SLOTS[0];
  const dx=home.x-BASE_HOME.x,dz=home.z-BASE_HOME.z;
  if(!dx&&!dz)return;
  BASE_HOME.x=home.x;BASE_HOME.z=home.z;BASE_GROUP.position.set(home.x,0,home.z);
  for(const o of BASE_FENCE_OB){o.x+=dx;o.z+=dz}
- P.x+=dx;P.z+=dz;P.vx=P.vz=0;P.train=false;dirty=true;
+ if(!preservePosition){P.x+=dx;P.z+=dz}P.vx=P.vz=0;P.train=false;dirty=true;
+};
+const mpApplyLayout=layout=>{
+ if(!layout?.slots||!window.RoubeOvoLayout)return;
+ BASE_SLOTS.splice(0,BASE_SLOTS.length,...layout.slots.map(p=>({...p})));
+ const training=P.train;setHomeBaseSlot(MP.baseSlot,true);P.train=training;
+ window.RoubeOvoPlaza?.resize(layout.hub);window.RoubeOvoWorldActions?.resize(layout.hub);
 };
 const PEER_BASES=new Map();
 const makePeerBase=u=>{
@@ -74,7 +81,7 @@ const makePeerBase=u=>{
  const obstacles=[];
  for(let k=-20;k<=20;k+=2){obstacles.push({x:slot.x+k,z:slot.z+30,r:1});if(Math.abs(k)>=6)obstacles.push({x:slot.x+k,z:slot.z-10,r:1})}
  for(let k=-10;k<=30;k+=2)obstacles.push({x:slot.x-20,z:slot.z+k,r:1},{x:slot.x+20,z:slot.z+k,r:1});
- OB.push(...obstacles);PEER_BASES.set(u.id,{group,obstacles,slot:u.baseSlot,name:u.name,sign,incubators,pets:[],petSignature:''});
+ OB.push(...obstacles);PEER_BASES.set(u.id,{group,obstacles,slot:u.baseSlot,homeX:slot.x,homeZ:slot.z,name:u.name,sign,incubators,pets:[],petSignature:''});
 };
 const mpSyncBasePets=(base,pets)=>{
  const list=Array.isArray(pets)?pets.slice(0,18):[];
@@ -107,7 +114,8 @@ const removePeerBase=id=>{
 const syncPeerBase=u=>{
  const b=PEER_BASES.get(u.id);
  if(!Number.isInteger(u.baseSlot)||u.baseSlot<0||u.baseSlot>=BASE_SLOTS.length){removePeerBase(u.id);return}
- if(b?.slot!==u.baseSlot){removePeerBase(u.id);makePeerBase(u)}
+ const home=BASE_SLOTS[u.baseSlot];
+ if(b?.slot!==u.baseSlot||b.homeX!==home.x||b.homeZ!==home.z){removePeerBase(u.id);makePeerBase(u)}
  else if(b.name!==u.name){b.name=u.name;b.sign.set('Base de '+u.name)}
  mpApplyBase(u.id,MP.baseStates.get(u.id));
 };
@@ -136,7 +144,7 @@ const mpDraw=()=>{
  if($('mpPresence').textContent!==text)$('mpPresence').textContent=text;
  const button=$('mpFindFriend');if(button){button.disabled=!MP.connected||!others.length;button.textContent=others.length?'👥 Encontrar amigo':'👥 Esperando amigo';}
 };
-const mpApplyUsers=users=>{const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)v=mpBuild(u.id,u);window.RoubeOvoAvatar?.syncRemote(v.group,u.avatar);syncPeerBase(u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
+const mpApplyUsers=(users,layout)=>{const self=users.find(u=>u.id===MP.self);if(self)MP.baseSlot=self.baseSlot;if(layout)mpApplyLayout(layout);const alive=new Set();for(const u of users){if(u.id===MP.self)continue;alive.add(u.id);const prev=MP.players.get(u.id);MP.players.set(u.id,u);let v=MP.views.get(u.id);if(v&&(v.name!==u.name||v.admin!==!!u.admin)){mpDispose(u.id);v=null}if(!v)v=mpBuild(u.id,u);window.RoubeOvoAvatar?.syncRemote(v.group,u.avatar);syncPeerBase(u);}for(const id of MP.views.keys())if(!alive.has(id))mpDispose(id);for(const id of MP.players.keys())if(!alive.has(id))MP.players.delete(id);mpDraw();};
 const mpRemoteEvent=ev=>{if(ev.kind==='event'&&ev.action==='start'&&ev.endsAt&&MP.roomEvent?.endsAt===ev.endsAt&&ABUSE.active?.id===ev.id)return;MP.settingRemote=true;try{if(ev.kind==='event'){if(ev.action==='start'){if(ABUSE.active)abuseStop(true);const st={...(ev.settings||{duration:60,interval:10,wave:1})};if(ev.endsAt){st.duration=Math.max(.01,(ev.endsAt-Date.now()-MP.clockOffset)/1000);MP.roomEvent=ev;}abuseStart(ev.id,st)}else if(ev.action==='stop'){abuseStop(true);MP.roomEvent=null;}}else if(ev.kind==='announce'){abuseAnnounce(ev.text,ev.seconds||10)}else if(ev.kind==='limited'){if(MP.protocol>=2)return;
  for(const p of ev.eggs||[])if(p&&Number.isFinite(p.x)&&Number.isFinite(p.z))makeLimitedEgg(p.x,p.z);
  abuseAnnounce('🔥 O ADMIN invocou o LIMITED ∞ exclusivo nesta sala!',12);abuseFlash(0xff5918,16);
@@ -281,7 +289,7 @@ const mpDisconnect=(offline=true)=>{
  mpEntrance(false,true);
  MP.stopped=true;clearTimeout(MP.retryTimer);clearTimeout(MP.connectTimer);MP.retryTimer=null;
  const ws=MP.socket;MP.socket=null;try{ws?.close()}catch(e){}mpClear();
- if(offline){setHomeBaseSlot(0);EGG_NIGHT.phase='day';EGG_NIGHT.until=0;nextReset=Date.now()/1000+CFG.reset;refreshEggNightUI();regrow(true);}
+ if(offline){MP.baseSlot=0;if(window.RoubeOvoLayout)mpApplyLayout(window.RoubeOvoLayout.state(1));setHomeBaseSlot(0);EGG_NIGHT.phase='day';EGG_NIGHT.until=0;nextReset=Date.now()/1000+CFG.reset;refreshEggNightUI();regrow(true);}
 };
 const mpJoin=(mode='join',retrying=false)=>{
  const name=String(retrying?MP.name:$('roomName').value).trim().slice(0,20),room=String(retrying?MP.room:$('roomCode').value).trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,12);
@@ -308,10 +316,10 @@ const mpJoin=(mode='join',retrying=false)=>{
    if(msg.identity){MP.identity=msg.identity;try{localStorage.setItem('rue3d_identity_v1',msg.identity)}catch{}}
    mpApplyRole(msg);
    $('roomCode').value=msg.room;MP.tokens.set(msg.room,msg.token);try{localStorage.setItem('rue3d_mp_room',msg.room);sessionStorage.setItem('rue3d_mp_token_'+msg.room,msg.token)}catch(e){}
-   setHomeBaseSlot(msg.baseSlot);mpPlace(msg.spawn||{x:BASE_HOME.x,z:BASE_HOME.z+8});
+   MP.baseSlot=msg.baseSlot;mpApplyLayout(msg.layout);setHomeBaseSlot(msg.baseSlot);mpPlace(msg.spawn||{x:BASE_HOME.x,z:BASE_HOME.z+8});
    if(msg.world)mpWorldSync(msg.world);else syncRoomLimitedEggs(msg.limitedEggs||[]);
    if(msg.carrying){MP.settingRemote=true;try{const e=mpUpsertEgg(msg.carrying);if(e&&!carry)take(e)}finally{MP.settingRemote=false}}
-   mpApplyUsers(msg.players||[]);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
+   mpApplyUsers(msg.players||[],msg.layout);for(const b of msg.bases||[])mpApplyBase(b.id,b.base);
    mpStatus('✅ Sala '+MP.room+' conectada • Código para amigos: '+MP.room);
    typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:MP.name}}));
    mpSend({type:'stats',money:S.$,speed:S.sp,base:mpBaseState(),avatar:window.RoubeOvoAvatar?.current()});
@@ -325,11 +333,11 @@ const mpJoin=(mode='join',retrying=false)=>{
    typeof CustomEvent==='function'&&window.dispatchEvent(new CustomEvent('roube-player-name-updated',{detail:{name:msg.name}}));
    try{localStorage.setItem('rue3d_mp_name',msg.name)}catch(e){}
   }else if(msg.type==='players'){
-   mpApplyUsers(msg.players||[]);
+   mpApplyUsers(msg.players||[],msg.layout);
    const self=msg.players?.find(p=>p.id===MP.self);
    if(carry?.netId&&self&&!self.carrying&&!MP.pending){P.g.remove(carry.mesh);if(carry.aura){if(carry.s===LIMITED_ID)disposeLimitedAura(carry);else sc.remove(carry.aura)}carry=null;}
   }else if(msg.type==='world-sync')mpWorldSync(msg);
-  else if(msg.type==='reposition'){mpPlace(msg.spawn);$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition()});if(msg.reason!=='night')toast(msg.reason==='home'?'🏠 Você voltou para sua base.':'👥 Você e '+msg.name+' estão de frente!');}
+  else if(msg.type==='reposition'){const training=P.train;if(msg.reason==='layout'){MP.baseSlot=msg.baseSlot;mpApplyLayout(msg.layout)}mpPlace(msg.spawn);if(msg.reason==='layout')P.train=training;$('roomPanel').style.display='none';mpSend({type:'move',...mpPosition(),training:P.train});if(!['night','layout'].includes(msg.reason))toast(msg.reason==='home'?'🏠 Você voltou para sua base.':'👥 Você e '+msg.name+' estão de frente!');}
   else if(msg.type==='world-add')for(const d of msg.eggs||[])mpUpsertEgg(d);
   else if(msg.type==='world-remove')mpRemoveEgg(msg.id);
   else if(msg.type==='egg-result')mpEggResult(msg);

@@ -1,4 +1,5 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<script src="/world-layout.js?v=20261103-compact1"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Roube um Ovo 3D — Admin Abuse Livre</title>
 <link rel="stylesheet" href="/egg-hatching.css?v=20261031-1">
@@ -274,16 +275,16 @@ const creature=(col,k)=>{const g=new T.Group(),m=new T.MeshLambertMaterial({colo
  mk(GS,0x111111,[.08,.08,.08],g,[-.2,1.6,1.3]);mk(GS,0x111111,[.08,.08,.08],g,[.2,1.6,1.3]);g.scale.setScalar(k);g.mat=m;sc.add(g);return g};
 /* ===== Mundo: chão quadriculado, caminhos, muros, montanhas, nuvens, árvores ===== */
 const OB=[]; // obstáculos circulares {x,z,r}
-plane(204,1010,0x427b41,0,0,-450,tex(204/8,1010/8));
-plane(204,300,0x427b41,0,.008,185,tex(204/8,300/8));
+plane(104,916,0x427b41,0,0,-498,tex(104/8,916/8));
+const courtyardGround=plane(128,86,0x427b41,0,.008,3,tex(128/8,86/8));
 // Treze partes com pisos e bordas próprios; a estrada central mantém a passagem livre.
 BI.forEach((b,i)=>{
  const z=-65-70*i;
- plane(200,66,b.t,0,.018,z,tex(200/8,66/8));
- plane(190,58,b.g,0,.025,z,tex(190/8,58/8));
+ plane(104,66,b.t,0,.018,z,tex(104/8,66/8));
+ plane(96,58,b.g,0,.025,z,tex(96/8,58/8));
 })
-plane(14,1010,0xd9c8a0,0,.04,-450,tex(1,1010/8));
-plane(14,300,0xd9c8a0,0,.045,185,tex(1,300/8));
+plane(14,916,0xd9c8a0,0,.04,-498,tex(1,916/8));
+const courtyardRoad=plane(14,86,0xd9c8a0,0,.045,3,tex(1,86/8));
 {const wl=(w,d,x,z)=>mk(GB,0x8b6b4a,[w,7,d],sc,[x,3.5,z]);wl(2,1010,-102,-450);wl(2,1010,102,-450);wl(2,282,-102,196);wl(2,282,102,196);wl(206,2,0,338);wl(206,2,0,-956)}
 {const m4=new T.Matrix4(),I=new T.Quaternion(),v=new T.Vector3(),s=new T.Vector3();
  const mt=new T.InstancedMesh(GC,M(0x7f93a8),60),cl=new T.InstancedMesh(GS,new T.MeshBasicMaterial({color:0xffffff,fog:false}),40);
@@ -301,7 +302,7 @@ const gz=i=>-30-70*i;
 // Os muros permanentes sumiram; estas são só as posições das paredes NOTURNAS.
 const PART_BORDERS=BI.map((b,i)=>gz(i));
 // Portões de todas as 13 partes, um por região.
-const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,depthWrite:true,side:T.DoubleSide}),[204,10.5,.8],sc,[0,5.25,z]);bar.visible=false;
+const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,depthWrite:true,side:T.DoubleSide}),[104,10.5,.8],sc,[0,5.25,z]);bar.visible=false;
  // Sem pilares e traves visíveis de dia.
  const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);const timer=label('',512,128,15);timer.position.set(0,5.35,z+.72);timer.visible=false;sc.add(timer);return{z,bar,timer,l,b,req:b.req}});
 let zlim=-938;
@@ -432,7 +433,7 @@ const GD=BI.map((b,i)=>{const home=new T.Vector3(0,0,-65-70*i),m=creature(new T.
 // O guardião genérico da 4ª área sai do mapa: só o guaxinim protege a parte 4.
 if(GD[3]){sc.remove(GD[3].m);sc.remove(GD[3].l);}
 /* Bases multiplayer: o servidor dá uma posição única a cada pessoa na sala. */
-const BASE_SLOTS=Array.from({length:16},(_,i)=>({x:[0,52,-52][i%3],z:Math.floor(i/3)*56}));
+const BASE_SLOTS=window.RoubeOvoLayout.slots(1);
 const BASE_HOME={x:0,z:0};
 const BASE_GROUP=new T.Group();sc.add(BASE_GROUP);
 const BASE_FENCE_OB=[];
@@ -818,14 +819,16 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(!Number.isFinite(P.x)||!Number.isFinite(P.z)||!Number.isFinite(P.y)||!Number.isFinite(P.vx)||!Number.isFinite(P.vz)){
   P.x=BASE_HOME.x;P.z=BASE_HOME.z+8;P.y=0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
   if(tt<=0)toast('🛠 Movimento recuperado automaticamente.');}
- P.x=Math.max(-99,Math.min(99,P.x));P.z=Math.max(zlim,Math.min(333,P.z));if(!P.train)push(P,.5,oldPartX,oldPartZ);
+ const fitted=window.RoubeOvoLayout.fit(P,window.RoubeOvoPlaza?.bounds);P.x=fitted.x;P.z=Math.max(zlim,fitted.z);if(!P.train)push(P,.5,oldPartX,oldPartZ);
  const v2=Math.hypot(P.vx,P.vz);P.ph+=dt*(P.train?12:v2*.9);const sw=Math.sin(P.ph)*(P.train?1:Math.min(1,v2/6));
  lL.rotation.x=sw*.9;lR.rotation.x=-sw*.9;aL.rotation.x=aR.rotation.x=carry?-1.4:P.y>.05?-2.6:0;if(!carry&&P.y<=.05){aL.rotation.x=-sw*.9;aR.rotation.x=sw*.9}
  if(P.train)P.g.rotation.y=Math.PI;else if(v2>.5)P.g.rotation.y=Math.atan2(P.vx,P.vz);
  P.g.rotation.x=P.stun>0?-1.4:0;P.g.position.set(P.x,P.y+(P.train?.62:P.stun>0?.4:0),P.z);
  /* câmera */
  CT.set(P.x,P.y+2.2,P.z);const cp_=Math.cos(P.pitch);
- NV.set(Math.max(-100,Math.min(100,CT.x+Math.sin(P.yaw)*cp_*P.dist)),Math.max(.9,CT.y+Math.sin(P.pitch)*P.dist),Math.max(-954,Math.min(337,CT.z+Math.cos(P.yaw)*cp_*P.dist)));
+ const cameraBounds=window.RoubeOvoLayout.limits(P.z,window.RoubeOvoPlaza?.bounds);
+ NV.set(Math.max(-cameraBounds.x,Math.min(cameraBounds.x,CT.x+Math.sin(P.yaw)*cp_*P.dist)),Math.max(.9,CT.y+Math.sin(P.pitch)*P.dist),Math.max(-954,Math.min(cameraBounds.maxZ,CT.z+Math.cos(P.yaw)*cp_*P.dist)));
+ window.RoubeOvoPlaza?.clipCamera(NV,CT);
  cam.position.lerp(NV,Math.min(1,dt*12));cam.lookAt(CT);sun.position.set(P.x+30,55,P.z+25);sun.target.position.set(P.x,0,P.z);
  stripe.offset.y-=P.train?dt*1.2:0;
  /* guardiões */
@@ -1355,4 +1358,5 @@ upGates();upHud();cam.position.set(0,6,17);
 toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'🥚 Roube um ovo e leve até a sua base!');
 // Aguardar os scripts de frutas, animais e chocagem antes do primeiro frame.
 addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
-</script><script src="/multiplayer-client.js?v=20261103-single-presence2"></script><script src="/entrance-cinematic.js?v=20261102-skip1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
+</script><script src="/multiplayer-client.js?v=20261103-compact-U1"></script><script src="/entrance-cinematic.js?v=20261102-skip1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
+

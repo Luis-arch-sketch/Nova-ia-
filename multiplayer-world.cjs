@@ -1,17 +1,17 @@
 'use strict';
 const crypto=require('node:crypto');
+const MapLayout=require('./world-layout.js');
 const LIMITED=104,REMOVED=new Set([0,9]),RARITIES=[0,1,2,3,4,7,8,9];
 const SIZES=[.8,1,1.4,1.9,12/1.8],CHANCES={2:.4,3:.3,4:.2,7:.1,8:.04,9:.005};
 const MUTATION_CHANCES=[.08,.04,.015,.06,.01,.015,.015,.01];
-const baseSpawn=slot=>({x:[0,52,-52][slot%3],z:8+Math.floor(slot/3)*56});
+const baseSpawn=(slot,count=1)=>MapLayout.base(slot,count);
 const finite=(n,min,max)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
 // Colocar o visitante diante da câmera do amigo, onde ambos podem se enxergar.
 const meetingSpawn=(friend,slot=0)=>{
  slot=Math.max(0,Math.floor(slot)||0);
  const angle=finite(friend.cameraYaw,-100,100)?friend.cameraYaw:0;
  const side=(slot%2?1:-1)*(1.2+Math.floor(slot%4/2)*.7),ahead=4.8+Math.floor(slot/4)*1.2;
- const x=Math.max(-97,Math.min(97,friend.x-Math.sin(angle)*ahead+Math.cos(angle)*side));
- const z=Math.max(-937,Math.min(333,friend.z-Math.cos(angle)*ahead-Math.sin(angle)*side));
+ const {x,z}=MapLayout.fit({x:friend.x-Math.sin(angle)*ahead+Math.cos(angle)*side,z:friend.z-Math.cos(angle)*ahead-Math.sin(angle)*side},friend.hub);
  return {x,y:Math.max(0,Number(friend.y)||0),z,yaw:Math.atan2(friend.x-x,friend.z-z),cameraYaw:Math.atan2(x-friend.x,z-friend.z)};
 };
 class World {
@@ -63,14 +63,15 @@ class World {
  }
  drop(player){
   if(!player.heldEgg)return null;
-  const egg={...player.heldEgg,x:Math.max(-97,Math.min(97,player.x+Math.sin(player.yaw)*1.8)),z:Math.max(-937,Math.min(333,player.z+Math.cos(player.yaw)*1.8)),nest:null};
+  const egg={...player.heldEgg,...MapLayout.fit({x:player.x+Math.sin(player.yaw)*1.8,z:player.z+Math.cos(player.yaw)*1.8},player.hub),nest:null};
   this.eggs.set(egg.id,egg);player.heldEgg=null;return egg;
  }
  deposit(player){
   if(!player.heldEgg)return null;
-  const home=baseSpawn(player.baseSlot);
-  if(Math.hypot(player.x-home.x,player.z-(home.z-12))>4.6)return null;
+  const home=player.home||{x:baseSpawn(player.baseSlot).x,z:baseSpawn(player.baseSlot).z-8};
+  if(Math.hypot(player.x-home.x,player.z-(home.z-4))>4.6)return null;
   const egg=player.heldEgg;player.heldEgg=null;return egg;
  }
 }
 module.exports={World,LIMITED,baseSpawn,finite,meetingSpawn};
+

@@ -9,6 +9,7 @@ on:
       - 'multiplayer-client.js'
       - 'map-plaza.js'
       - 'world-remake.js'
+      - 'world-layout.js'
       - 'tests/map-presence-browser.cjs'
       - 'player-*.cjs'
       - 'player-equipment.js'

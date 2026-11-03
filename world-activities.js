@@ -6,7 +6,7 @@
  if(window.RoubeOvoWorldActions)return;
  const root=new T.Group();root.name='Physical stores, fusion machine and leaderboard';sc.add(root);
  const own=new T.Group();own.name='Shared public stations';root.add(own);
- const layout={fusion:{x:-66,z:-24},sell:{x:-41,z:-24},trails:{x:66,z:-24}};
+ const layout=window.RoubeOvoLayout.shops;
  const metal=new T.MeshLambertMaterial({color:0x353b53,metalness:.35});
  const dark=new T.MeshLambertMaterial({color:0x151d33});
  const cyan=new T.MeshLambertMaterial({color:0x67e3fb,emissive:0x216276});
@@ -64,7 +64,7 @@
   const l=label('APERTE AÇÃO • VENDER ANIMAIS',640,90,11);l.position.set(0,7.55,-.8);g.add(l);
  }
  // Placar fixo num cantinho do mapa, global para todos (base independe do slot).
- const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(0,0,327);ranking.rotation.y=Math.PI;root.add(ranking);
+ const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(0,0,window.RoubeOvoLayout.hub(1).endZ-8);ranking.rotation.y=Math.PI;root.add(ranking);
  block(ranking,-9,3,0,.8,6,.9,wood);block(ranking,9,3,0,.8,6,.9,wood);
  block(ranking,0,8.8,0,21,12,1.25,metal);
  block(ranking,0,8.8,.78,19.5,10.5,.5,dark);
@@ -104,7 +104,7 @@
   {id:'fusion',name:'Máquina de Fusão',world:true,...layout.fusion,open:()=>window.RoubeOvoFusion?.open()},
   {id:'sell',name:'Loja de Vender',world:true,...layout.sell,open:()=>window.RoubeOvoOpenSellShop?.()},
   {id:'trails',name:'Loja de Trilhas',world:true,...layout.trails,open:()=>window.RoubeOvoOpenShop?.(2)},
-  {id:'ranking',name:'Placar dos Melhores',world:true,x:0,z:327,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
+  {id:'ranking',name:'Placar dos Melhores',world:true,x:0,z:ranking.position.z,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
  ];
  function closest(){
   let p=null,d=8;
@@ -123,6 +123,8 @@
  }
  setInterval(update,250);
  function interact(){const chosen=closest();if(!chosen)return false;chosen.open();return true}
- window.RoubeOvoWorldActions={interact,update,refresh,points,board,ranking,own,get nearest(){return closest()?.id||null}};
+ function resize(hub){ranking.position.z=hub.endZ-8;points.find(p=>p.id==='ranking').z=ranking.position.z;}
+ window.RoubeOvoWorldActions={interact,update,refresh,resize,points,board,ranking,own,get nearest(){return closest()?.id||null}};
+ if(window.RoubeOvoPlaza?.bounds)resize(window.RoubeOvoPlaza.bounds);
 })();
 

@@ -701,7 +701,7 @@ function trees(three,scene,biomes,ob,random){
   const b=Math.min(12,Math.floor(k/18)-1),zc=-65-70*b;
   let x,z,n=0;
   do{
-   x=(random()*2-1)*96;
+   x=(random()*2-1)*(b<0?55:44);
    z=b<0?50-random()*75:zc+(random()-.5)*66;
   }while((Math.abs(x)<10||(b<0?Math.abs(x)<24&&z>-14:Math.hypot(x,z-zc)<28))&&++n<100);
   const h=3.6+random()*2.5;
@@ -935,3 +935,4 @@ function weather(three,scene,player,biome,dt){
 }
 window.RoubeOvoVisuals={create,animate,egg,decorate,terrain,weather,trees,player,species:SPECIES};
 })();
+

@@ -3,11 +3,12 @@ const crypto=require('node:crypto');
 const {WebSocketServer,WebSocket}=require('ws');
 const {World,LIMITED,baseSpawn,finite,meetingSpawn}=require('./multiplayer-world.cjs');
 const {swingBat}=require('./player-combat.cjs');
-module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
+const MapLayout=require('./world-layout.js');
+module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,refreshRoomLayout,leave,bound,sameHex,error,newPublicRoom,openPublicRoom})=>{
  const wss=new WebSocketServer({server:httpServer,path:'/ws',maxPayload:16384});
  const position=(ws,p)=>{
-  if(!p||!finite(p.x,-99,99)||!finite(p.y,-1,2000)||!finite(p.z,-945,333)||!finite(p.yaw,-100,100))return false;
-  ws.x=p.x;ws.y=p.y;ws.z=p.z;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
+  if(!p||!finite(p.x,-140,140)||!finite(p.y,-1,2000)||!finite(p.z,-945,350)||!finite(p.yaw,-100,100))return false;
+  Object.assign(ws,MapLayout.fit(p,ws.hub));ws.y=p.y;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
  };
  const bases=room=>[...peers(room)].filter(p=>p.baseState).map(p=>({id:p.id,base:p.baseState}));
  const result=(ws,m,ok,egg=null)=>{const reply={type:'egg-result',action:m.type,requestId:m.requestId,ok,egg,slot:m.slot};
@@ -60,31 +61,36 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     if(baseSlot===undefined){error(ws,'Sala sem bases livres');return}
     const otherPlayers=[...peers(room)].filter(p=>p!==ws&&!previous.includes(p)&&p.readyState===WebSocket.OPEN);
     const anchor=otherPlayers.find(p=>p.id===m.friend)||otherPlayers[0];
+    const oldRooms=new Set([...previous.map(p=>p.room),ws.room].filter(Boolean));
     for(const old of previous){
      if(old===transferring)old.heldEgg=null; // transfere o ovo, sem duplicar ou largar
-     old.replaced=true;send(old,{type:'session-replaced'});leave(old);
+     old.replaced=true;send(old,{type:'session-replaced'});leave(old,true);
      old.close(4001,'Sessão transferida');
     }
-    leave(ws);clearTimeout(joinTimer);
+    leave(ws,true);clearTimeout(joinTimer);
     const session=resume||{token:crypto.randomBytes(24).toString('hex'),id:crypto.randomUUID(),receipts:new Map()};
     if(transferring){
      sessions.set(session.token,{principal:ws.principal,room,active:false,expiresAt:now+120000,replaced:true});
      session.token=crypto.randomBytes(24).toString('hex');
     }
     Object.assign(session,{room,slot:baseSlot,active:true,expiresAt:Infinity,principal:ws.principal});sessions.set(session.token,session);
-    const spawn=resume?.position||(anchor?meetingSpawn(anchor,baseSlot-1):{...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0});
-    Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,training:false,baseState:null,heldEgg:null});
+    const spawn=resume?.position||(anchor?meetingSpawn(anchor,baseSlot-1):{...baseSpawn(baseSlot,otherPlayers.length+1),y:0,yaw:0,cameraYaw:0});
+    Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,home:resume?.home||null,training:false,baseState:null,heldEgg:null});
     if(state)Object.assign(ws,state);
     applyRole(ws,access.resumeOwner(ws.principal,m.ownerToken,m.accessBackup));
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
     if(!roomWorlds.has(room))roomWorlds.set(room,new World(now));
     const world=roomWorlds.get(room);world.emptyAt=0;world.tick(now);
+    const layout=refreshRoomLayout(room);
+    if(!resume&&anchor)Object.assign(ws,meetingSpawn(anchor,ws.baseSlot-1));
      // Respeitar a posição recuperada ao reconectar durante a noite.
      if(world.phase!=='day'&&!resume&&!anchor){
-      const home={...baseSpawn(baseSlot),y:0,yaw:0,cameraYaw:0};
+      const home={...baseSpawn(ws.baseSlot,layout.count),y:0,yaw:0,cameraYaw:0};
       Object.assign(ws,home);Object.assign(spawn,home);
      }
-    send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,identity:ws.identityToken,room,baseSlot,spawn,carrying:ws.heldEgg,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event,...roleState(ws),accessBackup:ws.owner?access.backup():undefined});
+    Object.assign(spawn,{x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0});
+    send(ws,{type:'joined',protocol:2,id:ws.id,token:session.token,identity:ws.identityToken,room,baseSlot:ws.baseSlot,spawn,layout,carrying:ws.heldEgg,players:[...peers(room)].map(publicUser),limitedEggs:world.limited(),world:world.snapshot(now),bases:bases(room),event:world.event,...roleState(ws),accessBackup:ws.owner?access.backup():undefined});
+    for(const oldRoom of oldRooms)if(oldRoom!==room)broadcastPresence(oldRoom);
     broadcastPresence(room);return;
    }
    if(m.type==='ping'){send(ws,{type:'pong',serverNow:now});return}
@@ -148,7 +154,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    if(m.type==='go-home'||m.type==='meet'){
     if(ws.heldEgg&&m.type==='meet'){error(ws,'Leve o ovo para sua base antes de encontrar amigos.');return}
     if(m.type==='go-home'){
-     const spawn={...baseSpawn(ws.baseSlot),y:0,yaw:0,cameraYaw:0};Object.assign(ws,spawn,{training:false});
+     const spawn={x:ws.home.x,z:ws.home.z+8,y:0,yaw:0,cameraYaw:0};Object.assign(ws,spawn,{training:false});
      send(ws,{type:'reposition',reason:'home',spawn});broadcastPresence(ws.room);return;
     }
     const friend=[...peers(ws.room)].find(p=>p.id===m.id&&p!==ws&&p.readyState===WebSocket.OPEN);

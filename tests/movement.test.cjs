@@ -55,11 +55,11 @@ test('servidor libera retorno à base com ovo sem permitir encontrar amigo carre
   const [a,b]=clients,egg=a.joined.world.eggs[0],position={x:egg.x,y:0,z:egg.z,yaw:0};
   a.sendJSON({type:'egg-take',id:egg.id,requestId:'take-test-123',position});a.sendJSON({type:'go-home'});
   assert.equal((await a.next(m=>m.type==='egg-result')).ok,true);
-  const firstHome=await a.next(m=>m.type==='reposition');assert.equal(firstHome.reason,'home');assert.equal(firstHome.spawn.z,8);
+  const firstHome=await a.next(m=>m.type==='reposition'&&m.reason==='home');assert.equal(firstHome.reason,'home');assert.equal(firstHome.spawn.z,8);
   a.sendJSON({type:'meet',id:b.joined.id});assert.match((await a.next(m=>m.type==='error')).message,/Leve o ovo/);
   a.sendJSON({type:'egg-drop',id:egg.id,requestId:'drop-test-123',position});assert.equal((await a.next(m=>m.type==='egg-result')).ok,true);
-  a.sendJSON({type:'go-home'});const home=await a.next(m=>m.type==='reposition');assert.equal(home.reason,'home');assert.equal(home.spawn.x,0);assert.equal(home.spawn.z,8);
-  b.sendJSON({type:'go-home'});const second=await b.next(m=>m.type==='reposition');assert.equal(second.spawn.x,52);assert.equal(second.spawn.z,8);
+  a.sendJSON({type:'go-home'});const home=await a.next(m=>m.type==='reposition'&&m.reason==='home');assert.equal(home.reason,'home');assert.equal(home.spawn.x,-24);assert.equal(home.spawn.z,8);
+  b.sendJSON({type:'go-home'});const second=await b.next(m=>m.type==='reposition'&&m.reason==='home');assert.equal(second.spawn.x,24);assert.equal(second.spawn.z,8);
   // Reposition chega depois do drop: retire snapshots anteriores que podem
   // ter sido transmitidos enquanto o ovo ainda estava sendo carregado.
   a.discard(m=>m.type==='world-sync');

@@ -43,16 +43,16 @@ try{
  const WALL_HEIGHT=24;
  // O corredor termina exatamente na entrada da praça; as peças compartilham
  // bordas em vez de se sobreporem (evita cintilação e frestas no Android).
- const sectionLength=(956-48)/30;
+ const sectionLength=(956-40)/30;
  const wallGeo=new T.PlaneGeometry(sectionLength,WALL_HEIGHT);
  const wallInstances=new T.InstancedMesh(wallGeo,wallMat,60);
  const mat4=new T.Matrix4(),q=new T.Quaternion(),vec=new T.Vector3(),vscale=new T.Vector3(1,1,1);
  let n=0;
  for(const side of [-1,1]){
    for(let i=0;i<30;i++){
-     const z=-48-sectionLength*(i+.5);
+     const z=-40-sectionLength*(i+.5);
      q.setFromAxisAngle(new T.Vector3(0,1,0),side*Math.PI/2);
-     mat4.compose(vec.set(side*102.2,WALL_HEIGHT/2,z),q,vscale);
+     mat4.compose(vec.set(side*52.2,WALL_HEIGHT/2,z),q,vscale);
      wallInstances.setMatrixAt(n++,mat4);
    }
  }
@@ -66,16 +66,16 @@ try{
  const tops=new T.InstancedMesh(topGeo,topMat,n);
  let k=0;
  for(const side of [-1,1])for(let i=0;i<30;i++){
-   const z=-48-sectionLength*(i+.5);
-   mat4.compose(vec.set(side*102.2,WALL_HEIGHT+.4,z),new T.Quaternion(),vscale);
+   const z=-40-sectionLength*(i+.5);
+   mat4.compose(vec.set(side*52.2,WALL_HEIGHT+.4,z),new T.Quaternion(),vscale);
    tops.setMatrixAt(k++,mat4);
  }
  tops.count=k;tops.instanceMatrix.needsUpdate=true;tops.frustumCulled=false;
  cliffGroup.add(tops);
  // Fechar o extremo distante como no corredor, sem criar uma nova passagem.
- const back=new T.Mesh(new T.PlaneGeometry(207,WALL_HEIGHT),wallMat);
+ const back=new T.Mesh(new T.PlaneGeometry(107,WALL_HEIGHT),wallMat);
  back.position.set(0,WALL_HEIGHT/2,-956);back.receiveShadow=true;cliffGroup.add(back);
- const backTop=new T.Mesh(new T.BoxGeometry(207,.8,2.5),topMat);
+ const backTop=new T.Mesh(new T.BoxGeometry(107,.8,2.5),topMat);
  backTop.position.set(0,WALL_HEIGHT+.4,-956);cliffGroup.add(backTop);
  // Ocultar apenas as muralhas de blocos baixas originais, preservando a colisão de x/z.
  sc.children.forEach(obj=>{

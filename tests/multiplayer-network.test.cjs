@@ -5,7 +5,7 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms)),PORT=3102,secret='TEST_LOCAL_ON
 function connect(){return new Promise((resolve,reject)=>{
  const ws=new WebSocket('ws://127.0.0.1:'+PORT+'/ws'),inbox=[],waiters=[];
  ws.on('message',raw=>{const m=JSON.parse(String(raw));const i=waiters.findIndex(w=>w.predicate(m));if(i>=0){const w=waiters.splice(i,1)[0];clearTimeout(w.timer);w.resolve(m)}else inbox.push(m)});
- ws.next=(predicate,timeout=3000)=>{const i=inbox.findIndex(predicate);if(i>=0)return Promise.resolve(inbox.splice(i,1)[0]);return new Promise((resolve,reject)=>{const w={predicate,resolve};w.timer=setTimeout(()=>{waiters.splice(waiters.indexOf(w),1);reject(Error('Sem resposta esperada'))},timeout);waiters.push(w)})};
+ ws.next=(predicate,timeout=3000)=>{const i=inbox.findIndex(predicate);if(i>=0)return Promise.resolve(inbox.splice(i,1)[0]);return new Promise((resolve,reject)=>{const w={predicate,resolve};w.timer=setTimeout(()=>{waiters.splice(waiters.indexOf(w),1);reject(Error('Sem resposta esperada: '+String(predicate)))},timeout);waiters.push(w)})};
  ws.sendJSON=m=>ws.send(JSON.stringify(m));ws.on('open',()=>resolve(ws));ws.once('error',reject);
 });}
 async function join(ws,room,name,token){ws.sendJSON({type:'join',room,name,token});return ws.next(m=>m.type==='joined');}
@@ -40,3 +40,4 @@ test('rede: 16 bases, sala cheia preserva sala anterior, eventos para novos joga
   const health=await (await fetch('http://127.0.0.1:'+PORT+'/health')).json();assert.equal(health.multiplayerProtocol,2);
  }finally{for(const ws of clients)ws.terminate();srv.kill('SIGTERM')}
 });
+

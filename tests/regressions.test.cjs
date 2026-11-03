@@ -234,7 +234,7 @@ test('apenas a base tem cerca original, física e permanente dia/noite',()=>{
 test('cronômetros 9s + 3s: paredes brancas só nas áreas, base com cerca original',()=>{
  assert(html.includes("EGG_NIGHT.until=now+9000"));
  assert(html.includes("EGG_NIGHT.phase='unlock';EGG_NIGHT.until+=3000"));
- assert(html.includes("[204,10.5,.8]"));
+ assert(html.includes("[104,10.5,.8]"));
  assert(html.includes("const PART_BORDERS=BI.map((b,i)=>gz(i));"));
  assert(html.includes("GT.forEach(g=>{g.bar.visible=true;g.timer.visible=false})"));
  assert(html.includes("GT.forEach(g=>{g.bar.visible=false;g.timer.visible=false})"));
@@ -314,3 +314,4 @@ test('guaxinim é mais lento que jogador de 200K até com joystick parcial no An
   }
  }
 });
+

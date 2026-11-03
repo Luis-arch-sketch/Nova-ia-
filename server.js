@@ -2,6 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {WebSocket}=require('ws');
 const {LIMITED}=require('./multiplayer-world.cjs');
+const MapLayout=require('./world-layout.js');
 const previewPort=process.argv.indexOf('--port');
 const PORT=Number(process.env.PORT||(previewPort>=0?process.argv[previewPort+1]:3000)),ADMIN_HASH=process.env.ADMIN_PASSWORD_HASH||'',MAX_ROOM=16,rooms=new Map(),roomWorlds=new Map(),sessions=new Map();
 const {PlayerAccess}=require('./player-access.cjs');
@@ -32,13 +33,24 @@ const listPublicRooms=requested=>{
  return {rooms:all.slice(page*20,(page+1)*20),total,players:all.reduce((n,r)=>n+r.count,0),page,pages};
 };
 const broadcast=(room,obj,except=null)=>{for(const c of peers(room))if(c!==except)send(c,obj)};
-const broadcastPresence=room=>broadcast(room,{type:'players',players:[...peers(room)].map(publicUser)});
-const leave=ws=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r),world=roomWorlds.get(r);
+const refreshRoomLayout=room=>{
+ const players=[...peers(room)].sort((a,b)=>a.baseSlot-b.baseSlot),layout=MapLayout.state(players.length);
+ players.forEach((ws,slot)=>{
+  const old=ws.home,home=layout.slots[slot],before={x:ws.x,z:ws.z};
+  if(old&&(old.x!==home.x||old.z!==home.z)&&Math.abs(ws.x-old.x)<=22&&ws.z>=old.z-14&&ws.z<=old.z+33){ws.x+=home.x-old.x;ws.z+=home.z-old.z;}
+  Object.assign(ws,MapLayout.fit(ws,layout.hub));if(!MapLayout.contains(ws,layout.hub)){ws.x=home.x;ws.z=home.z+8}ws.baseSlot=slot;ws.home={...home};ws.hub=layout.hub;
+  if(ws.session){ws.session.slot=slot;ws.session.home={...home};ws.session.position={x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0};}
+  if(old&&(before.x!==ws.x||before.z!==ws.z))send(ws,{type:'reposition',reason:'layout',baseSlot:slot,layout,spawn:{x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0}});
+ });
+ return layout;
+};
+const broadcastPresence=room=>{const layout=refreshRoomLayout(room);broadcast(room,{type:'players',players:[...peers(room)].map(publicUser),layout})};
+const leave=(ws,quiet=false)=>{if(!ws.room)return;const r=ws.room,p=rooms.get(r),world=roomWorlds.get(r);
  const egg=world?.drop(ws);
  if(egg){broadcast(r,{type:'world-add',eggs:[egg]},ws);if(egg.s===LIMITED)broadcast(r,{type:'event',kind:'limited-drop',egg},ws)}
  if(ws.session){ws.session.position={x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0};ws.session.active=false;ws.session.expiresAt=Date.now()+120000;}
  p?.delete(ws);ws.room=null;ws.admin=false;ws.owner=false;ws.weapon=null;ws.baseSlot=null;
- if(p?.size===0){rooms.delete(r);if(world)world.emptyAt=Date.now()}else broadcastPresence(r);
+ if(p?.size===0){rooms.delete(r);if(world)world.emptyAt=Date.now()}else if(!quiet)broadcastPresence(r);
 };
 const bound=(n,min,max)=>{n=Number(n);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):min};
 const sameHex=(a,b)=>{try{const x=Buffer.from(a,'hex'),y=Buffer.from(b,'hex');return x.length===32&&y.length===32&&crypto.timingSafeEqual(x,y)}catch{return false}};
@@ -93,6 +105,7 @@ const installFruitVendor=html=>{
  return html.replace('</body>','<script src="/fruits-shop.js"></script></body>');
 };
 const PWA_FILES={'/three.min.js':['three.min.js','application/javascript; charset=utf-8'],'/capa-oficial-2026.jpg':['capa-roube-um-ovo.jpg','image/jpeg'],'/icone-capa-oficial-192.png':['icone-192.png','image/png'],'/icone-capa-oficial-512.png':['icone-512.png','image/png'],'/capa-gerada-v2.jpg':['capa-roube-um-ovo.jpg','image/jpeg'],'/capa-gerada-192-v2.png':['icone-192.png','image/png'],'/capa-gerada-512-v2.png':['icone-512.png','image/png'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json; charset=utf-8'],'/service-worker.js':['service-worker.js','application/javascript; charset=utf-8'],'/capa-roube-um-ovo.jpg':['capa-roube-um-ovo.jpg','image/jpeg'],'/icone-192.png':['icone-192.png','image/png'],'/icone-512.png':['icone-512.png','image/png']};
+PWA_FILES['/world-layout.js']=['world-layout.js','application/javascript; charset=utf-8'];
 const PWA_HEAD="<meta name=\"theme-color\" content=\"#ffc933\"><meta name=\"apple-mobile-web-app-capable\" content=\"yes\"><meta name=\"mobile-web-app-capable\" content=\"yes\"><meta name=\"description\" content=\"Roube um Ovo 3D — capture ovos raros e escape dos guardiões.\"><meta property=\"og:title\" content=\"Roube um Ovo 3D\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:image\" content=\"https://roube-um-ovo-3d-salas.onrender.com/capa-oficial-2026.jpg\"><link rel=\"manifest\" href=\"/manifest.webmanifest?v=4\"><link rel=\"apple-touch-icon\" href=\"/icone-capa-oficial-192.png\"><link rel=\"icon\" type=\"image/png\" href=\"/icone-capa-oficial-192.png\"><style>\n#roube-capa{position:fixed;inset:0;z-index:1500;display:flex;align-items:center;justify-content:center;overflow-y:auto;touch-action:pan-y;padding:20px;background:radial-gradient(circle at 50% 22%,#295080,#111b38 68%,#050b16);box-sizing:border-box;color:#fff;font:700 15px system-ui,sans-serif}\n#roube-capa .roube-capa-box{width:min(100%,470px);display:flex;flex-direction:column;align-items:stretch;gap:13px;text-align:center;margin:auto}\n#roube-capa img{display:block;width:min(100%,360px);max-height:min(52dvh,370px);object-fit:contain;aspect-ratio:1;border-radius:18px;margin:0 auto;border:3px solid #ffd266;box-shadow:0 12px 50px #000b}\n#roube-capa h1{margin:1px 0;font-size:clamp(20px,6vw,30px);color:#ffdb77;text-shadow:0 3px 8px #000}\n#roube-capa p{margin:0;color:#dce8ff;font-size:13px}\n#roube-capa button{position:static;border-radius:13px;min-height:49px;padding:12px 15px;font-size:17px;font-weight:900;background:#ffc933;color:#281800;cursor:pointer}\n#roube-capa #roube-install{background:#ffffff;color:#17253a}\n#roube-capa #roube-install-info{font-size:12px;min-height:18px;color:#dce8ff}\n\n@media (display-mode: standalone),(display-mode: fullscreen),(display-mode: minimal-ui){#roube-capa{display:none!important}}\n</style>";
 const PWA_BODY="<div id=\"roube-capa\" role=\"dialog\" aria-label=\"Capa de Roube um Ovo 3D\"><div class=\"roube-capa-box\"><img src=\"/capa-oficial-2026.jpg\" width=\"256\" height=\"256\" alt=\"Capa de Roube um Ovo 3D com personagem carregando ovo raro e guaxinim perseguindo\"><h1>ROUBE UM OVO 3D</h1><p>Ovos raros • Guardiões • Multiplayer</p><button id=\"roube-play\" type=\"button\">🎮 JOGAR AGORA</button><button id=\"roube-install\" type=\"button\">📲 INSTALAR NO CELULAR</button><p id=\"roube-install-info\" aria-live=\"polite\"></p></div></div>\n<script>\n(()=>{const layer=document.getElementById('roube-capa'),play=document.getElementById('roube-play'),install=document.getElementById('roube-install'),status=document.getElementById('roube-install-info');let prompt=null;\nfunction enter(){if(navigator.maxTouchPoints>0){try{const landscape=()=>{try{Promise.resolve(screen.orientation?.lock?.('landscape')).catch(()=>{})}catch(e){}};if(document.fullscreenElement)landscape();else if(document.documentElement.requestFullscreen)Promise.resolve(document.documentElement.requestFullscreen({navigationUI:'hide'})).then(landscape).catch(()=>{});else landscape()}catch(e){}}layer.remove();window.dispatchEvent(new Event('roube-start-game'));try{sessionStorage.setItem('roube-capa-2026-v3-visitada','sim')}catch(e){}}\ntry{const installed=(window.matchMedia&&(['standalone','fullscreen','minimal-ui'].some(mode=>matchMedia('(display-mode: '+mode+')').matches)))||navigator.standalone===true||new URLSearchParams(location.search).get('instalado')==='1';if(installed)layer.remove()}catch(e){if(location.search.includes('instalado=1'))layer.remove()}\nplay.addEventListener('click',enter);\nwindow.addEventListener('beforeinstallprompt',e=>{e.preventDefault();prompt=e;status.textContent='Pronto para instalar pelo Chrome.'});\ninstall.addEventListener('click',async()=>{if(prompt){const p=prompt;prompt=null;p.prompt();try{const r=await p.userChoice;status.textContent=r.outcome==='accepted'?'Instalação solicitada.':'Você pode instalar pelo menu ⋮ do Chrome.'}catch(e){status.textContent='Abra o menu ⋮ do Chrome para instalar.'}}else{status.textContent='No Chrome, toque em ⋮ e em Instalar aplicativo ou Adicionar à tela inicial.'}});\nif('serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('/service-worker.js',{scope:'/'}).catch(()=>{})});\n})();\n</script>";
 const addPwa=html=>{if(html.split('</head>').length!==2||html.split('</body>').length!==2)throw new Error('HTML do jogo alterado inesperadamente');return html.replace('</head>',PWA_HEAD+'</head>').replace('</body>',PWA_BODY+'</body>')};
@@ -122,7 +135,7 @@ PWA_FILES['/biome-countdown.js']=['biome-countdown.js','application/javascript; 
 for(const file of ['admin-controls.js','player-equipment.js'])PWA_FILES['/'+file]=[file,'application/javascript; charset=utf-8'];
 const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML do avatar inválido');return html.replace('</body>','<script src="/avatar-customizer.js?v=20261102-no-horizontal6"></script><script src="/afk-training.js?v=20261102-3"></script><script src="/biome-countdown.js?v=20261102-layout5"></script><script src="/admin-controls.js?v=20261102-roles1"></script><script src="/player-equipment.js?v=20261102-bat2"></script></body>')};
 const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261102-menus3"></script></body>')};
-const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-skip1"></script><script src="/world-detail.js?v=20261102-visual3"></script><script src="/imported-biomes.js?v=20261102-kenney-glb2"></script><script src="/world-remake.js?v=20261103-continuous-walls2"></script><script src="/map-plaza.js?v=20261103-continuous-walls2"></script><script src="/fusion-rules.js?v=20261102-1"></script><script src="/fusion-system.js?v=20261102-1"></script><script src="/world-activities.js?v=20261103-shops-layout1"></script></body>');
+const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-skip1"></script><script src="/world-detail.js?v=20261102-visual3"></script><script src="/imported-biomes.js?v=20261102-kenney-glb2"></script><script src="/world-remake.js?v=20261103-compact-U1"></script><script src="/map-plaza.js?v=20261103-compact-U1"></script><script src="/fusion-rules.js?v=20261102-1"></script><script src="/fusion-system.js?v=20261102-1"></script><script src="/world-activities.js?v=20261103-compact-U1"></script></body>');
 const RETIRED_ASSETS=new Set(['/halloween-event.js','/halloween-pets.js','/halloween-clowns.js',
  '/audio/halloween-spooky-scary-skeletons.mp3','/audio/clown-dance.webm','/audio/witch-laugh.mp3']);
 const httpServer=http.createServer((req,res)=>{
@@ -193,7 +206,7 @@ const httpServer=http.createServer((req,res)=>{
  }
  res.writeHead(404).end('Not found');
 });
-const wss=require('./multiplayer-network.cjs')({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,leave,bound,sameHex,error,newPublicRoom,openPublicRoom});
+const wss=require('./multiplayer-network.cjs')({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions,send,publicUser,peers,broadcast,broadcastPresence,refreshRoomLayout,leave,bound,sameHex,error,newPublicRoom,openPublicRoom});
 // Verificacao de integracao: dois clientes WebSocket reais, duas bases e movimento sincronizado.
 // A sala QA-* e temporaria e e removida no final, sem afetar os jogadores.
 const testMultiplayer=async()=>{

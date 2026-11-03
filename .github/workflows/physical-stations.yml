@@ -6,6 +6,7 @@ on:
       - 'fusion-rules.js'
       - 'fusion-system.js'
       - 'world-activities.js'
+      - 'world-layout.js'
       - 'map-plaza.js'
       - 'multiplayer-client.js'
       - 'tests/physical-stations-browser.cjs'
@@ -29,3 +30,4 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Fusão real e estações físicas no Android
         run: node tests/physical-stations-browser.cjs
+

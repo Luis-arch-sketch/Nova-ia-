@@ -37,7 +37,7 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   assert(before.plaza&&before.floor&&before.initiallyAbsent,'Pátio arredondado sem bases fantasmas');
   assert(before.curvedWalls>24&&before.corridorSections===60,'Muralhas contínuas acompanham o contorno da praça e o corredor');
   assert.deepEqual(before.layout.map(({id,x,z})=>({id,x,z})),[
-   {id:'fusion',x:-66,z:-24},{id:'sell',x:-41,z:-24},{id:'trails',x:66,z:-24},{id:'ranking',x:0,z:327}
+   {id:'fusion',x:-46,z:-24},{id:'sell',x:-26,z:-24},{id:'trails',x:46,z:-24},{id:'ranking',x:0,z:38}
   ],'Fusão no antigo local das trilhas; venda no antigo local da fusão; trilhas no lado oposto');
   assert(before.layout.every(p=>p.world),'As três lojas e o placar são áreas públicas independentes da base individual');
   console.log('ANDROID PHYSICAL STATIONS '+JSON.stringify(before));
@@ -59,7 +59,7 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   assert(presence.left.obstacles<presence.joined.obstacles,'Obstáculos de jogador ausente eliminados');
   console.log('ONLINE ONLY MULTIPLAYER BASES '+JSON.stringify(presence));
   const shop=await page.evaluate(()=>{
-   P.x=66;P.z=-24;
+   P.x=46;P.z=-24;
    const hit=window.RoubeOvoWorldActions.interact();
    return {hit,visible:document.getElementById('pn').style.display,trail:document.getElementById('pn').textContent.includes('Equipada:')};
   });
@@ -83,7 +83,7 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   const selling=await page.evaluate(()=>{
    const previous={pets:S.pets,money:S.$,speed:S.sp,inc:JSON.stringify(S.inc),trails:JSON.stringify(S.own)};
    S.pets=[{id:900001,s:1,z:0,m:[]},{id:900002,s:2,z:1,m:[0]}];S.$=1000;recalc();
-   P.x=-41;P.z=-24;const hit=window.RoubeOvoWorldActions.interact(),p=document.getElementById('pn');
+   P.x=-26;P.z=-24;const hit=window.RoubeOvoWorldActions.interact(),p=document.getElementById('pn');
    const heading=p.textContent.includes('LOJA DE VENDER'),value=sellPrice(S.pets[0]);
    p.querySelector('[data-a="sell:900001"]').click();
    const beforeConfirmation={money:S.$,pets:S.pets.length};
@@ -103,7 +103,7 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   console.log('SELL STATION '+JSON.stringify(selling));
   const opened=await page.evaluate(()=>{
    document.getElementById('pn').style.display='none';
-   P.x=-66;P.z=-24;
+   P.x=-46;P.z=-24;
    const hit=window.RoubeOvoWorldActions.interact();
    return {hit,active:window.RoubeOvoFusion.active,text:document.getElementById('rue-fusion-card').textContent};
   });
