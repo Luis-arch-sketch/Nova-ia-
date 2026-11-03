@@ -34,3 +34,32 @@ test('200 golpes de 50 de dano derrubam monstro de 10000 HP; renasce em 120 segu
  assert.equal(raid.respawnAt,0);
  assert.equal(result.awards.length,2);
 });
+
+test('corrida suprema só mata quando atinge a trajetória; fugir funciona',()=>{
+ const raid=new RadioactiveRaid(()=>.5),p={id:'j1',principal:'p1',x:5,z:-300,inRaid:true,raidHp:300};
+ raid.nextAttackAt=0;raid.attackNumber=2;
+ let e=raid.attacks(100000,[p]);
+ assert.equal(e[0].kind,'charge');assert.equal(e[0].phase,'warn');
+ p.z=-293; // Sai de lado da rota antes do impacto.
+ e=raid.attacks(101300,[p]);
+ assert.equal(e.some(x=>x.type==='raid-player-hit'),false);
+ assert.equal(p.raidHp,300);
+ p.z=-300;raid.nextAttackAt=0;raid.attackNumber=2;
+ e=raid.attacks(110000,[p]);assert.equal(e[0].kind,'charge');
+ e=raid.attacks(111300,[p]);
+ assert.equal(e.find(x=>x.type==='raid-player-hit')?.dead,true);
+ assert.equal(p.raidHp,0);
+});
+test('giro próximo dá quatro golpes de 50 sem matar quem foge',()=>{
+ const raid=new RadioactiveRaid(()=>.5),p={id:'j2',principal:'p2',x:5,z:-300,inRaid:true,raidHp:300};
+ raid.nextAttackAt=0;raid.attackNumber=1;
+ assert.equal(raid.attacks(100000,[p])[0].kind,'spin');
+ const damage=[];
+ for(const t of [101050,101350,101650,101950]){
+  const e=raid.attacks(t,[p]);damage.push(...e.filter(x=>x.type==='raid-player-hit').map(x=>x.damage));
+ }
+ assert.deepEqual(damage,[50,50,50,50]);assert.equal(p.raidHp,100);
+ const other={id:'j3',principal:'p3',x:15,z:-300,inRaid:true,raidHp:300};
+ raid.nextAttackAt=0;raid.attackNumber=0;raid.attacks(200000,[other]);
+ assert.equal(raid.attacks(200900,[other]).some(x=>x.type==='raid-player-hit'),false);
+});
