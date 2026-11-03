@@ -6,6 +6,7 @@
  if(window.RoubeOvoWorldActions)return;
  const root=new T.Group();root.name='Physical stores, fusion machine and leaderboard';sc.add(root);
  const own=new T.Group();own.name='Shared public stations';root.add(own);
+ const layout={fusion:{x:-66,z:-24},sell:{x:-41,z:-24},trails:{x:66,z:-24}};
  const metal=new T.MeshLambertMaterial({color:0x353b53,metalness:.35});
  const dark=new T.MeshLambertMaterial({color:0x151d33});
  const cyan=new T.MeshLambertMaterial({color:0x67e3fb,emissive:0x216276});
@@ -25,7 +26,7 @@
  }
  // Loja de trilhas: balcão, letreiro, esteira luminosa e mascote de brilho ciano.
  {
-  const g=new T.Group();g.position.set(-66,0,-24);g.name='Loja de trilhas';own.add(g);
+  const g=new T.Group();g.position.set(layout.trails.x,0,layout.trails.z);g.name='Loja de trilhas';own.add(g);
   circle(g,0,.13,0,5.2,metal);circle(g,0,.34,0,4.55,cyan);
   block(g,0,1.15,0,7,1.7,3.1,dark);
   block(g,0,2.15,1.2,6.8,.25,.30,cyan);
@@ -36,7 +37,7 @@
   const l=label('APERTE AÇÃO • TRILHAS',512,90,10);l.position.set(0,7.35,0);g.add(l);
  }
  // Máquina de fusão: câmara, três encaixes reais para ovos e energia roxa.
- const fusionObject=new T.Group();fusionObject.position.set(-41,0,-24);fusionObject.name='Máquina de fusão 50%';own.add(fusionObject);
+ const fusionObject=new T.Group();fusionObject.position.set(layout.fusion.x,0,layout.fusion.z);fusionObject.name='Máquina de fusão 50%';own.add(fusionObject);
  {
   const g=fusionObject;
   circle(g,0,.19,0,5.1,dark);circle(g,0,.41,0,4.55,violet);
@@ -49,6 +50,18 @@
   for(const x of [-3.2,3.2])block(g,x,4.25,-1.1,.38,4.2,.42,metal);
   sign(g,0,6.15,-.9,'🧬 FUSÃO DE OVOS','#ce89ff',10.4);
   const t=label('50% GANHA • 50% PERDE',512,85,10);t.position.set(0,7.55,-1);g.add(t);
+ }
+ // Venda de animais ocupa a antiga posição da máquina de fusão.
+ {
+  const g=new T.Group();g.position.set(layout.sell.x,0,layout.sell.z);g.name='Loja de vender';own.add(g);
+  const green=new T.MeshLambertMaterial({color:0x73d48c,emissive:0x174d27});
+  circle(g,0,.19,0,5.1,metal);circle(g,0,.4,0,4.55,green);
+  block(g,0,1.25,0,6.8,1.8,3.1,dark);block(g,0,2.23,0,7.1,.24,3.35,gold);
+  for(const x of [-3.2,3.2])block(g,x,4.25,-1,.38,4.2,.42,metal);
+  sign(g,0,6.15,-.8,'💰 LOJA DE VENDER','#8bffa8',10.4);
+  const coin=new T.Mesh(new T.CylinderGeometry(.8,.8,.22,24),gold);
+  coin.rotation.x=Math.PI/2;coin.position.set(0,3.35,.2);g.add(coin);
+  const l=label('APERTE AÇÃO • VENDER ANIMAIS',640,90,11);l.position.set(0,7.55,-.8);g.add(l);
  }
  // Placar fixo num cantinho do mapa, global para todos (base independe do slot).
  const ranking=new T.Group();ranking.name='Placar 3D dos melhores jogadores';ranking.position.set(0,0,327);ranking.rotation.y=Math.PI;root.add(ranking);
@@ -88,8 +101,9 @@
  }
  refresh();setInterval(refresh,15000);
  const points=[
-  {id:'trails',name:'Loja de Trilhas',world:true,x:-66,z:-24,open:()=>window.RoubeOvoOpenShop?.(2)},
-  {id:'fusion',name:'Máquina de Fusão',world:true,x:-41,z:-24,open:()=>window.RoubeOvoFusion?.open()},
+  {id:'fusion',name:'Máquina de Fusão',world:true,...layout.fusion,open:()=>window.RoubeOvoFusion?.open()},
+  {id:'sell',name:'Loja de Vender',world:true,...layout.sell,open:()=>window.RoubeOvoOpenSellShop?.()},
+  {id:'trails',name:'Loja de Trilhas',world:true,...layout.trails,open:()=>window.RoubeOvoOpenShop?.(2)},
   {id:'ranking',name:'Placar dos Melhores',world:true,x:0,z:327,open:()=>{refresh();if(typeof rankToggle==='function')rankToggle(true)}}
  ];
  function closest(){
@@ -111,3 +125,4 @@
  function interact(){const chosen=closest();if(!chosen)return false;chosen.open();return true}
  window.RoubeOvoWorldActions={interact,update,refresh,points,board,ranking,own,get nearest(){return closest()?.id||null}};
 })();
+

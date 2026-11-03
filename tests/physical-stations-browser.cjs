@@ -32,14 +32,14 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
    initiallyAbsent:PEER_BASES.size===0
   }));
   assert.equal(before.shopDisplay,'none');assert.equal(before.rankDisplay,'none');
-  assert(before.scene&&before.own&&before.board.includes('Placar'));assert.equal(before.actions,3);
+  assert(before.scene&&before.own&&before.board.includes('Placar'));assert.equal(before.actions,4);
   assert(before.core&&before.escalation);
   assert(before.plaza&&before.floor&&before.initiallyAbsent,'Pátio arredondado sem bases fantasmas');
   assert(before.curvedWalls>24&&before.corridorSections===60,'Muralhas contínuas acompanham o contorno da praça e o corredor');
-  assert(before.layout[2].x===0&&before.layout[2].z===327,'Placar no fim arredondado, fora das bases');
-  assert.deepEqual(before.layout.map(p=>p.id),['trails','fusion','ranking']);
-  assert(before.layout[0].x<before.layout[1].x&&before.layout[0].z===before.layout[1].z,'Loja fica à esquerda da fusão');
-  assert(before.layout.every(p=>p.world),'Loja, fusão e placar são áreas públicas independentes da base individual');
+  assert.deepEqual(before.layout.map(({id,x,z})=>({id,x,z})),[
+   {id:'fusion',x:-66,z:-24},{id:'sell',x:-41,z:-24},{id:'trails',x:66,z:-24},{id:'ranking',x:0,z:327}
+  ],'Fusão no antigo local das trilhas; venda no antigo local da fusão; trilhas no lado oposto');
+  assert(before.layout.every(p=>p.world),'As três lojas e o placar são áreas públicas independentes da base individual');
   console.log('ANDROID PHYSICAL STATIONS '+JSON.stringify(before));
   // As bases de outras pessoas só existem enquanto seus respectivos jogadores
   // estiverem na sala. A base própria e os obstáculos originais continuam.
@@ -59,7 +59,7 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   assert(presence.left.obstacles<presence.joined.obstacles,'Obstáculos de jogador ausente eliminados');
   console.log('ONLINE ONLY MULTIPLAYER BASES '+JSON.stringify(presence));
   const shop=await page.evaluate(()=>{
-   P.x=-66;P.z=-24;
+   P.x=66;P.z=-24;
    const hit=window.RoubeOvoWorldActions.interact();
    return {hit,visible:document.getElementById('pn').style.display,trail:document.getElementById('pn').textContent.includes('Equipada:')};
   });
@@ -80,9 +80,30 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
   assert(separated.treadmillTab.heading&&separated.treadmillTab.body&&!separated.treadmillTab.hasTrails,'Esteira está disponível pelo inventário');
   assert(!separated.horizontalButton,'Botão Horizontal removido');
   console.log('TRAIL SHOP + INVENTORY SEPARATED ANDROID '+JSON.stringify(separated));
+  const selling=await page.evaluate(()=>{
+   const previous={pets:S.pets,money:S.$,speed:S.sp,inc:JSON.stringify(S.inc),trails:JSON.stringify(S.own)};
+   S.pets=[{id:900001,s:1,z:0,m:[]},{id:900002,s:2,z:1,m:[0]}];S.$=1000;recalc();
+   P.x=-41;P.z=-24;const hit=window.RoubeOvoWorldActions.interact(),p=document.getElementById('pn');
+   const heading=p.textContent.includes('LOJA DE VENDER'),value=sellPrice(S.pets[0]);
+   p.querySelector('[data-a="sell:900001"]').click();
+   const beforeConfirmation={money:S.$,pets:S.pets.length};
+   p.querySelector('[data-a="sell-cancel"]').click();
+   const cancelled={money:S.$,pets:S.pets.length};
+   p.querySelector('[data-a="sell:900001"]').click();
+   const confirm=p.querySelector('[data-a="sell-ok:900001"]');confirm.click();confirm.click();
+   const saved=JSON.parse(localStorage.getItem('rue3d_v1'));
+   const result={hit,heading,value,beforeConfirmation,cancelled,money:S.$,ids:S.pets.map(x=>x.id),savedMoney:saved.$,savedIds:saved.pets.map(x=>x.id),preserved:S.sp===previous.speed&&JSON.stringify(S.inc)===previous.inc&&JSON.stringify(S.own)===previous.trails};
+   S.pets=previous.pets;S.$=previous.money;recalc();save();open=false;ui();
+   return result;
+  });
+  assert(selling.hit&&selling.heading&&selling.preserved);
+  assert.deepEqual(selling.beforeConfirmation,{money:1000,pets:2});assert.deepEqual(selling.cancelled,{money:1000,pets:2});
+  assert.equal(selling.money,1000+selling.value);assert.deepEqual(selling.ids,[900002]);
+  assert.equal(selling.savedMoney,selling.money);assert.deepEqual(selling.savedIds,selling.ids,'Uma confirmação vende apenas o animal selecionado e salva o resultado');
+  console.log('SELL STATION '+JSON.stringify(selling));
   const opened=await page.evaluate(()=>{
    document.getElementById('pn').style.display='none';
-   P.x=-41;P.z=-24;
+   P.x=-66;P.z=-24;
    const hit=window.RoubeOvoWorldActions.interact();
    return {hit,active:window.RoubeOvoFusion.active,text:document.getElementById('rue-fusion-card').textContent};
   });

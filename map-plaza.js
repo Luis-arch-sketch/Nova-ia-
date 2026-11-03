@@ -1,7 +1,7 @@
 'use strict';
 /* Praça arredondada com paredes reais. O terreno original é a única
  * superfície de grama: nenhum retângulo escuro ou piso neon sobreposto.
- * As posições das bases, ovos, lojas e os saves permanecem as mesmas.
+ * As posições das bases, ovos e os saves permanecem as mesmas.
  */
 (()=>{
  try{
@@ -23,7 +23,7 @@
   path.bezierCurveTo(91,34,53,52,31,48);
   const edge=path.getSpacedPoints(100).map(p=>({x:p.x,z:-p.y}));
   // Ombros fecham o encontro com os muros do corredor. A boca central
-  // continua livre e as duas lojas ficam no lado público da entrada.
+  // continua livre e as três lojas ficam no lado público da entrada.
   edge.unshift({x:-102.2,z:-48});
   edge.push({x:102.2,z:-48});
   const positions=[],uv=[],indices=[],height=24;
@@ -62,7 +62,7 @@
    originalGrassPreserved:true,darkOverlayRemoved:true,frontWallAdded:true,
    slots:BASE_SLOTS.length,visibleEmptyPeerBases:false,sharedShops:true,
    curvedWallSections:edge.length-1,wallObstacles:obstacles.length,
-   servicePositions:[[-66,-24],[-41,-24]],group:root
+   servicePositions:[[-66,-24],[-41,-24],[66,-24]],group:root
   };
  }catch(err){
   console.error('Correção das paredes do mapa:',err);
