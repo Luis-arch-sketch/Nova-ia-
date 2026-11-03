@@ -119,6 +119,7 @@ PWA_FILES['/pet-collection.js']=['pet-collection.js','application/javascript; ch
 // Arquivos locais da sequência de chocagem e os dois áudios enviados.
 for(const file of ['egg-hatching.js','egg-hatching.css'])PWA_FILES['/'+file]=[file,file.endsWith('.css')?'text/css; charset=utf-8':'application/javascript; charset=utf-8'];
 PWA_FILES['/multiplayer-client.js']=['multiplayer-client.js','application/javascript; charset=utf-8'];
+PWA_FILES['/mutation-minigame.js']=['mutation-minigame.js','application/javascript; charset=utf-8'];
 PWA_FILES['/entrance-cinematic.js']=['entrance-cinematic.js','application/javascript; charset=utf-8'];
 PWA_FILES['/cutscene-zona-radioativa.html']=['cutscene-zona-radioativa.html','text/html; charset=utf-8'];
 PWA_FILES['/radioactive-cutscene.js']=['radioactive-cutscene.js','application/javascript; charset=utf-8'];
@@ -136,6 +137,8 @@ for(const file of ['admin-controls.js','player-equipment.js'])PWA_FILES['/'+file
 const installAvatar=html=>{if(html.split('</body>').length!==2)throw Error('HTML do avatar inválido');return html.replace('</body>','<script src="/avatar-customizer.js?v=20261102-no-horizontal6"></script><script src="/afk-training.js?v=20261102-3"></script><script src="/biome-countdown.js?v=20261102-layout5"></script><script src="/admin-controls.js?v=20261102-roles1"></script><script src="/player-equipment.js?v=20261102-bat2"></script></body>')};
 const installChatHud=html=>{if(html.split('</body>').length!==2)throw new Error('HTML sem fechamento para incluir chat');return html.replace('</body>','<script src="/hud-chat.js?v=20261102-menus3"></script></body>')};
 const gameHtml=installAvatar(installChatHud(addPwa(installPetCollection(installFruitVendor(installServerBrowser(applyGraphicUpgrade(fs.readFileSync(path.join(__dirname,'index.html'),'utf8')))))))).replace('</body>','<script src="/radioactive-cutscene.js?v=20261102-skip1"></script><script src="/world-detail.js?v=20261102-visual3"></script><script src="/imported-biomes.js?v=20261102-kenney-glb2"></script><script src="/world-remake.js?v=20261103-compact-U1"></script><script src="/map-plaza.js?v=20261103-compact-U1"></script><script src="/fusion-rules.js?v=20261102-1"></script><script src="/fusion-system.js?v=20261102-1"></script><script src="/world-activities.js?v=20261103-compact-U1"></script></body>');
+// Evento especial: um minigame repetivel para ganhar e aplicar mutacoes reais.
+gameHtml=gameHtml.replace('</body>','<script src="/mutation-minigame.js?v=20261103-1430-1"></script></body>');
 const RETIRED_ASSETS=new Set(['/halloween-event.js','/halloween-pets.js','/halloween-clowns.js',
  '/audio/halloween-spooky-scary-skeletons.mp3','/audio/clown-dance.webm','/audio/witch-laugh.mp3']);
 const httpServer=http.createServer((req,res)=>{
