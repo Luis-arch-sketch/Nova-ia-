@@ -170,7 +170,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     if(ws.session.receipts.has(requestId)){send(ws,ws.session.receipts.get(requestId));return}
     if(!Number.isInteger(m.mutation)||m.mutation<0||m.mutation>=8||!position(ws,m.position)){answer(false);return}
     const egg=world.eggs.get(m.id);
-    if(!egg||egg.s===LIMITED||world.phase!=='day'||Math.hypot(egg.x-ws.x,egg.z-ws.z)>5||
+    if(!egg||world.phase!=='day'||Math.hypot(egg.x-ws.x,egg.z-ws.z)>5||
        (Array.isArray(egg.m)&&egg.m.includes(m.mutation))){answer(false);return}
     egg.m=Array.isArray(egg.m)?[...egg.m,m.mutation]:[m.mutation];
     const reply={type:'egg-mutate-result',ok:true,requestId,id:egg.id,mutation:m.mutation,egg};
