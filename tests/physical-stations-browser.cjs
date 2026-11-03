@@ -35,6 +35,22 @@ const port=3198,base='http://127.0.0.1:'+port,delay=ms=>new Promise(r=>setTimeou
    return {hit,visible:document.getElementById('pn').style.display,trail:document.getElementById('pn').textContent.includes('Equipada:')};
   });
   assert(shop.hit&&shop.visible==='block'&&shop.trail,'Loja de trilhas física abre catálogo real');
+  // A loja física mostra APENAS as trilhas, sem as abas do menu antigo.
+  const separated=await page.evaluate(()=>{
+   const p=document.getElementById('pn');
+   const trailOnly={heading:p.textContent.includes('LOJA DE TRILHAS'),allTabs:p.querySelectorAll('button[data-a^="T"]').length,hasBase:p.textContent.includes('Base nível'),hasTreadmill:p.textContent.includes('Próxima:')};
+   document.getElementById('bInv').click();
+   const inventory={open:p.style.display,heading:p.textContent.includes('INVENTÁRIO'),tabs:[...p.querySelectorAll('button[data-a^="T"]')].map(b=>b.textContent),hasInventory:p.textContent.includes('Inventário')};
+   p.querySelector('button[data-a="T0"]').click();
+   const treadmillTab={heading:p.textContent.includes('INVENTÁRIO'),body:p.textContent.includes('Sua esteira'),hasTrails:p.textContent.includes('LOJA DE TRILHAS')};
+   document.getElementById('bInv').click();
+   return {trailOnly,inventory,treadmillTab,horizontalButton:!!document.getElementById('horizontalButton')};
+  });
+  assert(separated.trailOnly.heading&&separated.trailOnly.allTabs===0&&!separated.trailOnly.hasBase&&!separated.trailOnly.hasTreadmill,'Loja física contém exclusivamente trilhas');
+  assert(separated.inventory.open==='block'&&separated.inventory.heading&&separated.inventory.tabs.length===5&&!separated.inventory.tabs.includes('Trails'),'Inventário tem suas próprias opções e deixa trilhas na loja');
+  assert(separated.treadmillTab.heading&&separated.treadmillTab.body&&!separated.treadmillTab.hasTrails,'Esteira está disponível pelo inventário');
+  assert(!separated.horizontalButton,'Botão Horizontal removido');
+  console.log('TRAIL SHOP + INVENTORY SEPARATED ANDROID '+JSON.stringify(separated));
   const opened=await page.evaluate(()=>{
    document.getElementById('pn').style.display='none';
    P.x=BASE_HOME.x-29;P.z=BASE_HOME.z+7;
