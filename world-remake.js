@@ -16,77 +16,11 @@ try{
  const groundGroup=new T.Group();groundGroup.name='Roblox studded ground';root.add(groundGroup);
  const cliffGroup=new T.Group();cliffGroup.name='Terracotta high canyon walls';root.add(cliffGroup);
  const basePen=new T.Group();basePen.name='Orange rails base pen';BASE_GROUP.add(basePen);
- const palette=[
-  [0x57e42e,0x85f85a], // Floresta, verde Roblox
-  [0x5bdc8c,0x96edb0], // Lago
-  [0xe4c47c,0xf7dfaa], // Deserto
-  [0x37ad46,0x64d46e], // Selva
-  [0xb7eaff,0xe5faff], // Neve
-  [0x754c49,0xa3624e], // Vulcão
-  [0x4a93aa,0x76c7d4], // Abissal
-  [0x96b65b,0xbacc72], // Pré-história
-  [0x444881,0x6d6eb0], // Cósmico
-  [0x90c57b,0xb2e4a0], // Cerejeiras
-  [0xb1b1a8,0xd4cbb0], // Titãs
-  [0x8279ac,0xc1adbe], // Anjos e Demônios
-  [0x7db89a,0xb1d4af]  // Encantada
- ];
- function studCanvas(){
-   const c=document.createElement('canvas');c.width=c.height=256;
-   const ctx=c.getContext('2d');
-   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,256,256);
-   // Quadrados em relevo, vistos também em perspectiva, sem centenas de milhares de meshes.
-   for(let y=0;y<8;y++)for(let x=0;x<8;x++){
-     const xx=x*32, yy=y*32, checker=(x+y)%2;
-     ctx.fillStyle=checker?'#f7f7f7':'#ffffff';ctx.fillRect(xx,yy,32,32);
-     ctx.fillStyle='#e0e0e0';ctx.fillRect(xx+6,yy+7,20,20);
-     ctx.fillStyle='#b8b8b8';ctx.fillRect(xx+7,yy+8,18,18);
-     ctx.fillStyle='#eeeeee';ctx.fillRect(xx+8,yy+8,15,14);
-     ctx.fillStyle='#ffffff';ctx.fillRect(xx+8,yy+8,13,2);
-     ctx.fillStyle='#d7d7d7';ctx.fillRect(xx+9,yy+24,15,2);
-   }
-   const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=4;
-   t.magFilter=T.LinearFilter;t.minFilter=T.LinearMipmapLinearFilter;
-   return t;
- }
- const studTemplate=studCanvas();
- function studded(w,d,color,x,y,z,accent){
-   const texture=studTemplate.clone();texture.repeat.set(w/10,d/10);texture.needsUpdate=true;
-   const mat=new T.MeshLambertMaterial({map:texture,color,polygonOffset:true,polygonOffsetFactor:-1});
-   const g=new T.PlaneGeometry(w,d);
-   const obj=new T.Mesh(g,mat);obj.rotation.x=-Math.PI/2;obj.position.set(x,y,z);
-   obj.receiveShadow=true;obj.userData.rueRebuiltGround=true;groundGroup.add(obj);result.groundTiles++;
-   if(accent){
-     const edgeMaterial=new T.MeshBasicMaterial({color:accent,transparent:true,opacity:.22,depthWrite:false});
-     for(const dx of [-w*.5+.2,w*.5-.2]){
-       const strip=new T.Mesh(new T.PlaneGeometry(.45,d),edgeMaterial);
-       strip.rotation.x=-Math.PI/2;strip.position.set(x+dx,y+.008,z);groundGroup.add(strip);
-     }
-   }
-   return obj;
- }
- // Ocultar exatamente os grandes planos antigos, preservando os pisos pequenos dos itens.
- sc.children.forEach(obj=>{
-   if(!obj.isMesh||obj.geometry?.type!=='PlaneGeometry')return;
-   const a=obj.geometry.parameters||{};
-   const large=a.width>=100&&a.height>=50;
-   if(large&&Math.abs(obj.position.y)<.09&&Math.abs(obj.rotation.x+Math.PI/2)<.01){
-     obj.visible=false;result.oldGroundHidden++;
-   }
- });
- // Replicar a leitura do baseplate Roblox de verdade em todos os trechos.
- studded(203.5,301,0x73e94a,0,.051,185,0xb7ff77);
- studded(203.5,1011,0x6adf48,0,.051,-450);
- for(let b=0;b<BI.length&&b<13;b++){
-   const z=-65-70*b,c=palette[b],pad=b===0?0x57e62e:c[0];
-   studded(202,67,pad,0,.064,z,c[1]);
-   // Transição como faixa no chão, nunca parede física.
-   if(b!==0)studded(202,2.0,c[1],0,.078,z+34);
- }
- // Caminho discreto. Nada de grandes faixas bege sobre a área verde.
- const mainTrail=new T.Mesh(new T.PlaneGeometry(7.5,1320),
-   new T.MeshBasicMaterial({color:0xe3ffbf,transparent:true,opacity:.14,depthWrite:false}));
- mainTrail.rotation.x=-Math.PI/2;mainTrail.position.set(0,.092,-305);groundGroup.add(mainTrail);
+ // Preservar o terreno original: a textura neon e as placas sobrepostas
+ // criavam faixas verdes e manchas escuras no mapa do Android.
+ // O grupo groundGroup permanece vazio; o chão original mantém sua cor,
+ // relevo visual, biomas, posições e colisões sem nenhuma alteração.
+ result.originalTerrainPreserved=true;
  // Textura do paredão laranja do Roblox: blocos e pequenos relevos quadrados.
  function cliffTexture(){
    const c=document.createElement('canvas');c.width=256;c.height=256;
@@ -106,7 +40,8 @@ try{
  }
  const wallTexture=cliffTexture();
  const wallMat=new T.MeshLambertMaterial({map:wallTexture,color:0xffffff,side:T.DoubleSide});
- const wallGeo=new T.PlaneGeometry(32,57);
+ const WALL_HEIGHT=24;
+ const wallGeo=new T.PlaneGeometry(32,WALL_HEIGHT);
  const wallInstances=new T.InstancedMesh(wallGeo,wallMat,84);
  const mat4=new T.Matrix4(),q=new T.Quaternion(),vec=new T.Vector3(),vscale=new T.Vector3(1,1,1);
  let n=0;
@@ -115,7 +50,7 @@ try{
      const z=338-16-i*31;
      if(z<-954)break;
      q.setFromAxisAngle(new T.Vector3(0,1,0),side*Math.PI/2);
-     mat4.compose(vec.set(side*102.2,28.5,z),q,vscale);
+     mat4.compose(vec.set(side*102.2,WALL_HEIGHT/2,z),q,vscale);
      wallInstances.setMatrixAt(n++,mat4);
    }
  }
@@ -130,16 +65,16 @@ try{
  let k=0;
  for(const side of [-1,1])for(let i=0;i<42;i++){
    const z=338-16-i*31;if(z<-954)break;
-   mat4.compose(vec.set(side*102.2,57.4,z),new T.Quaternion(),vscale);
+   mat4.compose(vec.set(side*102.2,WALL_HEIGHT+.4,z),new T.Quaternion(),vscale);
    tops.setMatrixAt(k++,mat4);
  }
  tops.count=k;tops.instanceMatrix.needsUpdate=true;tops.frustumCulled=false;
  cliffGroup.add(tops);
  // Fechar o extremo distante como no corredor, sem criar uma nova passagem.
- const back=new T.Mesh(new T.PlaneGeometry(207,57),wallMat);
- back.position.set(0,28.5,-956);back.receiveShadow=true;cliffGroup.add(back);
+ const back=new T.Mesh(new T.PlaneGeometry(207,WALL_HEIGHT),wallMat);
+ back.position.set(0,WALL_HEIGHT/2,-956);back.receiveShadow=true;cliffGroup.add(back);
  const backTop=new T.Mesh(new T.BoxGeometry(207,.8,2.5),topMat);
- backTop.position.set(0,57.4,-956);cliffGroup.add(backTop);
+ backTop.position.set(0,WALL_HEIGHT+.4,-956);cliffGroup.add(backTop);
  // Ocultar apenas as muralhas de blocos baixas originais, preservando a colisão de x/z.
  sc.children.forEach(obj=>{
    if(!obj.isMesh||obj.geometry?.type!=='BoxGeometry'||Math.abs(obj.scale.y-7)>.01)return;
@@ -233,7 +168,7 @@ try{
  if(typeof sun!=='undefined')sun.intensity=Math.max(1.1,sun.intensity);
  sc.traverse(o=>{if(o.isHemisphereLight)o.intensity=Math.max(1.04,o.intensity)});
  if(sc.fog){sc.fog.near=100;sc.fog.far=555;}
- result.installed=true;result.mapTheme='bright-studded-roblox';
+ result.installed=true;result.mapTheme='original-grass-and-perimeter-walls';
  window.RoubeOvoMapRebuild=result;
 }catch(error){
  console.error('Recriação da arquitetura do mapa:',error);
