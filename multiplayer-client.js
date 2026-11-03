@@ -49,9 +49,22 @@ const PEER_BASES=new Map();
 const makePeerBase=u=>{
  const slot=BASE_SLOTS[u.baseSlot];if(!slot)return;
  const group=new T.Group();group.position.set(slot.x,0,slot.z);sc.add(group);
- const wall=(x,z,w,d)=>mk(GB,0xc89b5a,[w,1.6,d],group,[x,.8,z]);
- wall(-20,10,.6,40);wall(20,10,.6,40);wall(0,30,40,.6);
- wall(-12.5,-10,15,.6);wall(12.5,-10,15,.6);
+ // Os cercados de jogadores online usam ripas abertas, iguais à base própria.
+ // Os obstáculos do servidor continuam os mesmos, protegendo colisões e ovos.
+ const sections=[[-20,-10,-5,-10],[5,-10,20,-10],[-20,-10,-20,30],
+                 [20,-10,20,30],[-20,30,20,30]];
+ for(const [x1,z1,x2,z2] of sections){
+  const n=Math.max(1,Math.ceil(Math.hypot(x2-x1,z2-z1)/5));
+  const length=Math.hypot(x2-x1,z2-z1),angle=-Math.atan2(z2-z1,x2-x1);
+  const mx=(x1+x2)/2,mz=(z1+z2)/2;
+  for(const [height,color] of [[.65,0xc26d29],[1.45,0xe28d36]]){
+   const rail=mk(GB,color,[length,.20,.20],group,[mx,height,mz]);rail.rotation.y=angle;
+  }
+  for(let i=0;i<=n;i++){
+   const t=i/n;
+   mk(GB,0x2b3039,[.44,2.24,.44],group,[x1+(x2-x1)*t,1.12,z1+(z2-z1)*t]);
+  }
+ }
  mk(GY,0xffe14a,[3.6,.05,3.6],group,[0,.06,-4]);
  const sign=label('Base de '+u.name,512,80,8);sign.position.set(0,6,-10);group.add(sign);
  const mark=label('DEPÓSITO',256,64,5);mark.position.set(0,3,-4);group.add(mark);
