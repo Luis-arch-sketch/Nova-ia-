@@ -16,7 +16,7 @@ class RadioactiveRaid {
   player.lastRaidHit=now;const dealt=Math.min(50,this.hp);this.hp-=dealt;
   this.damage.set(player.principal,(this.damage.get(player.principal)||0)+dealt);
   if(this.hp>0)return {ok:true,dealt,defeated:false,awards:[]};
-  this.respawnAt=now+30000;
+  this.respawnAt=now+120000; // Próxima batalha dois minutos após a vitória
   const awards=[...this.damage].map(([id,damage])=>({id,candies:25+Math.floor(damage/50)}));
   for(const r of awards)this.award(r.id,r.candies);
   this.damage.clear();return {ok:true,dealt,defeated:true,awards};
