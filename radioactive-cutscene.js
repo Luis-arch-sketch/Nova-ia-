@@ -44,6 +44,23 @@
    if(dt<.19){ctx.fillStyle='rgba(255,250,230,'+(.32*(1-dt/.19))+')';ctx.fillRect(0,0,w,h)}
    ctx.restore();
   }
+
+  // Substitui os textos de horario do MP4 original, mantendo as cenas originais.
+  const vw=Math.min(w,h*16/9),vh=vw*9/16,left=(w-vw)/2,top=(h-vh)/2;
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+  if(t<2.8){
+   ctx.fillStyle='#10291b';ctx.fillRect(left+vw*.39,top+vh*.235,vw*.22,vh*.135);
+   ctx.fillStyle='#d2ff89';ctx.shadowColor='#8aff69';ctx.shadowBlur=12;
+   ctx.font='900 '+Math.max(11,Math.round(vh*.10))+'px system-ui,sans-serif';
+   ctx.fillText('20:30',left+vw*.5,top+vh*.305);
+  }
+  if(t>=29){
+   ctx.fillStyle='#102b20';ctx.fillRect(left+vw*.27,top+vh*.84,vw*.46,vh*.145);
+   ctx.fillStyle='#d3ff89';ctx.shadowColor='#99ff72';ctx.shadowBlur=12;
+   ctx.font='900 '+Math.max(11,Math.round(vh*.076))+'px system-ui,sans-serif';
+   ctx.fillText('HOJE • 20:30',left+vw*.5,top+vh*.925);
+  }
+  ctx.restore();
   raf=requestAnimationFrame(paint);
  }
  function open(){if(opened)return;opened=true;ended=false;overlay.hidden=false;tap.hidden=true;video.currentTime=0;play();cancelAnimationFrame(raf);raf=requestAnimationFrame(paint)}
