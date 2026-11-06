@@ -306,7 +306,7 @@ const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0
  // Sem pilares e traves visíveis de dia.
  const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);const timer=label('',512,128,15);timer.position.set(0,5.35,z+.72);timer.visible=false;sc.add(timer);return{z,bar,timer,l,b,req:b.req}});
 let zlim=-938;
-const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=-938}; // todas as áreas liberadas: o número da placa é só recomendação
+const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=window.RoubeOvoLayout?.released?.()?-1008:-938}; // o bioma novo libera as 20:30
 /* ===== Ninhos, ovos, guardiões ===== */
 const NS=[],eggs=[];
 BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
@@ -929,7 +929,7 @@ const abuseJumpMult=()=>abuseIs('moon')?1.55:1;
 const abuseGuardianHit=g=>{if(P.stun>0||A.god)return;P.stun=.9;const a=Math.atan2(P.x-g.m.position.x,P.z-g.m.position.z);P.vx=Math.sin(a)*13;P.vz=Math.cos(a)*13;g.st='ret';toast('😈 Guardião enfurecido te atingiu!');};
 const abuseRecord=txt=>{ABUSE.log.unshift(new Date().toLocaleTimeString('pt-BR')+' • '+txt);ABUSE.log.length=Math.min(ABUSE.log.length,20)};
 const abuseAnnounce=(txt,secs=10)=>{txt=String(txt||'').trim();if(!txt)throw Error('Escreva uma mensagem para anunciar.');$('abMessageText').textContent=txt.slice(0,160);$('abMessage').style.display='block';ABUSE.msgSeconds=Math.max(4,Math.min(30,+secs||10));ABUSE.msgTotal=ABUSE.msgSeconds;abuseRecord('Aviso: '+txt.slice(0,70));beep(880,.25,'triangle',.05)};
-const abuseSpawn=(j,num=1)=>{if(typeof MP!=='undefined'&&MP.connected&&!MP.canAdmin)return 0;const bi=Number(AS.abBiome),loc=Number.isInteger(bi)&&bi>=0&&bi<BI.length?bi:Math.max(0,cb()),where=bi<0?'player':'nest';let n=0;for(let i=0;i<num;i++){const e=adminSpawnEgg(loc,j,Math.floor(Math.random()*SZ.length),where,false);if(e)n++;}return n};
+const abuseSpawn=(j,num=1)=>{if(typeof MP!=='undefined'&&MP.roomEvent?.scheduled)return 0;if(typeof MP!=='undefined'&&MP.connected&&!MP.canAdmin)return 0;const bi=Number(AS.abBiome),loc=Number.isInteger(bi)&&bi>=0&&bi<BI.length?bi:Math.max(0,cb()),where=bi<0?'player':'nest';let n=0;for(let i=0;i<num;i++){const e=adminSpawnEgg(loc,j,Math.floor(Math.random()*SZ.length),where,false);if(e)n++;}return n};
 // Um pool simples de partículas 3D, até 42 meshes: efeito visual leve em dispositivos Android.
 const abuseColor=id=>({secret:0x32c7ff,eternal:0x8cfbff,divine:0xff54ce,mixed:0xaf57ff,cosmic:0x9355ff,money:0xffcf30,gold:0xffcf30,meteor:0xff5e35,luck:0x39f09d,rainbow:0x6ae5ff,fireworks:0xff8f32,profit2:0xffcf30,profit10:0xffcf30,training:0x40b2ff,speed:0x65d0ff,moon:0xa9a1ff,eclipse:0x6254aa,sun:0xffd965,freeze:0x93eaff,fury:0xff3737,hatch:0xe6ff9a}[id]||0xffffff);
 const ABUSE_GEOM=new T.IcosahedronGeometry(.34,0);

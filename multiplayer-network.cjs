@@ -10,6 +10,46 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  const raid=new RadioactiveRaid();
  const raidPortal=MapLayout.raidPortal;
  const broadcastAll=message=>{for(const players of rooms.values())for(const client of players)send(client,message)};
+ // Admin Abuse automatico, valido no SERVIDOR e igual para todos os jogadores.
+ const LAUNCH_AT=Date.parse('2026-11-06T23:30:00Z'); // 20:30 Brasilia
+ const PHASE_MS=90000,WAVE_MS=30000;
+ const PHASES=[
+  ['secret','☢ LANCAMENTO: bioma radioativo e chuva de SECRET!'],
+  ['eternal','💠 Chuva de ETERNAL radioativos!'],
+  ['divine','🌸 Chuva de DIVINE radioativos!'],
+  ['money','💸 Chuva de dinheiro e ovos raros!'],
+  ['rainbow','🌈 Festival Rainbow nuclear!'],
+  ['meteor','☄️ Meteoros divinos no novo bioma!'],
+  ['profit10','💎 Renda 10x no Admin Abuse!'],
+  ['fireworks','🎆 GRANDE FINAL: fogos e ovos especiais!']
+ ];
+ let currentPhase=-1,currentWave=-1;
+ function runOfficialEvent(now){
+  const age=now-LAUNCH_AT;
+  if(age<0||age>=PHASES.length*PHASE_MS)return;
+  const unique=[...new Set(roomWorlds.values())];if(!unique.length)return;
+  const phase=Math.floor(age/PHASE_MS),wave=Math.floor(age/WAVE_MS);
+  if(currentPhase!==phase){
+   const startedAt=LAUNCH_AT+phase*PHASE_MS,endsAt=startedAt+PHASE_MS;
+   const packet={type:'event',kind:'event',action:'start',id:PHASES[phase][0],settings:{duration:90,interval:15,wave:3},scheduled:true,startedAt,endsAt};
+   for(const world of unique)world.event={...packet};
+   currentPhase=phase;broadcastAll(packet);
+   broadcastAll({type:'event',kind:'announce',text:PHASES[phase][1],seconds:20});
+  }
+  if(wave===currentWave)return;
+  currentWave=wave;
+  for(const world of unique){
+   const eggs=[];
+   for(let i=0;i<7;i++){
+    const j=phase===0?5:phase===1?6:phase===2?7:5+(i+wave)%3;
+    const x=-32+i*10.5+(wave%2?2:-2),z=-958-((i+wave)%5)*11;
+    const egg=world.add(12,j,i%4,x,z,now,12*8+j,null,[0,2,7].slice(0,1+i%3));
+    if(egg){egg.adminSpawned=true;egg.radioactive=true;egg.expiresAt=now+900000;eggs.push(egg)}
+   }
+   if(eggs.length)for(const [room,w] of roomWorlds)if(w===world)broadcast(room,{type:'world-add',eggs});
+  }
+ }
+
  const position=(ws,p)=>{
   if(!p||!finite(p.x,-140,140)||!finite(p.y,-1,2000)||!finite(p.z,-1180,350)||!finite(p.yaw,-100,100))return false;
   Object.assign(ws,ws.inRaid?MapLayout.fitRaid(p):MapLayout.fit(p,ws.hub));ws.y=p.y;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
@@ -343,7 +383,8 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  // Um pacote por sala a cada 100 ms, sem multiplicar o tráfego por cada movimento.
  const updates=setInterval(()=>{
   const now=Date.now();
-  if(raid.tick(now))broadcastAll(raid.state(now));
+  runOfficialEvent(now);
+   if(raid.tick(now))broadcastAll(raid.state(now));
   const combatants=[...wss.clients].filter(p=>p.room&&p.readyState===WebSocket.OPEN);
   for(const event of raid.attacks(now,combatants)){
    if(event.type==='raid-attack'){broadcastAll(event);continue}

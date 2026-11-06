@@ -43,7 +43,7 @@ try{
  const WALL_HEIGHT=24;
  // O corredor termina exatamente na entrada da praça; as peças compartilham
  // bordas em vez de se sobreporem (evita cintilação e frestas no Android).
- const sectionLength=(956-40)/30;
+ const sectionLength=(1026-40)/30;
  const wallGeo=new T.PlaneGeometry(sectionLength,WALL_HEIGHT);
  const wallInstances=new T.InstancedMesh(wallGeo,wallMat,60);
  const mat4=new T.Matrix4(),q=new T.Quaternion(),vec=new T.Vector3(),vscale=new T.Vector3(1,1,1);
@@ -77,6 +77,8 @@ try{
  back.position.set(0,WALL_HEIGHT/2,-956);back.receiveShadow=true;cliffGroup.add(back);
  const backTop=new T.Mesh(new T.BoxGeometry(107,.8,2.5),topMat);
  backTop.position.set(0,WALL_HEIGHT+.4,-956);cliffGroup.add(backTop);
+  function updateBackWall(){const live=Date.now()>=Date.parse('2026-11-06T23:30:00Z');back.position.z=backTop.position.z=live?-1026:-956;}
+  updateBackWall();setInterval(updateBackWall,1000);
  // Ocultar apenas as muralhas de blocos baixas originais, preservando a colisão de x/z.
  sc.children.forEach(obj=>{
    if(!obj.isMesh||obj.geometry?.type!=='BoxGeometry'||Math.abs(obj.scale.y-7)>.01)return;
