@@ -43,7 +43,7 @@ const refreshRoomLayout=room=>{
  players.forEach((ws,slot)=>{
   const old=ws.home,home=layout.slots[slot],before={x:ws.x,z:ws.z};
   if(old&&(old.x!==home.x||old.z!==home.z)&&Math.abs(ws.x-old.x)<=22&&ws.z>=old.z-14&&ws.z<=old.z+33){ws.x+=home.x-old.x;ws.z+=home.z-old.z;}
-  Object.assign(ws,MapLayout.fit(ws,layout.hub));if(!MapLayout.contains(ws,layout.hub)){ws.x=home.x;ws.z=home.z+8}ws.baseSlot=slot;ws.home={...home};ws.hub=layout.hub;
+  Object.assign(ws,ws.inRaid?MapLayout.fitRaid(ws):MapLayout.fit(ws,layout.hub));if(!ws.inRaid&&!MapLayout.contains(ws,layout.hub)){ws.x=home.x;ws.z=home.z+8}ws.baseSlot=slot;ws.home={...home};ws.hub=layout.hub;
   if(ws.session){ws.session.slot=slot;ws.session.home={...home};ws.session.position={x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0};}
   if(old&&(before.x!==ws.x||before.z!==ws.z))send(ws,{type:'reposition',reason:'layout',baseSlot:slot,layout,spawn:{x:ws.x,y:ws.y,z:ws.z,yaw:ws.yaw,cameraYaw:ws.cameraYaw||0}});
  });
