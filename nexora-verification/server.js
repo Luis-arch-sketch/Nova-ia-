@@ -10,7 +10,7 @@ function clean(s,n=280){return String(s||'').trim().slice(0,n)}
 const page=fs.readFileSync(path.join(root,'index.html'));
 http.createServer((req,res)=>{
  res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff');
- if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(page)}
+ if(req.method==='GET' && !new URL(req.url,'http://localhost').pathname.startsWith('/api/') && new URL(req.url,'http://localhost').pathname!=='/health'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(page)}
  if(req.method==='GET'&&req.url==='/health')return json(res,200,{ok:true});
  const url=new URL(req.url,'http://localhost');
  if(req.method==='GET'&&url.pathname==='/api/status'){
