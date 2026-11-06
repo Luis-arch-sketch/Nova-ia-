@@ -81,6 +81,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     Object.assign(session,{room,slot:baseSlot,active:true,expiresAt:Infinity,principal:ws.principal});sessions.set(session.token,session);
     const spawn=resume?.position||(anchor?meetingSpawn(anchor,baseSlot-1):{...baseSpawn(baseSlot,otherPlayers.length+1),y:0,yaw:0,cameraYaw:0});
     Object.assign(ws,{session,id:session.id,room,name,admin:false,baseSlot,...spawn,home:resume?.home||null,training:false,baseState:null,heldEgg:null,voiceEnabled:false});
+     ws.inRaid=ws.z<-1050;
     if(state)Object.assign(ws,state);
     applyRole(ws,access.resumeOwner(ws.principal,m.ownerToken,m.accessBackup));
     if(!rooms.has(room))rooms.set(room,new Set());rooms.get(room).add(ws);
@@ -88,7 +89,6 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     const world=roomWorlds.get(room);world.emptyAt=0;world.tick(now);
     const layout=refreshRoomLayout(room);
     if(!resume&&anchor)Object.assign(ws,meetingSpawn(anchor,ws.baseSlot-1));
-     ws.inRaid=ws.z<-1050;
      // Respeitar a posição recuperada ao reconectar durante a noite.
      if(world.phase!=='day'&&!resume&&!anchor){
       const home={...baseSpawn(ws.baseSlot,layout.count),y:0,yaw:0,cameraYaw:0};
