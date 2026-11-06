@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-<script src="/world-layout.js?v=20261103-compact1"></script>
+<script src="/world-layout.js?v=20261106-radio-room1"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Roube um Ovo 3D — Admin Abuse Livre</title>
 <link rel="stylesheet" href="/egg-hatching.css?v=20261031-1">
@@ -821,16 +821,16 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(!Number.isFinite(P.x)||!Number.isFinite(P.z)||!Number.isFinite(P.y)||!Number.isFinite(P.vx)||!Number.isFinite(P.vz)){
   P.x=BASE_HOME.x;P.z=BASE_HOME.z+8;P.y=0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
   if(tt<=0)toast('🛠 Movimento recuperado automaticamente.');}
- const fitted=window.RoubeOvoLayout.fit(P,window.RoubeOvoPlaza?.bounds);P.x=fitted.x;P.z=Math.max(zlim,fitted.z);if(!P.train)push(P,.5,oldPartX,oldPartZ);
+ const raidRoom=MP.connected&&MP.inRaid;const fitted=raidRoom?window.RoubeOvoLayout.fitRaid(P):window.RoubeOvoLayout.fit(P,window.RoubeOvoPlaza?.bounds);P.x=fitted.x;P.z=raidRoom?fitted.z:Math.max(zlim,fitted.z);if(!P.train&&!raidRoom)push(P,.5,oldPartX,oldPartZ);
  const v2=Math.hypot(P.vx,P.vz);P.ph+=dt*(P.train?12:v2*.9);const sw=Math.sin(P.ph)*(P.train?1:Math.min(1,v2/6));
  lL.rotation.x=sw*.9;lR.rotation.x=-sw*.9;aL.rotation.x=aR.rotation.x=carry?-1.4:P.y>.05?-2.6:0;if(!carry&&P.y<=.05){aL.rotation.x=-sw*.9;aR.rotation.x=sw*.9}
  if(P.train)P.g.rotation.y=Math.PI;else if(v2>.5)P.g.rotation.y=Math.atan2(P.vx,P.vz);
  P.g.rotation.x=P.stun>0?-1.4:0;P.g.position.set(P.x,P.y+(P.train?.62:P.stun>0?.4:0),P.z);
  /* câmera */
  CT.set(P.x,P.y+2.2,P.z);const cp_=Math.cos(P.pitch);
- const cameraBounds=window.RoubeOvoLayout.limits(P.z,window.RoubeOvoPlaza?.bounds);
- NV.set(Math.max(-cameraBounds.x,Math.min(cameraBounds.x,CT.x+Math.sin(P.yaw)*cp_*P.dist)),Math.max(.9,CT.y+Math.sin(P.pitch)*P.dist),Math.max(-954,Math.min(cameraBounds.maxZ,CT.z+Math.cos(P.yaw)*cp_*P.dist)));
- window.RoubeOvoPlaza?.clipCamera(NV,CT);
+ const cameraBounds=raidRoom?{x:25.5,minZ:-1165.5,maxZ:-1114.5}:window.RoubeOvoLayout.limits(P.z,window.RoubeOvoPlaza?.bounds);
+ NV.set(Math.max(-cameraBounds.x,Math.min(cameraBounds.x,CT.x+Math.sin(P.yaw)*cp_*P.dist)),Math.max(.9,Math.min(20,CT.y+Math.sin(P.pitch)*P.dist)),Math.max(raidRoom?cameraBounds.minZ:-954,Math.min(cameraBounds.maxZ,CT.z+Math.cos(P.yaw)*cp_*P.dist)));
+ if(!raidRoom)window.RoubeOvoPlaza?.clipCamera(NV,CT);
  cam.position.lerp(NV,Math.min(1,dt*12));cam.lookAt(CT);sun.position.set(P.x+30,55,P.z+25);sun.target.position.set(P.x,0,P.z);
  stripe.offset.y-=P.train?dt*1.2:0;
  /* guardiões */
@@ -1360,5 +1360,5 @@ upGates();upHud();cam.position.set(0,6,17);
 toast(OWNER_RESET_AT_BOOT?'🆕 Conta reiniciada do zero! Painel ADMIN mantido.':'🥚 Roube um ovo e leve até a sua base!');
 // Aguardar os scripts de frutas, animais e chocagem antes do primeiro frame.
 addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
-</script><script src="/multiplayer-client.js?v=20261103-compact-U1"></script><script src="/entrance-cinematic.js?v=20261102-skip1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
+</script><script src="/multiplayer-client.js?v=20261106-radio-room1"></script><script src="/entrance-cinematic.js?v=20261102-skip1"></script><script src="/egg-hatching.js?v=20261101-normal-1"></script></body></html>
 

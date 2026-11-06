@@ -11,8 +11,8 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
  const raidPortal=MapLayout.raidPortal;
  const broadcastAll=message=>{for(const players of rooms.values())for(const client of players)send(client,message)};
  const position=(ws,p)=>{
-  if(!p||!finite(p.x,-140,140)||!finite(p.y,-1,2000)||!finite(p.z,-945,350)||!finite(p.yaw,-100,100))return false;
-  Object.assign(ws,MapLayout.fit(p,ws.hub));ws.y=p.y;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
+  if(!p||!finite(p.x,-140,140)||!finite(p.y,-1,2000)||!finite(p.z,-1180,350)||!finite(p.yaw,-100,100))return false;
+  Object.assign(ws,ws.inRaid?MapLayout.fitRaid(p):MapLayout.fit(p,ws.hub));ws.y=p.y;ws.yaw=p.yaw;if(finite(p.cameraYaw,-100,100))ws.cameraYaw=p.cameraYaw;return true;
  };
  const bases=room=>[...peers(room)].filter(p=>p.baseState).map(p=>({id:p.id,base:p.baseState}));
  const result=(ws,m,ok,egg=null)=>{const reply={type:'egg-result',action:m.type,requestId:m.requestId,ok,egg,slot:m.slot};
@@ -65,7 +65,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     const baseSlot=Number.isInteger(preferred)&&!occupied.has(preferred)?preferred:Array.from({length:MAX_ROOM},(_,i)=>i).find(i=>!occupied.has(i));
     if(baseSlot===undefined){error(ws,'Sala sem bases livres');return}
     const otherPlayers=[...peers(room)].filter(p=>p!==ws&&!previous.includes(p)&&p.readyState===WebSocket.OPEN);
-    const anchor=otherPlayers.find(p=>p.id===m.friend)||otherPlayers[0];
+    const anchor=otherPlayers.find(p=>p.id===m.friend&&!p.inRaid)||otherPlayers.find(p=>!p.inRaid);
     const oldRooms=new Set([...previous.map(p=>p.room),ws.room].filter(Boolean));
     for(const old of previous){
      if(old===transferring)old.heldEgg=null; // transfere o ovo, sem duplicar ou largar
@@ -88,6 +88,7 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     const world=roomWorlds.get(room);world.emptyAt=0;world.tick(now);
     const layout=refreshRoomLayout(room);
     if(!resume&&anchor)Object.assign(ws,meetingSpawn(anchor,ws.baseSlot-1));
+     ws.inRaid=ws.z<-1050;
      // Respeitar a posição recuperada ao reconectar durante a noite.
      if(world.phase!=='day'&&!resume&&!anchor){
       const home={...baseSpawn(ws.baseSlot,layout.count),y:0,yaw:0,cameraYaw:0};
@@ -151,11 +152,11 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
     if(Math.hypot(ws.x-origin.x,ws.z-origin.z)>6){
      send(ws,{type:'raid-error',message:'Chegue perto do portal para atravessar.'});return;
     }
-    if(ws.heldEgg){
+    if(entering&&ws.heldEgg){
      send(ws,{type:'raid-error',message:'Guarde ou solte seu ovo antes de entrar no portal.'});return;
     }
     const destination=entering?raidPortal.arrivalArena:raidPortal.arrivalTown;
-    const spawn={...MapLayout.fit(destination,ws.hub),y:0,yaw:0,cameraYaw:0};
+    const spawn={...(entering?MapLayout.fitRaid(destination):MapLayout.fit(destination,ws.hub)),y:0,yaw:0,cameraYaw:0};
     ws.lastRaidPortal=now;ws.inRaid=entering;ws.raidHp=300;Object.assign(ws,spawn,{training:false,dirtyMove:true});
     send(ws,{type:'raid-player-hp',hp:300,maxHp:300});
     if(ws.session)ws.session.position={...spawn};
@@ -176,9 +177,9 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    if(m.type==='raid-buy'){
     if(now-(ws.lastRaidBuy||0)<350)return;
     ws.lastRaidBuy=now;
-    if(!position(ws,m.position)||Math.hypot(ws.x-raid.x,ws.z-raid.z)>24){send(ws,{type:'raid-error',message:'Visite a arena para comprar ovos.'});return}
+    if(!ws.inRaid||!position(ws,m.position)||Math.hypot(ws.x-MapLayout.raidZone.shop.x,ws.z-MapLayout.raidZone.shop.z)>6){send(ws,{type:'raid-error',message:'Chegue perto da loja de ovos na sala radioativa.'});return}
     if(!raid.canBuy(ws.principal)){send(ws,{type:'raid-error',message:'Voce precisa de mais doces.'});return}
-    const rarity=raid.roll(),spot=MapLayout.fit({x:ws.x+2,z:ws.z+2},ws.hub);
+    const rarity=raid.roll(),spot=MapLayout.fitRaid({x:MapLayout.raidZone.shop.x+2,z:MapLayout.raidZone.shop.z-2});
     const egg=world.add(0,rarity,1,spot.x,spot.z,now,rarity,null,[]);
     if(!egg){send(ws,{type:'raid-error',message:'O mundo esta cheio de ovos. Tente novamente.'});return}
     egg.halloween=true;egg.adminSpawned=true;egg.expiresAt=now+600000;
@@ -225,12 +226,13 @@ module.exports=({httpServer,ADMIN_HASH,access,MAX_ROOM,rooms,roomWorlds,sessions
    if(m.type==='go-home'||m.type==='meet'){
     if(ws.heldEgg&&m.type==='meet'){error(ws,'Leve o ovo para sua base antes de encontrar amigos.');return}
     if(m.type==='go-home'){
-     const spawn={x:ws.home.x,z:ws.home.z+8,y:0,yaw:0,cameraYaw:0};Object.assign(ws,spawn,{training:false});
+     const spawn={x:ws.home.x,z:ws.home.z+8,y:0,yaw:0,cameraYaw:0};Object.assign(ws,spawn,{training:false,inRaid:false});
      send(ws,{type:'reposition',reason:'home',spawn});broadcastPresence(ws.room);return;
     }
     const friend=[...peers(ws.room)].find(p=>p.id===m.id&&p!==ws&&p.readyState===WebSocket.OPEN);
     if(!friend){error(ws,'Seu amigo precisa estar conectado na mesma sala.');return}
-    const spawn=meetingSpawn(friend);Object.assign(ws,spawn,{training:false});
+    if(ws.inRaid||friend.inRaid){error(ws,'Use o portal de saída antes de encontrar amigos.');return}
+     const spawn=meetingSpawn(friend);Object.assign(ws,spawn,{training:false});
     send(ws,{type:'reposition',spawn,friend:friend.id,name:friend.name});broadcastPresence(ws.room);return;
    }
    // Mutacoes equipadas sao aplicadas apenas em ovos reais proximos.

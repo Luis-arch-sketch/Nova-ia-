@@ -15,10 +15,11 @@
  const localBat=makeBat(aR,true),radioBat=makeBat(aR,true,true);localBat.visible=equipped==='bat';radioBat.visible=equipped==='radioactive-bat';
  const style=document.createElement('style');style.textContent='#rue-bat-hit{position:fixed;z-index:48;right:calc(118px + env(safe-area-inset-right,0px));bottom:calc(112px + env(safe-area-inset-bottom,0px));min-width:84px;min-height:44px;background:#b77942;color:white;font-weight:900;border:2px solid #ffe4b4;box-shadow:0 3px 12px #0007;display:none}body.rue-panel-visible #rue-bat-hit{display:none!important}#pn .batCard{padding:14px;border:2px solid #bd915c;border-radius:14px;background:#32465a;color:#fff;margin-top:14px}#pn .batCard h3{margin-top:0;color:#ffdf9a}';document.head.appendChild(style);
  const hit=document.createElement('button');hit.type='button';hit.id='rue-bat-hit';hit.textContent='🏏 Bater';hit.setAttribute('aria-label','Bater com o bastão');document.body.appendChild(hit);
- const allowed=()=>equipped==='bat'&&MP.connected&&!carry&&!MP.pending&&!adminVisible&&!open&&!window.RoubeOvoHatching?.active;
+ const raidSwing=()=>equipped==='radioactive-bat'&&MP.inRaid;
+ const allowed=()=>((equipped==='bat'&&!MP.inRaid)||raidSwing())&&MP.connected&&!carry&&!MP.pending&&!adminVisible&&!open&&!window.RoubeOvoHatching?.active;
  function swing(){
   if(!allowed()||cooldown>0)return false;
-  cooldown=.65;swings.set(MP.self,.28);beep(260,.05,'triangle',.025);mpSend({type:'move',...mpPosition(),training:false});return mpSend({type:'bat-swing'});
+  cooldown=.65;swings.set(MP.self,.28);beep(260,.05,'triangle',.025);mpSend({type:'move',...mpPosition(),training:false});return mpSend({type:raidSwing()?'raid-hit':'bat-swing'});
  }
  hit.addEventListener('pointerdown',event=>{event.preventDefault();event.stopPropagation();swing()});
  hit.addEventListener('click',event=>{if(event.detail===0)swing()});
@@ -43,7 +44,7 @@
    if(message.type==='bat-result'&&!message.ok&&message.message)toast(message.message);
   },
   update(dt){
-   cooldown=Math.max(0,cooldown-dt);hit.style.display=allowed()?'block':'none';hit.disabled=cooldown>0;
+   cooldown=Math.max(0,cooldown-dt);hit.style.display=allowed()?'block':'none';hit.textContent=raidSwing()?'☢ Bater':'🏏 Bater';hit.style.background=raidSwing()?'#287a39':'#b77942';hit.disabled=cooldown>0;
    localBat.visible=equipped==='bat'&&!carry;radioBat.visible=equipped==='radioactive-bat'&&!carry;
    for(const [id,time] of swings){const next=time-dt;if(next<=0)swings.delete(id);else swings.set(id,next)}
    const pose=(bat,arm,id)=>{const arc=swings.has(id)?Math.sin((1-swings.get(id)/.28)*Math.PI):0;bat.rotation.set(-.28-arc*.45,-.20-arc*1.25,arc*.12);if(arm){arm.rotation.z=.08-arc*.22;if(arc>0)arm.rotation.x=-.20-arc*.95}};

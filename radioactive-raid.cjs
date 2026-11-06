@@ -1,6 +1,6 @@
 'use strict';
 class RadioactiveRaid {
- constructor(random=Math.random){this.x=0;this.z=-300;this.maxHp=10000;this.hp=10000;this.respawnAt=0;this.damage=new Map();this.wallets=new Map();this.random=random;this.attack=null;this.attackNumber=0;this.nextAttackAt=Date.now()+5000}
+ constructor(random=Math.random){this.x=0;this.z=-1140;this.maxHp=10000;this.hp=10000;this.respawnAt=0;this.damage=new Map();this.wallets=new Map();this.random=random;this.attack=null;this.attackNumber=0;this.nextAttackAt=Date.now()+5000}
  state(now=Date.now()){return {type:'raid-state',hp:this.hp,maxHp:this.maxHp,respawnAt:this.respawnAt,portalOpen:this.hp>0,eggPrice:80,serverNow:now,x:this.x,z:this.z}}
  wallet(id,access){const row=this.wallets.get(id)||{balance:0,seq:0};return {candies:row.balance,raidWalletToken:access.sign({kind:'raid-wallet',id,balance:row.balance,seq:row.seq})}}
  restore(id,token,access){const d=access.verify(token,'raid-wallet'),old=this.wallets.get(id);if(d&&d.id===id&&Number.isSafeInteger(d.balance)&&d.balance>=0&&d.balance<=1000000000&&Number.isSafeInteger(d.seq)&&d.seq>=0&&(!old||d.seq>old.seq))this.wallets.set(id,{balance:d.balance,seq:d.seq});return this.wallet(id,access)}

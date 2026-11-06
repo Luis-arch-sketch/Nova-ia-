@@ -3,7 +3,7 @@
 const mpInvitation=(new URLSearchParams(location.search).get('sala')||'').trim().toUpperCase();
 if(/^[A-Z0-9-]{3,12}$/.test(mpInvitation))$('roomCode').value=mpInvitation;
 /* ============ SALAS MULTIPLAYER: presença e eventos ============ */
-const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:mpInvitation?'join':'quick-join'};
+const MP={socket:null,connected:false,room:'',name:'',self:'',players:new Map(),views:new Map(),lastTx:0,owner:false,settingRemote:false,notice:'',protocol:0,stopped:false,retry:0,retryTimer:null,connectTimer:null,pending:null,clock:null,clockOffset:0,lastRx:0,adminPassword:null,roomEvent:null,baseStates:new Map(),tokens:new Map(),initialMode:mpInvitation?'join':'quick-join',inRaid:false};
 MP.canAdmin=false;
 MP.baseSlot=0;
 const mpPrivateRead=key=>{try{return localStorage.getItem(key)||''}catch{return ''}};
@@ -179,7 +179,7 @@ $('roomJoin').onclick=()=>mpJoin('join');$('roomLeave').onclick=()=>{mpDisconnec
 const mpPosition=()=>({x:P.x,y:P.y,z:P.z,yaw:P.g.rotation.y,cameraYaw:Number.isFinite(P.yaw)?P.yaw:0});
 const mpPlace=spawn=>{
  if(!spawn||!Number.isFinite(spawn.x)||!Number.isFinite(spawn.z))return;
- P.x=spawn.x;P.z=spawn.z;P.y=Number.isFinite(spawn.y)?Math.max(0,spawn.y):0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
+ MP.inRaid=Number(spawn.z)<-1050;P.x=spawn.x;P.z=spawn.z;P.y=Number.isFinite(spawn.y)?Math.max(0,spawn.y):0;P.vx=P.vy=P.vz=0;P.train=false;P.stun=0;
  P.yaw=Number.isFinite(spawn.cameraYaw)?spawn.cameraYaw:0;P.pitch=.45;P.dist=Math.max(8,P.dist||9);
  P.g.position.set(P.x,P.y,P.z);P.g.rotation.y=Number.isFinite(spawn.yaw)?spawn.yaw:0;
  if(typeof cam!=='undefined'){
