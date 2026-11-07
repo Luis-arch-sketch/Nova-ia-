@@ -8,57 +8,51 @@ function save(){const tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(reques
 function json(res,status,data){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data))}
 function clean(s,n=280){return String(s||'').trim().slice(0,n)}
 
-const smsSessions=new Map(),smsThrottle=new Map();
-function smsSettings(){return !!(process.env.TWILIO_API_KEY && process.env.TWILIO_API_SECRET && /^VA[0-9a-f]{32}$/i.test(process.env.TWILIO_VERIFY_SERVICE_SID||''))}
-async function twilio(action,fields){
- const endpoint='https://verify.twilio.com/v2/Services/'+process.env.TWILIO_VERIFY_SERVICE_SID+'/'+action;
- const auth=Buffer.from(process.env.TWILIO_API_KEY+':'+process.env.TWILIO_API_SECRET).toString('base64');
- const rsp=await fetch(endpoint,{method:'POST',headers:{Authorization:'Basic '+auth,'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(fields),signal:AbortSignal.timeout(12000)});
- const payload=await rsp.json();if(!rsp.ok)throw Error('SMS_PROVIDER_ERROR_'+rsp.status);return payload;
-}
+const emailSessions=new Map(),emailThrottle=new Map();
+function emailSettings(){return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(process.env.EMAIL_FROM))}
+function cleanEmail(v){const email=String(v||'').trim().toLowerCase();return email.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)?email:null}
 function readBody(req,res,callback){let raw='',stopped=false;req.on('data',b=>{raw+=b;if(raw.length>2048&&!stopped){stopped=true;json(res,413,{error:'Dados muito grandes'});req.destroy()}});req.on('end',async()=>{if(stopped)return;try{await callback(JSON.parse(raw))}catch(e){if(!res.writableEnded)json(res,400,{error:'Dados inválidos'})}})}
 function clientId(req){return String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'anonymous').split(',')[0].slice(0,80)}
-function mobile(v){const p=String(v||'').replace(/[\s().-]/g,'');return /^\+[1-9]\d{9,14}$/.test(p)?p:null}
-
+async function sendVerificationEmail(email,code){const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[email],subject:'Código de verificação Nexora — expira em 1 minuto',text:'Seu código de verificação da Nexora é: '+code+'\n\nEle expira em 1 minuto. Não compartilhe este código com ninguém.'}),signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('email provider rejected request');return response.json()}
+function codeDigest(salt,code){return crypto.createHash('sha256').update(salt+':'+code).digest()}
 const page=fs.readFileSync(path.join(root,'index.html'));
 http.createServer((req,res)=>{
  res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff');
  if(req.method==='GET' && !new URL(req.url,'http://localhost').pathname.startsWith('/api/') && new URL(req.url,'http://localhost').pathname!=='/health'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(page)}
  if(req.method==='GET'&&req.url==='/health')return json(res,200,{ok:true});
 
- if(req.method==='GET'&&req.url==='/api/sms/config')return json(res,200,{enabled:smsSettings(),mode:'phone-only'});
- if(req.method==='POST'&&req.url==='/api/sms/send'){
+ if(req.method==='GET'&&req.url==='/api/email/config')return json(res,200,{enabled:emailSettings(),expiresInSeconds:60});
+ if(req.method==='POST'&&req.url==='/api/email/send'){
   return readBody(req,res,async body=>{
-   if(!smsSettings())return json(res,503,{error:'O envio de SMS ainda precisa ser ativado pela administração.'});
-   const phone=mobile(body.phone),username=clean(body.username,40).replace(/^@/,'').toLowerCase();
-   if(!phone||!/^[a-z0-9_]{3,28}$/.test(username))return json(res,400,{error:'Informe telefone com DDI, como +55, e seu @usuário.'});
-   const id=clientId(req),key=id+'|'+phone,now=Date.now(),recent=(smsThrottle.get(key)||[]).filter(t=>now-t<3600000);
-   if(recent.length>=3)return json(res,429,{error:'Limite de envios atingido. Tente depois.'});
+   if(!emailSettings())return json(res,503,{error:'O envio de e-mail ainda precisa ser ativado pela administração.'});
+   const email=cleanEmail(body.email),username=clean(body.username,40).replace(/^@/,'').toLowerCase();
+   if(!email||!/^[a-z0-9_]{3,28}$/.test(username))return json(res,400,{error:'Informe um e-mail válido e seu @usuário.'});
+   const ip=clientId(req),key=ip+'|'+email,now=Date.now(),recent=(emailThrottle.get(key)||[]).filter(t=>now-t<3600000);
+   if(recent.length>=3)return json(res,429,{error:'Limite de envios por hora atingido. Tente depois.'});
+   const code=String(crypto.randomInt(100000,1000000));const salt=crypto.randomBytes(16).toString('hex');const session=crypto.randomBytes(24).toString('hex');
    try{
-    const v=await twilio('Verifications',{To:phone,Channel:'sms'});
-    if(v.status!=='pending')return json(res,502,{error:'Operadora não confirmou o envio.'});
-    const session=crypto.randomBytes(24).toString('hex');
-    smsSessions.set(session,{phone,username,ip:id,createdAt:now,tries:0});smsThrottle.set(key,[...recent,now]);
-    return json(res,200,{session,delivery:'sms',expiresInSeconds:600});
-   }catch(e){return json(res,502,{error:'Falha no envio de SMS. Confira o serviço e o número.'})}
+    await sendVerificationEmail(email,code);
+    for(const [id,v] of emailSessions)if(v.email===email&&v.username===username)emailSessions.delete(id);
+    emailSessions.set(session,{digest:codeDigest(salt,code),salt,email,username,ip,createdAt:Date.now(),tries:0});
+    emailThrottle.set(key,[...recent,now]);
+    return json(res,200,{session,expiresInSeconds:60,message:'Código enviado para o seu e-mail.'});
+   }catch(e){return json(res,502,{error:'Falha ao enviar o e-mail. Confira a configuração do remetente.'})}
   });
  }
- if(req.method==='POST'&&req.url==='/api/sms/check'){
+ if(req.method==='POST'&&req.url==='/api/email/check'){
   return readBody(req,res,async body=>{
-   if(!smsSettings())return json(res,503,{error:'SMS indisponível'});
-   const session=clean(body.session,64),code=clean(body.code,10),state=smsSessions.get(session);
-   if(!state||Date.now()-state.createdAt>600000||state.ip!==clientId(req))return json(res,400,{error:'Sessão inválida ou expirada. Solicite outro SMS.'});
-   if(!/^\d{4,10}$/.test(code))return json(res,400,{error:'Informe o código numérico recebido por SMS.'});
-   if(++state.tries>5){smsSessions.delete(session);return json(res,429,{error:'Muitas tentativas. Solicite outro SMS.'})}
-   try{
-    const result=await twilio('VerificationCheck',{To:state.phone,Code:code});
-    if(result.status!=='approved')return json(res,400,{error:'Código incorreto ou expirado.'});
-    smsSessions.delete(session);
-    return json(res,200,{phoneVerified:true,username:state.username,message:'Telefone verificado. A ativação do selo na Nexora dependerá da vinculação segura da conta.'});
-   }catch(e){return json(res,502,{error:'Não foi possível validar o código agora.'})}
+   const session=clean(body.session,64),code=clean(body.code,10),state=emailSessions.get(session);
+   if(!state)return json(res,400,{error:'Sessão inválida. Solicite outro código.'});
+   if(Date.now()-state.createdAt>=60000){emailSessions.delete(session);return json(res,410,{error:'Código expirado. Solicite outro.'})}
+   if(state.ip!==clientId(req))return json(res,403,{error:'Sessão inválida'});
+   if(!/^\d{6}$/.test(code))return json(res,400,{error:'Digite o código de 6 números.'});
+   if(++state.tries>5){emailSessions.delete(session);return json(res,429,{error:'Muitas tentativas. Solicite outro código.'})}
+   const actual=codeDigest(state.salt,code);
+   if(!crypto.timingSafeEqual(actual,state.digest))return json(res,400,{error:'Código incorreto.'});
+   emailSessions.delete(session);
+   return json(res,200,{emailVerified:true,username:state.username,message:'E-mail confirmado. A ativação do selo na conta depende da integração segura com o perfil da Nexora.'});
   });
  }
-
  const url=new URL(req.url,'http://localhost');
  if(req.method==='GET'&&url.pathname==='/api/status'){
    const id=clean(url.searchParams.get('id'),80);const x=requests.find(v=>v.id===id);
