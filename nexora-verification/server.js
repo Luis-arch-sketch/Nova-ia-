@@ -15,11 +15,64 @@ function readBody(req,res,callback){let raw='',stopped=false;req.on('data',b=>{r
 function clientId(req){return String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'anonymous').split(',')[0].slice(0,80)}
 async function sendVerificationEmail(email,code){const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({from:process.env.EMAIL_FROM,to:[email],subject:'Código de verificação Nexora — expira em 1 minuto',text:'Seu código de verificação da Nexora é: '+code+'\n\nEle expira em 1 minuto. Não compartilhe este código com ninguém.'}),signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('email provider rejected request');return response.json()}
 function codeDigest(salt,code){return crypto.createHash('sha256').update(salt+':'+code).digest()}
+
+const accountFile=process.env.ACCOUNT_DATA_FILE||'/tmp/nexora-account-claims.json';
+let accountDb={claims:{},verified:{}};try{const d=JSON.parse(fs.readFileSync(accountFile,'utf8'));if(d&&typeof d==='object'&&d.claims&&d.verified)accountDb=d}catch{}
+const accountLimits=new Map();
+function persistAccount(){const tmp=accountFile+'.tmp';fs.writeFileSync(tmp,JSON.stringify(accountDb),{mode:0o600});fs.renameSync(tmp,accountFile)}
+function accountHandle(v){const h=String(v||'').replace(/^@/,'').trim().toLowerCase();return /^[a-z0-9_]{3,28}$/.test(h)?h:null}
+function claimToken(v){return String(v||'').trim().toUpperCase().replace(/[\s-]/g,'')}
+function expireClaims(){for(const [key,val] of Object.entries(accountDb.claims))if(val.expires<Date.now())delete accountDb.claims[key]}
+function publicOrigin(req,res){const allowed='https://nexora-lm-streaming.onrender.com';const origin=req.headers.origin;if(origin===allowed){res.setHeader('Access-Control-Allow-Origin',allowed);res.setHeader('Vary','Origin')}}
+
 const page=fs.readFileSync(path.join(root,'index.html'));
 http.createServer((req,res)=>{
  res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff');
  if(req.method==='GET' && !new URL(req.url,'http://localhost').pathname.startsWith('/api/') && new URL(req.url,'http://localhost').pathname!=='/health'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});return res.end(page)}
  if(req.method==='GET'&&req.url==='/health')return json(res,200,{ok:true});
+
+ publicOrigin(req,res);
+ if(req.method==='OPTIONS'&&new URL(req.url,'http://localhost').pathname.startsWith('/api/account/')){
+  res.setHeader('Access-Control-Allow-Methods','POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers','Content-Type');
+  res.writeHead(204);return res.end();
+ }
+ if(req.method==='GET'&&new URL(req.url,'http://localhost').pathname==='/api/account/badge'){
+  const u=accountHandle(new URL(req.url,'http://localhost').searchParams.get('username'));
+  if(!u)return json(res,400,{error:'Usuário inválido'});
+  return json(res,200,{username:u,verified:!!accountDb.verified[u],preview:true});
+ }
+ if(req.method==='POST'&&req.url==='/api/account/code'){
+  return readBody(req,res,async data=>{
+   if(req.headers.origin!=='https://nexora-lm-streaming.onrender.com')return json(res,403,{error:'Abra a Nexora para gerar o código.'});
+   const username=accountHandle(data.username);
+   if(!username)return json(res,400,{error:'Salve primeiro seu usuário na Nexora.'});
+   if(accountDb.verified[username])return json(res,409,{error:'Esta conta já tem um selo de prévia.'});
+   const ip=clientId(req),now=Date.now(),recent=(accountLimits.get(ip)||[]).filter(t=>now-t<3600000);
+   if(recent.length>=10)return json(res,429,{error:'Limite de códigos atingido.'});
+   expireClaims();
+   const code=crypto.randomBytes(5).toString('hex').toUpperCase();
+   accountDb.claims[username]={digest:crypto.createHash('sha256').update(code).digest('hex'),expires:now+300000,attempts:0};
+   try{persistAccount()}catch{return json(res,503,{error:'Não foi possível registrar seu código.'})}
+   accountLimits.set(ip,[...recent,now]);
+   return json(res,200,{username,code,expiresInSeconds:300});
+  });
+ }
+ if(req.method==='POST'&&req.url==='/api/account/redeem'){
+  return readBody(req,res,async data=>{
+   const username=accountHandle(data.username),code=claimToken(data.code);
+   if(!username||!/^[A-F0-9]{10}$/.test(code))return json(res,400,{error:'Informe o usuário e o código de 10 caracteres.'});
+   expireClaims();const entry=accountDb.claims[username];
+   if(!entry)return json(res,400,{error:'Código expirado ou inexistente. Gere outro na sua conta.'});
+   if(++entry.attempts>5){delete accountDb.claims[username];persistAccount();return json(res,429,{error:'Muitas tentativas. Gere outro código.'})}
+   const got=crypto.createHash('sha256').update(code).digest('hex');
+   if(!crypto.timingSafeEqual(Buffer.from(got,'hex'),Buffer.from(entry.digest,'hex')))return json(res,400,{error:'Código incorreto.'});
+   delete accountDb.claims[username];accountDb.verified[username]={verifiedAt:new Date().toISOString(),preview:true};
+   try{persistAccount()}catch{return json(res,503,{error:'Não foi possível salvar a verificação.'})}
+   return json(res,200,{verified:true,username,preview:true,message:'Código aceito! Seu selo de prévia foi ativado na Nexora.'});
+  });
+ }
+
 
  if(req.method==='GET'&&req.url==='/api/email/config')return json(res,200,{enabled:emailSettings(),expiresInSeconds:60});
  if(req.method==='POST'&&req.url==='/api/email/send'){
