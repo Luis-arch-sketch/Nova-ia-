@@ -32,6 +32,18 @@ jobs:
           gradle-version: '8.9'
       - name: Compilar APK do jogo
         run: gradle -p android-app :app:assembleDebug --no-daemon
+      - name: Empacotar o projeto completo em ZIP
+        run: |
+          git archive --format=zip --output=Roube-um-Ovo-3D-atualizado.zip HEAD
+          unzip -t Roube-um-Ovo-3D-atualizado.zip
+          ls -lh Roube-um-Ovo-3D-atualizado.zip
+      - name: Disponibilizar ZIP completo como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roube-um-Ovo-3D-ZIP
+          path: Roube-um-Ovo-3D-atualizado.zip
+          if-no-files-found: error
+          retention-days: 90
       - name: Disponibilizar APK como artefato
         uses: actions/upload-artifact@v4
         with:
@@ -44,6 +56,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android-app/app/build/outputs/apk/debug/app-debug.apk Roube-um-Ovo-3D.apk
+          cp Roube-um-Ovo-3D-atualizado.zip Roube-um-Ovo-3D-atualizado.zip
           if gh release view android-apk-v1 >/dev/null 2>&1; then
             gh release upload android-apk-v1 Roube-um-Ovo-3D.apk --clobber
           else
