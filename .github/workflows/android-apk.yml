@@ -56,11 +56,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android-app/app/build/outputs/apk/debug/app-debug.apk Roube-um-Ovo-3D.apk
-          cp Roube-um-Ovo-3D-atualizado.zip Roube-um-Ovo-3D-atualizado.zip
           if gh release view android-apk-v1 >/dev/null 2>&1; then
-            gh release upload android-apk-v1 Roube-um-Ovo-3D.apk --clobber
+            gh release upload android-apk-v1 Roube-um-Ovo-3D.apk Roube-um-Ovo-3D-atualizado.zip --clobber
           else
-            gh release create android-apk-v1 Roube-um-Ovo-3D.apk \
+            gh release create android-apk-v1 Roube-um-Ovo-3D.apk Roube-um-Ovo-3D-atualizado.zip \
               --target "$GITHUB_SHA" \
               --title "Roube um Ovo 3D — Android" \
               --notes "APK para instalar no Android. Joga nas mesmas salas online do site e recebe as atualizações do jogo. Internet necessária. Versão de teste assinada para instalação manual."
