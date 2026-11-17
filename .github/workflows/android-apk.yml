@@ -34,7 +34,10 @@ jobs:
         run: gradle -p android-app :app:assembleDebug --no-daemon
       - name: Empacotar o projeto completo em ZIP
         run: |
-          git archive --format=zip --output=Roube-um-Ovo-3D-atualizado.zip HEAD
+          mkdir -p game-package
+          git archive HEAD | tar -x -C game-package
+          find game-package -name 'Roube-um-Ovo-3D-atualizado.zip' -delete
+          (cd game-package && zip -qr ../Roube-um-Ovo-3D-atualizado.zip .)
           unzip -t Roube-um-Ovo-3D-atualizado.zip
           ls -lh Roube-um-Ovo-3D-atualizado.zip
       - name: Disponibilizar ZIP completo como artefato
