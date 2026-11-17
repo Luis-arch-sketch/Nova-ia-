@@ -145,7 +145,7 @@ try{
  // Placas de velocidade posicionadas perto dos ninhos, semelhantes ao jogo Roblox.
  const boardWood=new T.MeshLambertMaterial({color:0x7b421e});
  const boardFrame=new T.MeshLambertMaterial({color:0xb76525});
- for(let b=0;b<Math.min(BI.length,13);b++){
+ for(let b=0;b<BI.length;b++){
    const z=-65-70*b,x=15.4;
    const panel=new T.Group();panel.position.set(x,0,z+16);root.add(panel);
    for(const xx of [-2.6,2.6]){
@@ -167,7 +167,7 @@ try{
       new T.MeshBasicMaterial({map:tex,transparent:false,side:T.DoubleSide}));
    face.position.set(0,3.25,.21);panel.add(face);
  }
- result.guardiansEnhanced=true;result.speedSigns=Math.min(BI.length,13);
+ result.guardiansEnhanced=true;result.speedSigns=BI.length;
  // O original é colorido, com sol forte e céu azul. O tempo/noite do jogo permanece.
  if(typeof sun!=='undefined')sun.intensity=Math.max(1.1,sun.intensity);
  sc.traverse(o=>{if(o.isHemisphereLight)o.intensity=Math.max(1.04,o.intensity)});

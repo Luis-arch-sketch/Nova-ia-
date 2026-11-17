@@ -64,8 +64,8 @@ try{
   const detail=await page.evaluate(()=>{const d=window.RoubeOvoWorldDetail;return d?{installed:d.installed,worldCount:d.worldCount,baseCount:d.baseCount,biomes:d.biomes,fallbackVisible:d.fallbackWorld?.visible}:null});
   assert(detail?.installed&&detail.worldCount>=500&&detail.baseCount>=30,'Casas, jardins e pracinhas devem aparecer no mapa e na base');
   console.log(mode.toUpperCase()+' CENÁRIO '+JSON.stringify(detail));
-  assert.equal(state.species,103,'103 espécies ativas, com pato e pintinho retirados');
-  assert.equal(state.biomeCount,13);
+  assert.equal(state.species,111,'110 espécies de bioma + LIMITED, com pato e pintinho retirados');
+  assert.equal(state.biomeCount,14);
    const retired=await page.evaluate(()=>({
     emptySlots:[0,9].every(id=>window.RoubeOvoVisuals.species.flat()[id]===null),
     hasNoRemovedEggs:eggs.every(e=>e.s!==0&&e.s!==9),
@@ -74,7 +74,7 @@ try{
     blockedSpawns:adminSpawnEgg(0,0,0)===null&&adminSpawnEgg(1,1,0)===null
    }));
    assert(retired.emptySlots&&retired.hasNoRemovedEggs&&retired.blockedSpawns,'Pato e pintinho devem ficar fora dos ninhos e do spawn');
-   assert.equal(retired.activeIndexSize,127,'103 espécies principais + 24 animais adicionais da coleção');
+   assert.equal(retired.activeIndexSize,135,'111 espécies principais + 24 animais adicionais da coleção');
    assert.deepEqual(retired.forestOrder,['Dog','Galinha','Burrowing Owl','Guaxinim'],'Coruja terceira e guaxinim quarto');
   assert(state.controls.every(e=>e.exists),'Controles do jogo disponíveis');
   assert.equal(await page.locator('#playerNameOpen').count(),0,'Troca de nome fica dentro de Personagens');
@@ -151,7 +151,7 @@ try{
     assert(endPos.z<startPos.z-.30,'Android joystick must move player forward');
   }
   const pageVisuals=await page.evaluate(()=>{
-   const sample=[1,2,3,4,5,6,7,8,10,15,20,26,33,42,52,61,77,83,95,103,104];
+   const sample=[1,2,3,4,5,6,7,8,10,15,20,26,33,42,52,61,77,83,95,103,104,105,106,107,108,109,110,111,112];
    const codes=[];
    for(const id of sample){
     const m=window.RoubeOvoVisuals.create(THREE,id,.7,new THREE.Color(0xffffff),sc);
@@ -164,10 +164,10 @@ try{
    }
    return codes;
   });
-  // Comparação geométrica real: 103 espécies, sem depender de recoloração.
+  // Comparação geométrica real: 111 espécies, sem depender de recoloração.
   const sculptureAudit=await page.evaluate(()=>{
    const fingerprints=[],missing=[];
-   for(let id=0;id<=104;id++){
+   for(let id=0;id<=112;id++){
     if(id===0||id===9)continue;
     const model=window.RoubeOvoVisuals.create(THREE,id,.7,new THREE.Color(0x777777),sc);
     const data=model?.userData?.uniqueSculpture;
@@ -193,9 +193,9 @@ try{
     minParts:Math.min(...fingerprints.filter(x=>!x.imported).map(x=>x.parts)),
     minImportedVertices:Math.min(...fingerprints.filter(x=>x.imported).map(x=>x.vertices)),missing};
   });
-  assert.equal(sculptureAudit.count,103,'103 modelos 3D ativos');
-  assert.equal(sculptureAudit.uniqueSignatures,103,'Assinaturas individuais das 103 espécies');
-  assert.equal(sculptureAudit.uniqueGeometry,103,'103 estruturas de geometria realmente diferentes');
+  assert.equal(sculptureAudit.count,111,'111 modelos 3D ativos');
+  assert.equal(sculptureAudit.uniqueSignatures,111,'Assinaturas individuais das 111 espécies');
+  assert.equal(sculptureAudit.uniqueGeometry,111,'111 estruturas de geometria realmente diferentes');
   assert.equal(sculptureAudit.missing.length,0,'Nenhuma espécie sem novas partes de anatomia');
   assert(sculptureAudit.minParts>=10,'Anatomia detalhada também nos animais mais simples');
   assert(sculptureAudit.minImportedVertices>=100,'Malhas STL/3MF legítimas têm geometria 3D própria');
@@ -234,10 +234,10 @@ try{
       const light=new THREE.DirectionalLight(0xffe4b4,.90);light.position.set(8,17,12);scene.add(light);
       const ground=new THREE.Mesh(new THREE.PlaneGeometry(55,40),new THREE.MeshLambertMaterial({color:0x485a66}));
       ground.rotation.x=-Math.PI/2;ground.position.y=-.04;scene.add(ground);
-      const ids=[7,15,23,45,61,68,78,86,94,102,103,104];
+      const ids=[7,15,23,45,61,68,78,86,94,102,103,104,105,106,107,108,109,110,111,112];
       ids.forEach((id,i)=>{
         const c=new THREE.Color().setHSL((id*37%360)/360,.6,.53);
-        const g=window.RoubeOvoVisuals.create(THREE,id,id===104?.60:1.10,c,scene);
+        const g=window.RoubeOvoVisuals.create(THREE,id,id===112?.60:1.10,c,scene);
         g.position.set((i%6-2.5)*4.1,0,-3-Math.floor(i/6)*6.1);
         const p=new THREE.Mesh(new THREE.CylinderGeometry(1.62,1.65,.18,16),new THREE.MeshLambertMaterial({color:0xb2a991}));
         p.position.set(g.position.x,.02,g.position.z);scene.add(p);
@@ -331,7 +331,7 @@ try{
 
   console.log(mode.toUpperCase()+' ENTRADA SEM EXCESSO DE OVOS RAROS '+JSON.stringify(initialEggs));
 
-  // DIA: as 13 áreas abertas; a BASE conserva sua própria cerca e portão.
+  // DIA: as 14 áreas abertas; a BASE conserva sua própria cerca e portão.
   const fenceDay=await page.evaluate(()=>{
    const oldPhase=EGG_NIGHT.phase;
    try{
@@ -359,7 +359,7 @@ try{
       whiteAreas:GT.filter(g=>g.bar.visible||g.timer.visible).length};
    }finally{EGG_NIGHT.phase=oldPhase}
   });
-  assert(fenceDay.openAreas.every(x=>x.free),'As 13 divisões permanecem abertas durante o dia');
+  assert(fenceDay.openAreas.every(x=>x.free),'As 14 divisões permanecem abertas durante o dia');
   assert(fenceDay.fenceMeshCount>=25,'As cinco seções de cerca laranja com postes e trilhos permanecem visíveis');
   assert(fenceDay.fencePosts>0&&fenceDay.frontStopped&&fenceDay.leftStopped,
     'A cerca da base possui colisão nas laterais e na frente');
@@ -369,7 +369,7 @@ try{
   assert.equal(typeof NIGHT_BASE_TIMER,'undefined','Jamais existe cronômetro na cerca da base');
   console.log(mode.toUpperCase()+' CERCA DA BASE RESTAURADA '+JSON.stringify(fenceDay));
 
-  // Night renewal integration: 13 gates, 9+3 countdowns, physical collision,
+  // Night renewal integration: 14 gates, 9+3 countdowns, physical collision,
   // growth multiplier, protected LIMITED, eggs pickable again after sunrise.
   const nightTest=await page.evaluate(()=>{
    const t0=Date.now();
@@ -434,7 +434,7 @@ try{
   assert(nightTest.previousEggs>=20&&nightTest.newEggs>=20,'Normal eggs present without rare flood');
   assert(nightTest.removed,'Old nest eggs replaced');
   assert(nightTest.limitedKept,'Existing LIMITED remains untouched');
-  assert.equal(nightTest.nightWallCount,13,'13 white walls closed');
+  assert.equal(nightTest.nightWallCount,14,'14 white walls closed');
   assert.equal(nightTest.baseFenceDuringNight,5,'A cerca original permanece na base durante os 9 segundos de noite');
   assert(nightTest.areaSideBlocked,'Parede branca da área bloqueia toda sua largura durante a noite');
   assert(nightTest.baseFrontBlocked&&nightTest.baseSideBlocked&&nightTest.baseEntranceOpen,
@@ -445,7 +445,7 @@ try{
   assert(nightTest.wallPhysicallyBlocks,'Walls prevent crossing passage');
   assert.equal(nightTest.sunrisePhase,'unlock');
   assert.equal(nightTest.secondClock,'3s','Second 3 second countdown');
-  assert.equal(nightTest.sunriseWallCount,13,'Walls remain for 3 extra seconds');
+  assert.equal(nightTest.sunriseWallCount,14,'Walls remain for 3 extra seconds');
   assert.equal(nightTest.sunriseFenceCount,5,'Durante o segundo cronômetro a base mantém só a cerca original');
   assert(nightTest.noEggDuringUnlock,'Eggs still protected until unlocking');
   assert.equal(nightTest.dayPhase,'day');
@@ -844,8 +844,8 @@ try{
   assert(borderOwnership.neighborIdle&&borderOwnership.didNotSpawnSecondMob,'Nenhum segundo guardião na parte 4');
   assert(borderOwnership.afterDrop,'Soltar ovo encerra a perseguição');
   assert.equal(borderOwnership.baseFence,5,'Cerca original da base preservada');
-  assert(borderOwnership.baseWithoutWhiteWall&&borderOwnership.whiteAreaCount===13,
-   'Paredes brancas reservadas às 13 divisões, sem paredão na base');
+  assert(borderOwnership.baseWithoutWhiteWall&&borderOwnership.whiteAreaCount===14,
+   'Paredes brancas reservadas às 14 divisões, sem paredão na base');
   console.log(mode.toUpperCase()+' GUAXINIM E FRONTEIRA GUARDA ÚNICA '+JSON.stringify(borderOwnership));
 
   if(responses.length)console.warn(mode.toUpperCase()+' RESOURCE WARNINGS '+JSON.stringify(responses));

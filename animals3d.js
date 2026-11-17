@@ -18,7 +18,7 @@ const SPECIES=[
  ['gecko','beetle','bluejay','jackalope','panda','fox','lion','skywhale'],
  ['gecko','beetle','snake','dragon','spider','kraken','golem','skywhale']
 ];
-const UNIQUE_DESIGNS=[null,"ENYQ","VCFW","OFWV","MREY","EBTN","EYQK","BKSC","PUDS",null,"JGWQ","KPDY","CGFQ","LVFW","GCQF","SHJQ","ELPY","ENBT","HLQY","ZOFK","SJYT","APSD","PSYK","CWKO","LHYQ","VQFW","JSDT","LYQK","ZLCK","APSV","STJY","SJKC","BVFW","TGQJ","QEYB","TJYK","ZCXF","CYXJ","FXWC","HXWS","VSYD","PUXF","HXYK","VJSQ","ZCFX","YJXC","CXWF","HXWC","VGFD","SJQD","JSQG","BQFS","DGQJ","OQBF","PCJO","HJST","BVFC","VWQS","KSYD","HKQY","LSYT","JLYT","SJFQ","JQST","ALSD","GSQO","OCYQ","OHQC","KJYS","OXWH","MWHS","HOFW","LVCW","GDSY","MRET","OIFW","FGQD","ALHQ","HSYT","ZMOF","APSY","PKAQ","IKSH","ILYQ","HQKY","JSQK","YCKQ","HWSX","XCFQ","OWFV","EHOW","HWSZ","YJSQ","OWFC","OWCK","XWSH","GSQC","APKY","VCFD","AOSY","MOBY","GSYT","SCFK","COQF","HXWCO"];
+const UNIQUE_DESIGNS=[null,"ENYQ","VCFW","OFWV","MREY","EBTN","EYQK","BKSC","PUDS",null,"JGWQ","KPDY","CGFQ","LVFW","GCQF","SHJQ","ELPY","ENBT","HLQY","ZOFK","SJYT","APSD","PSYK","CWKO","LHYQ","VQFW","JSDT","LYQK","ZLCK","APSV","STJY","SJKC","BVFW","TGQJ","QEYB","TJYK","ZCXF","CYXJ","FXWC","HXWS","VSYD","PUXF","HXYK","VJSQ","ZCFX","YJXC","CXWF","HXWC","VGFD","SJQD","JSQG","BQFS","DGQJ","OQBF","PCJO","HJST","BVFC","VWQS","KSYD","HKQY","LSYT","JLYT","SJFQ","JQST","ALSD","GSQO","OCYQ","OHQC","KJYS","OXWH","MWHS","HOFW","LVCW","GDSY","MRET","OIFW","FGQD","ALHQ","HSYT","ZMOF","APSY","PKAQ","IKSH","ILYQ","HQKY","JSQK","YCKQ","HWSX","XCFQ","OWFV","EHOW","HWSZ","YJSQ","OWFC","OWCK","XWSH","GSQC","APKY","VCFD","AOSY","MOBY","GSYT","SCFK","COQF","IYSQ","BKSO","DZIX","HWXA","PZKG","WOPI","CXQG","WZDO","HXWCO"];
 const GENRE={
  chicken:'bird',dog:'quad',bird:'bird',owl:'bird',raccoon:'quad',fox:'quad',bear:'quad',
  golem:'biped',frog:'amphib',duck:'bird',fish:'fish',turtle:'shell',otter:'quad',
@@ -82,9 +82,11 @@ function create(three,id,k,col,scene){
   try{const imported=window.RoubeOvoUserMobs.create(three,id,k,scene);if(imported)return imported}
   catch(e){console.warn('Mob customizado: usando animal procedural',id,e)}
  }
- const bi=id>=0&&id<104?Math.floor(id/8):id===104?5:(id-105)%13;
- const slot=id>=0&&id<104?id%8:id===104?7:6;
- const kind=id===104?'dragon':SPECIES[bi]?.[slot];if(!kind)return null;
+ const baseSpeciesCount=SPECIES.length*8;
+ const isBiomeSpecies=Number.isInteger(id)&&id>=0&&id<baseSpeciesCount;
+ const bi=isBiomeSpecies?Math.floor(id/8):id===baseSpeciesCount?5:(id-baseSpeciesCount-1)%SPECIES.length;
+ const slot=isBiomeSpecies?id%8:id===baseSpeciesCount?7:6;
+ const kind=id===baseSpeciesCount?'dragon':SPECIES[bi]?.[slot];if(!kind)return null;
  const family=GENRE[kind]||'quad';
  const v=(id*17+11)%23,accent=biomePalettes[bi][1],dark=biomePalettes[bi][2];
  const g=new T.Group(),root=new T.Group();g.add(root);
@@ -455,7 +457,7 @@ function create(three,id,k,col,scene){
  if(id%7===3&&family==='quad')add('cone',accent,[.19,.53,.14],[0,2.14,.61]);
  if(id%8===7){horns(2,true);add('sphere',light,[.23,.23,.23],[0,2.50,.25]);}
 
- // ESCULTURAS POR ESPÉCIE: 103 silhuetas 3D, cada ID recebe partes geométricas
+ // ESCULTURAS POR ESPÉCIE: 111 silhuetas 3D, cada ID recebe partes geométricas
  // adicionais próprias (focinho, crista, chifres, pinças, asas, carapaça...).
  // Cores e escala são apenas complementares: diferenças vêm de geometria real.
  const uniqueForm=UNIQUE_DESIGNS[id];

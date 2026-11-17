@@ -29,7 +29,8 @@ try {
    [0xa780ad,0xf6b8d6,0x85647b,0xffe5eb],
    [0x8e8b9d,0xd3cdb9,0x6a6678,0xfbf4df],
    [0xb8abca,0xf7e5b6,0x6e5d83,0xfff5da],
-   [0x6a9f91,0xc1a6ef,0x756592,0xf2dfff]
+   [0x6a9f91,0xc1a6ef,0x756592,0xf2dfff],
+   [0x1a2d59,0x42e8e0,0x713bba,0x9af8ff]
  ];
  const rand=n=>{let x=Math.sin(n*127.13+65.43)*43758.5453;return x-Math.floor(x)};
  const add=(target,shape,x,y,z,sx,sy,sz,color,rx=0,ry=0,rz=0)=>{
@@ -65,18 +66,19 @@ try {
  }
  function cabin(x,z,b,k){
    const p=colors[b],r=3.2+(k%3)*.42;
-   const taller=b===3||b===10||b===11;
+   const taller=b===3||b===10||b===11||b===13;
    const h=taller?5.8:4.1;
-   const body=(b===4?0xe5f6ff:b===5?0x55424b:b===8?0x7275bb:b===9?0xf5e1e1:b===2?0xe4bd80:b===6?0x92b6bd:0xd6b991);
-   const roof=(b===2?0xb77e49:b===4?0x81bded:b===5?0x793b3d:b===8?0x433c8a:b===9?0xe17ea8:b===11?0xffedaa:p[0]);
+   const body=(b===13?0x1a2b52:b===4?0xe5f6ff:b===5?0x55424b:b===8?0x7275bb:b===9?0xf5e1e1:b===2?0xe4bd80:b===6?0x92b6bd:0xd6b991);
+   const roof=(b===13?0x42e8e0:b===2?0xb77e49:b===4?0x81bded:b===5?0x793b3d:b===8?0x433c8a:b===9?0xe17ea8:b===11?0xffedaa:p[0]);
    a('column',x,h/2,z,r,h,r,body);
    a('round',x,h+.18,z,r*1.05,.50,r*1.05,p[2]);
    if(b===4){ // Iglu de gelo, arredondado e com aro polar.
      a('round',x,h+.6,z,r*1.33,2.2,r*1.33,0xf0fbff);
      a('ring',x,h+1.05,z,r*.9,r*.9,r*.9,0x8fd6ff,ROUND);
-   }else if(b===2||b===6||b===8){
+   }else if(b===2||b===6||b===8||b===13){
      a('round',x,h+1.45,z,r*1.12,1.45,r*1.12,roof);
      a('ring',x,h+.43,z,r*1.10,r*1.10,r*1.10,p[3],ROUND);
+     if(b===13){a('cone',x,h+3.65,z,r*.34,3.4,r*.34,0x9af8ff);a('ring',x,h+1.8,z,r*1.35,r*1.35,r*1.35,0x42e8e0,ROUND);}
    }else{
      a('cone',x,h+1.8,z,r*1.3,3.4,r*1.3,roof);
      a('round',x,h+3.56,z,.43,.35,.43,p[3]);
@@ -89,12 +91,12 @@ try {
      a('round',x+side*(r+1.2),.21,z+2.0,1.2,.19,1.0,p[1]);
      if(k%2===0)a('stone',x+side*(r+1.5),.32,z-2.5,.58,.38,.61,p[2]);
    }
-   if(b===5||b===8||b===11){
+   if(b===5||b===8||b===11||b===13){
      a('round',x,h+4.65,z,.40,.46,.40,b===5?0xff7347:b===8?0x6efcff:0xfff7c2);
    }
  }
- // 13 biomas já publicados. A área radioativa futura permanece fora deste cenário.
- for(let b=0;b<BI.length&&b<13;b++){
+ // Todos os biomas publicados, incluindo o planeta alienígena.
+ for(let b=0;b<BI.length;b++){
    const p=colors[b],zc=-65-70*b;
    // Praças redondas e construções dos dois lados: o corredor dos ovos permanece aberto.
    for(const side of [-1,1]){
@@ -207,7 +209,7 @@ try {
  const fallbackWorld=new T.Group();fallbackWorld.name='Cenario procedural de reserva';sc.add(fallbackWorld);
  const fallbackBase=new T.Group();fallbackBase.name='Previous decorative base props';BASE_GROUP.add(fallbackBase);
  const worldCount=install(parts.world,fallbackWorld),baseCount=install(parts.base,fallbackBase);
- window.RoubeOvoWorldDetail={installed:true,worldCount,baseCount,biomes:Math.min(13,BI.length),fallbackWorld,fallbackBase};
+ window.RoubeOvoWorldDetail={installed:true,worldCount,baseCount,biomes:BI.length,fallbackWorld,fallbackBase};
 } catch(error) {
  console.warn('Cenário extra decorativo ignorado:',error);
 }

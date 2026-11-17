@@ -56,6 +56,12 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    await page.waitForTimeout(350);await page.screenshot({path:'test-results/roblox-style-cherry-android.png'});
    assert(cherry.visible,'Bioma das cerejeiras deve renderizar modelos reais');
    console.log('KENNEY CHERRY BLOSSOM '+JSON.stringify(cherry));
+   await page.evaluate(()=>{P.z=-65-13*70;P.g.position.z=P.z;});
+   await page.waitForFunction(()=>window.RoubeOvoImportedModels?.modelsByBiome[13]>=2,null,{timeout:40000});
+   const alien=await page.evaluate(()=>({types:window.RoubeOvoImportedModels.modelsByBiome[13],visible:sc.children.some(o=>o.name==='Kenney CC0 - 14'&&o.visible&&o.children.length>0)}));
+   await page.waitForTimeout(350);await page.screenshot({path:'test-results/roblox-style-alien-android.png'});
+   assert(alien.visible,'Alien Planet deve carregar seus modelos GLB');
+   console.log('KENNEY ALIEN PLANET '+JSON.stringify(alien));
  }finally{await browser?.close();server.kill('SIGTERM')}
 })().catch(e=>{console.error(e);process.exitCode=1});
 
