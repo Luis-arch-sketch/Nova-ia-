@@ -276,24 +276,24 @@ const creature=(col,k)=>{const g=new T.Group(),m=new T.MeshLambertMaterial({colo
  mk(GS,0x111111,[.08,.08,.08],g,[-.2,1.6,1.3]);mk(GS,0x111111,[.08,.08,.08],g,[.2,1.6,1.3]);g.scale.setScalar(k);g.mat=m;sc.add(g);return g};
 /* ===== Mundo: chão quadriculado, caminhos, muros, montanhas, nuvens, árvores ===== */
 const OB=[]; // obstáculos circulares {x,z,r}
-plane(104,916,0x427b41,0,0,-498,tex(104/8,916/8));
+plane(104,1050,0x427b41,0,0,-500,tex(104/8,1050/8));
 const courtyardGround=plane(128,86,0x427b41,0,.008,3,tex(128/8,86/8));
-// Treze partes com pisos e bordas próprios; a estrada central mantém a passagem livre.
+// Quatorze partes com pisos e bordas próprios; a estrada central mantém a passagem livre.
 BI.forEach((b,i)=>{
  const z=-65-70*i;
  plane(104,66,b.t,0,.018,z,tex(104/8,66/8));
  plane(96,58,b.g,0,.025,z,tex(96/8,58/8));
 })
-plane(14,916,0xd9c8a0,0,.04,-498,tex(1,916/8));
+plane(14,1050,0xd9c8a0,0,.04,-500,tex(1,1050/8));
 const courtyardRoad=plane(14,86,0xd9c8a0,0,.045,3,tex(1,86/8));
-{const wl=(w,d,x,z)=>mk(GB,0x8b6b4a,[w,7,d],sc,[x,3.5,z]);wl(2,1010,-102,-450);wl(2,1010,102,-450);wl(2,282,-102,196);wl(2,282,102,196);wl(206,2,0,338);wl(206,2,0,-956)}
+{const wl=(w,d,x,z)=>mk(GB,0x8b6b4a,[w,7,d],sc,[x,3.5,z]);wl(2,1050,-102,-500);wl(2,1050,102,-500);wl(2,282,-102,196);wl(2,282,102,196);wl(206,2,0,338);wl(206,2,0,-1025)}
 {const m4=new T.Matrix4(),I=new T.Quaternion(),v=new T.Vector3(),s=new T.Vector3();
  const mt=new T.InstancedMesh(GC,M(0x7f93a8),60),cl=new T.InstancedMesh(GS,new T.MeshBasicMaterial({color:0xffffff,fog:false}),40);
- for(let k=0;k<60;k++){const w=20+rn()*30,h=40+rn()*60;m4.compose(v.set((k%2?1:-1)*(160+rn()*80),h/2-4,56-rn()*1010),I,s.set(w,h,w));mt.setMatrixAt(k,m4)}
- for(let k=0;k<40;k++){m4.compose(v.set((rn()-.5)*500,80+rn()*40,56-rn()*1010),I,s.set(16+rn()*16,6+rn()*4,10+rn()*8));cl.setMatrixAt(k,m4)}
+ for(let k=0;k<60;k++){const w=20+rn()*30,h=40+rn()*60;m4.compose(v.set((k%2?1:-1)*(160+rn()*80),h/2-4,56-rn()*1076),I,s.set(w,h,w));mt.setMatrixAt(k,m4)}
+ for(let k=0;k<40;k++){m4.compose(v.set((rn()-.5)*500,80+rn()*40,56-rn()*1076),I,s.set(16+rn()*16,6+rn()*4,10+rn()*8));cl.setMatrixAt(k,m4)}
  mt.frustumCulled=cl.frustumCulled=false;sc.add(mt,cl)}
 {const N=252,tk=new T.InstancedMesh(GY,M(0x7a5230),N),cn=new T.InstancedMesh(GC,new T.MeshLambertMaterial({color:0xffffff}),N),m4=new T.Matrix4(),I=new T.Quaternion(),v=new T.Vector3(),s=new T.Vector3(),col=new T.Color();
- for(let k=0;k<N;k++){const b=Math.min(12,Math.floor(k/18)-1),zc=-65-70*b;let x,z;
+ for(let k=0;k<N;k++){const b=Math.min(BI.length-1,Math.floor(k/18)-1),zc=-65-70*b;let x,z;
   do{x=(rn()*2-1)*96;z=b<0?50-rn()*75:zc+(rn()-.5)*66}while(Math.abs(x)<10||(b<0?Math.abs(x)<24&&z>-14:Math.hypot(x,z-zc)<28));
   const h=4+rn()*3,r=1.6+rn()*1.2;m4.compose(v.set(x,1.5,z),I,s.set(.5,3,.5));tk.setMatrixAt(k,m4);
   m4.compose(v.set(x,3+h/2,z),I,s.set(r,h,r));cn.setMatrixAt(k,m4);cn.setColorAt(k,col.setHex(b<0?0x2e8b3a:BI[b].t));OB.push({x,z,r:1.1})}
@@ -302,7 +302,7 @@ const courtyardRoad=plane(14,86,0xd9c8a0,0,.045,3,tex(1,86/8));
 const gz=i=>-30-70*i;
 // Os muros permanentes sumiram; estas são só as posições das paredes NOTURNAS.
 const PART_BORDERS=BI.map((b,i)=>gz(i));
-// Portões de todas as 13 partes, um por região.
+// Portões de todas as partes, um por região.
 const GT=BI.map((b,i)=>{const z=gz(i),bar=mk(GB,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.92,depthWrite:true,side:T.DoubleSide}),[104,10.5,.8],sc,[0,5.25,z]);bar.visible=false;
  // Sem pilares e traves visíveis de dia.
  const l=label('',512,64,18);l.position.set(0,9.5,z);sc.add(l);const timer=label('',512,128,15);timer.position.set(0,5.35,z+.72);timer.visible=false;sc.add(timer);return{z,bar,timer,l,b,req:b.req}});
@@ -525,7 +525,7 @@ const partBorderCollision=(player,previousZ,previousX=player.x)=>{
   }
  }
 };
-const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(12,Math.floor((-30-P.z)/70));
+const near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r,cb=()=>P.z>-30?-1:Math.min(BI.length-1,Math.floor((-30-P.z)/70));
 // Chegar até o ovo permite pegá-lo: o desafio de Speed vem do guardião veloz.
 const findEgg=()=>{
  if(EGG_NIGHT.phase!=='day')return null;
@@ -1149,7 +1149,7 @@ const makeLimitedEgg=(x,z)=>{
  const b=BI.length-1,e=newEgg(b,7);
  e.s=LIMITED_ID;e.r=10;e.special='limited';e.z=4;e.w=1;e.st='caido';e.gr=1;e.nest=null;
  e.mesh=eggMesh(e);e.mesh.castShadow=false;e.base=e.mesh.scale.clone();
- e.mesh.position.set(Math.max(-92,Math.min(92,x)),.45+e.base.y,Math.max(-937,Math.min(49,z)));
+ e.mesh.position.set(Math.max(-92,Math.min(92,x)),.45+e.base.y,Math.max(-1008,Math.min(49,z)));
  eggs.push(e);return e;
 };
 const disposeLimitedAura=e=>{
