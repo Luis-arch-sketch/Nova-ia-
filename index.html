@@ -649,7 +649,7 @@ cv.addEventListener('pointerdown',e=>{if(window.RoubeOvoHatching?.active)return;
  else if(cp===null){cp=e.pointerId;ls={x:e.clientX,y:e.clientY}}});
 cv.addEventListener('pointermove',e=>{
  if(e.pointerId===jp){let dx=e.clientX-jo.x,dy=e.clientY-jo.y;const d=Math.hypot(dx,dy),m=55;if(d>m){dx*=m/d;dy*=m/d}J.x=dx/m;J.y=-dy/m;$('jk').style.left=jo.x+dx-25+'px';$('jk').style.top=jo.y+dy-25+'px'}
- else if(e.pointerId===cp){P.yaw-=(e.clientX-ls.x)*.006;P.pitch=Math.max(-.1,Math.min(1.3,P.pitch+(e.clientY-ls.y)*.005));ls={x:e.clientX,y:e.clientY}}});
+ else if(e.pointerId===cp){P.yaw-=(e.clientX-ls.x)*.012;P.pitch=Math.max(-.1,Math.min(1.3,P.pitch+(e.clientY-ls.y)*.005));ls={x:e.clientX,y:e.clientY}}});
 const pu=e=>{if(e.pointerId===jp){jp=null;J.x=J.y=0;$('js').style.display=$('jk').style.display='none'}if(e.pointerId===cp)cp=null};
 cv.addEventListener('pointerup',pu);cv.addEventListener('pointercancel',pu);cv.addEventListener('lostpointercapture',pu);
 addEventListener('blur',()=>{jp=cp=null;J.x=J.y=0;Object.keys(K).forEach(x=>K[x]=0);$('js').style.display=$('jk').style.display='none'});
@@ -828,9 +828,9 @@ const step=dt=>{TT+=dt;abuseUpdate(dt);
  if(P.train)P.g.rotation.y=Math.PI;else if(v2>.5)P.g.rotation.y=Math.atan2(P.vx,P.vz);
  P.g.rotation.x=P.stun>0?-1.4:0;P.g.position.set(P.x,P.y+(P.train?.62:P.stun>0?.4:0),P.z);
  /* câmera */
- CT.set(P.x,P.y+2.2,P.z);const cp_=Math.cos(P.pitch);
+ CT.set(P.x,P.y+1.35,P.z);const cp_=Math.cos(P.pitch);
  const cameraBounds=raidRoom?{x:25.5,minZ:-1165.5,maxZ:-1114.5}:window.RoubeOvoLayout.limits(P.z,window.RoubeOvoPlaza?.bounds);
- NV.set(Math.max(-cameraBounds.x,Math.min(cameraBounds.x,CT.x+Math.sin(P.yaw)*cp_*P.dist)),Math.max(.9,Math.min(20,CT.y+Math.sin(P.pitch)*P.dist)),Math.max(raidRoom?cameraBounds.minZ:-954,Math.min(cameraBounds.maxZ,CT.z+Math.cos(P.yaw)*cp_*P.dist)));
+ NV.set(Math.max(-cameraBounds.x,Math.min(cameraBounds.x,CT.x+Math.sin(P.yaw)*cp_*P.dist)),Math.max(.9,Math.min(20,CT.y+Math.sin(P.pitch)*P.dist)),Math.max(cameraBounds.minZ,Math.min(cameraBounds.maxZ,CT.z+Math.cos(P.yaw)*cp_*P.dist)));
  if(!raidRoom)window.RoubeOvoPlaza?.clipCamera(NV,CT);
  cam.position.lerp(NV,Math.min(1,dt*12));cam.lookAt(CT);sun.position.set(P.x+30,55,P.z+25);sun.target.position.set(P.x,0,P.z);
  stripe.offset.y-=P.train?dt*1.2:0;
