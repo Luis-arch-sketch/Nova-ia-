@@ -15,7 +15,8 @@ const SPECIES=[
  ['crane','salamander','redpanda','owl','koi','stag','tiger','kitsune'],
  ['spider','crab','armored','mantis','rhino','shark','gorilla','dragon'],
  ['sprite','dove','lamb','imp','hound','peacock','angel','dragon'],
- ['gecko','beetle','bluejay','jackalope','panda','fox','lion','skywhale']
+ ['gecko','beetle','bluejay','jackalope','panda','fox','lion','skywhale'],
+ ['gecko','beetle','snake','dragon','spider','kraken','golem','skywhale']
 ];
 const UNIQUE_DESIGNS=[null,"ENYQ","VCFW","OFWV","MREY","EBTN","EYQK","BKSC","PUDS",null,"JGWQ","KPDY","CGFQ","LVFW","GCQF","SHJQ","ELPY","ENBT","HLQY","ZOFK","SJYT","APSD","PSYK","CWKO","LHYQ","VQFW","JSDT","LYQK","ZLCK","APSV","STJY","SJKC","BVFW","TGQJ","QEYB","TJYK","ZCXF","CYXJ","FXWC","HXWS","VSYD","PUXF","HXYK","VJSQ","ZCFX","YJXC","CXWF","HXWC","VGFD","SJQD","JSQG","BQFS","DGQJ","OQBF","PCJO","HJST","BVFC","VWQS","KSYD","HKQY","LSYT","JLYT","SJFQ","JQST","ALSD","GSQO","OCYQ","OHQC","KJYS","OXWH","MWHS","HOFW","LVCW","GDSY","MRET","OIFW","FGQD","ALHQ","HSYT","ZMOF","APSY","PKAQ","IKSH","ILYQ","HQKY","JSQK","YCKQ","HWSX","XCFQ","OWFV","EHOW","HWSZ","YJSQ","OWFC","OWCK","XWSH","GSQC","APKY","VCFD","AOSY","MOBY","GSYT","SCFK","COQF","HXWCO"];
 const GENRE={
@@ -44,7 +45,8 @@ const biomePalettes=[
  [0x50a9e2,0xd1eaff,0x295eaa],[0x7a9c66,0xe5bf7b,0x655742],
  [0x9270e8,0x71e0f2,0x363476],[0xe598b8,0xffddeb,0x725b93],
  [0xa1b0b8,0xe3c67e,0x5a718a],[0xffe9b6,0xf3a6d8,0xa56ea5],
- [0x87e2c9,0xf7d5fa,0x6468c2]
+ [0x87e2c9,0xf7d5fa,0x6468c2],
+ [0x42e8e0,0xb76bff,0x18204f]
 ];
 let T=null;const shared={},materials=new Map(),shells=new Map();
 function init(three){
