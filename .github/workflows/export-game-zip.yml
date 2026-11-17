@@ -1,0 +1,28 @@
+name: Exportar ZIP do Roube um Ovo 3D
+on:
+  push:
+    branches:
+      - roube-um-ovo-3d-multiplayer
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exportar-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar versão exata do jogo
+        uses: actions/checkout@v4
+      - name: Criar e validar ZIP completo
+        run: |
+          git archive --format=zip --output=Roube-um-Ovo-3D-atualizado.zip HEAD
+          unzip -t Roube-um-Ovo-3D-atualizado.zip
+          ls -lh Roube-um-Ovo-3D-atualizado.zip
+      - name: Disponibilizar ZIP para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roube-um-Ovo-3D-atualizado
+          path: Roube-um-Ovo-3D-atualizado.zip
+          if-no-files-found: error
+          retention-days: 90
