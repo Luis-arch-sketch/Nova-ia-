@@ -32,7 +32,7 @@ jobs:
           gradle-version: '8.9'
       - name: Compilar APK do jogo
         run: gradle -p android-app :app:assembleDebug --no-daemon
-      - name: Empacotar o projeto completo em ZIP
+      - name: Empacotar ZIP do projeto completo atualizado
         run: |
           mkdir -p game-package
           git archive HEAD | tar -x -C game-package
