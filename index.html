@@ -310,7 +310,7 @@ let zlim=-938;
 const upGates=()=>{GT.forEach((g,i)=>g.l.set('PARTE '+(i+1)+' • '+g.b.n+(i===3?' • GUAXINIM GUARDIÃO':'')+(g.req?': Speed '+fm(g.req):'')));zlim=window.RoubeOvoLayout?.released?.()?-1008:-938}; // o bioma novo libera as 20:30
 /* ===== Ninhos, ovos, guardiões ===== */
 const NS=[],eggs=[];
-BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
+BI.forEach((b,i)=>{const zc=-65-70*i;for(let j=0;j<8;j++){const a=j/8*Math.PI*2,x=i===13&&j===2?35:i===13&&j===6?-35:Math.cos(a)*22,z=zc+Math.sin(a)*22;mk(GY,0x8a5a2b,[1.7,.35,1.7],sc,[x,.17,z]);mk(GY,0xd8b46a,[1.2,.4,1.2],sc,[x,.3,z]);NS.push({b:i,j,x,z,e:null})}});
 
 /* GUARDIÃO DA PARTE 4 DO MAPA (a Selva): guaxinim Quaternius.
    Guarda a região inteira e persegue qualquer ladrão de ovos da parte 4. */
