@@ -33,7 +33,8 @@ class World {
   const occupied=new Set([...this.eggs.values()].map(e=>e.nest));
   const spawn=(b,j)=>{const n=b*8+j;if(occupied.has(n)||REMOVED.has(n))return;
    const a=j/8*Math.PI*2;let size=this.size();if(!first&&this.random()<.32)size=Math.min(4,size+1);
-   const e=this.add(b,j,size,Math.cos(a)*22,-65-70*b+Math.sin(a)*22,now,b*8+j,n);if(e)occupied.add(n);
+   const x=b===13&&j===2?35:b===13&&j===6?-35:Math.cos(a)*22;
+   const e=this.add(b,j,size,x,-65-70*b+Math.sin(a)*22,now,b*8+j,n);if(e)occupied.add(n);
   };
   for(let b=0;b<14;b++)for(let j=0;j<2;j++)spawn(b,j);
   if(!first)for(let j=2;j<8;j++){
