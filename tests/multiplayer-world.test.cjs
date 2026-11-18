@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {World,baseSpawn,meetingSpawn}=require('../multiplayer-world.cjs');
+const {World,baseSpawn,meetingSpawn,LIMITED}=require('../multiplayer-world.cjs');
 test('amigos ficam visíveis nas duas câmeras, inclusive em celular vertical e câmera girada',()=>{
  const T=require('../three.min.js');
  function visible(viewer,subject,aspect){
@@ -55,7 +55,10 @@ test('cronômetros usam o servidor, preservam ovos carregados e respeitam 9 + 3 
  assert.equal(w.eggs.has(egg.id),false,'a renovação não duplica o ovo carregado');
 });
 test('geração inicial não despeja ovos raros e o limite do mapa é aplicado',()=>{
- const w=new World(1000);assert.equal(w.eggs.size,24);assert([...w.eggs.values()].every(e=>e.r<2));
+ const w=new World(1000);assert.equal(w.eggs.size,26);assert([...w.eggs.values()].every(e=>e.r<2));
+ assert.equal(LIMITED,112,'LIMITED fica depois das 14 espécies de oito animais');
+ assert([...w.eggs.values()].some(e=>e.b===13),'o 14º bioma também recebe ovos');
+ assert([...w.eggs.values()].every(e=>e.s!==LIMITED),'nenhum ovo comum pode usar o ID reservado do LIMITED');
  for(let n=0;n<500;n++)w.add(1,2,1,1,-100,1000);
  assert.equal(w.eggs.size,400);
 });
