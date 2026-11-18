@@ -30,7 +30,16 @@ function label3(txt,x,y,z){const c=document.createElement('canvas');c.width=512;
 house(-12,-10,'#f2a96b','ESTÚDIO');house(12,-10,'#9bcae6','ESTÚDIO');house(-12,12,'#d7a2c9','ATELIÊ');house(12,12,'#e7c66b','MUSEU');
 for(let i=0;i<5;i++){box(-2+i,0.55,0,0.8,1.1,.8,'#bd8d55')}
 // jogador
-const player=new THREE.Group();const body=new THREE.Mesh(new THREE.CapsuleGeometry(.38,.8,4,8),mat('#477fc1'));body.position.y=1;player.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.32,16,12),mat('#f0c39a'));head.position.y=1.85;player.add(head);const hair=new THREE.Mesh(new THREE.SphereGeometry(.33,16,10),mat('#493023'));hair.position.set(0,2.02,0);player.add(hair);player.position.set(0,0,7);scene.add(player);
+const player=new THREE.Group();
+const skin=mat('#d9a77f'),shirt=mat('#397bb8'),pants=mat('#35445d'),shoe=mat('#292a32'),hairMat=mat('#493023');
+const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.62,6,12),shirt);torso.position.y=1.15;torso.castShadow=true;player.add(torso);
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(.12,.13,.18,12),skin);neck.position.y=1.62;player.add(neck);
+const head=new THREE.Mesh(new THREE.SphereGeometry(.29,24,18),skin);head.scale.set(1,1.12,.95);head.position.y=1.91;head.castShadow=true;player.add(head);
+const hair=new THREE.Mesh(new THREE.SphereGeometry(.30,20,12,0,Math.PI*2,0,Math.PI*.58),hairMat);hair.position.set(0,2.04,0);player.add(hair);
+for(const x of [-.115,.115]){const eye=new THREE.Mesh(new THREE.SphereGeometry(.027,10,8),mat('#211a14'));eye.position.set(x,1.94,.265);player.add(eye)}
+const armGeo=new THREE.CapsuleGeometry(.105,.48,4,10);for(const x of [-.43,.43]){const arm=new THREE.Mesh(armGeo,shirt);arm.position.set(x,1.22,0);arm.rotation.z=x<0?-.13:.13;arm.castShadow=true;player.add(arm);const hand=new THREE.Mesh(new THREE.SphereGeometry(.105,12,10),skin);hand.position.set(x*1.12,.91,.02);player.add(hand)}
+for(const x of [-.17,.17]){const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.13,.48,4,10),pants);leg.position.set(x,.48,0);leg.castShadow=true;player.add(leg);const foot=new THREE.Mesh(new THREE.BoxGeometry(.23,.13,.36),shoe);foot.position.set(x,.12,.08);foot.castShadow=true;player.add(foot)}
+player.position.set(0,0,7);scene.add(player);
 const npcs=[];for(let i=0;i<3;i++){const p=new THREE.Group();const b=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.75,4,8),mat(['#bd6a4e','#8067bd','#e2a83e'][i]));b.position.y=.95;p.add(b);const h=new THREE.Mesh(new THREE.SphereGeometry(.29,16,12),mat('#e8bd95'));h.position.y=1.75;p.add(h);p.position.set([-5,5,-4][i],0,[-2,-5,4][i]);scene.add(p);npcs.push(p)}
 let yaw=0,pitch=.22,keys={},moving={};addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll('[data-move]').forEach(b=>{const k=b.dataset.move;b.addEventListener('touchstart',e=>{e.preventDefault();moving[k]=true});b.addEventListener('touchend',()=>moving[k]=false);b.addEventListener('mousedown',()=>moving[k]=true);b.addEventListener('mouseup',()=>moving[k]=false)});
