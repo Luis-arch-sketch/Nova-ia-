@@ -1,7 +1,7 @@
 'use strict';
 const crypto=require('node:crypto');
 const MapLayout=require('./world-layout.js');
-const LIMITED=104,REMOVED=new Set([0,9]),RARITIES=[0,1,2,3,4,7,8,9];
+const LIMITED=112,REMOVED=new Set([0,9]),RARITIES=[0,1,2,3,4,7,8,9];
 const SIZES=[.8,1,1.4,1.9,12/1.8],CHANCES={2:.4,3:.3,4:.2,7:.1,8:.04,9:.005};
 const MUTATION_CHANCES=[.08,.04,.015,.06,.01,.015,.015,.01];
 const baseSpawn=(slot,count=1)=>MapLayout.base(slot,count);
@@ -35,11 +35,11 @@ class World {
    const a=j/8*Math.PI*2;let size=this.size();if(!first&&this.random()<.32)size=Math.min(4,size+1);
    const e=this.add(b,j,size,Math.cos(a)*22,-65-70*b+Math.sin(a)*22,now,b*8+j,n);if(e)occupied.add(n);
   };
-  for(let b=0;b<13;b++)for(let j=0;j<2;j++)spawn(b,j);
+  for(let b=0;b<14;b++)for(let j=0;j<2;j++)spawn(b,j);
   if(!first)for(let j=2;j<8;j++){
    const chance=CHANCES[RARITIES[j]]*(j>=6?1.4:1);
    if(this.random()>=chance)continue;
-   const candidates=Array.from({length:13},(_,b)=>b).filter(b=>!REMOVED.has(b*8+j)&&!occupied.has(b*8+j));
+   const candidates=Array.from({length:14},(_,b)=>b).filter(b=>!REMOVED.has(b*8+j)&&!occupied.has(b*8+j));
    if(candidates.length)spawn(candidates[Math.floor(this.random()*candidates.length)],j);
   }
 
