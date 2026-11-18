@@ -7,3 +7,6 @@ Render Static Site: branch `desenhe-um-ovo-mundo-3d`, publish directory `desenhe
 
 ## Limitações desta primeira versão
 A sala multiplayer online com sincronização, chat de voz entre jogadores e o áudio original anexado ainda precisam ser conectados a um servidor/serviço de mídia. O botão de voz apenas solicita permissão de microfone; não transmite áudio a outros jogadores. A avaliação é local e heurística, não um modelo externo.
+
+
+Sala online: servidor WebSocket para até quatro jogadores, chat e sinalização de voz P2P. Use o endereço do serviço web no Render para jogar com a sala conectada.
